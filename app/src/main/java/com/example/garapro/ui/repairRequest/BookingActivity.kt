@@ -86,7 +86,7 @@ class BookingActivity : AppCompatActivity(), TokenExpiredListener {
                 R.id.branchSelectionFragment -> "Chọn Chi Nhánh"
                 R.id.parentCategorySelectionFragment -> "Chọn Danh mục Dịch vụ"
                 R.id.childCategorySelectionFragment -> "Chọn Dịch Vụ Theo Thể Loại"
-                R.id.servicePartsSelectionFragment -> "Chọn Linh Kiện Theo Dịch Vụ"
+//                R.id.servicePartsSelectionFragment -> "Chọn Linh Kiện Theo Dịch Vụ"
                 R.id.detailsFragment -> "Thông Tin Đặt Lịch"
                 R.id.confirmationFragment -> "Xác Nhận"
                 else -> "Đặt Lịch Sửa Chữa"

@@ -18,7 +18,10 @@ class ParentCategoryAdapter(
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvCategoryName: TextView = itemView.findViewById(R.id.tvCategoryName)
         val tvDescription: TextView = itemView.findViewById(R.id.tvDescription)
+
+        val tvChildCount : TextView = itemView.findViewById(R.id.tvChildCount)
         val cardView: MaterialCardView = itemView.findViewById(R.id.cardCategory)
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -32,6 +35,7 @@ class ParentCategoryAdapter(
         holder.tvCategoryName.text = category.categoryName
         holder.tvDescription.text = category.description
 
+        holder.tvChildCount.text = category.childCategories?.size.toString() + " Loại dịch vụ đang có";
         holder.cardView.setOnClickListener {
             Log.d("ParentTochild","toggle");
             onCategorySelected(category)

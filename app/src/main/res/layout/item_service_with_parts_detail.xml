@@ -11,8 +11,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="@color/white"
         android:padding="12dp">
-
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Giá chưa bao gồm giá linh kiện:"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:layout_marginBottom="4dp" />
         <!-- Service Header -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -35,7 +42,7 @@
                 android:id="@+id/tvServicePrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$0"
+                android:text="0đ"
                 android:textColor="@color/primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -43,18 +50,18 @@
         </LinearLayout>
 
         <!-- Parts List -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Parts:"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:layout_marginBottom="4dp" />
+<!--        <TextView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Parts:"-->
+<!--            android:textColor="@color/text_secondary"-->
+<!--            android:textSize="12sp"-->
+<!--            android:layout_marginBottom="4dp" />-->
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvParts"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+<!--        <androidx.recyclerview.widget.RecyclerView-->
+<!--            android:id="@+id/rvParts"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content" />-->
 
     </LinearLayout>
 

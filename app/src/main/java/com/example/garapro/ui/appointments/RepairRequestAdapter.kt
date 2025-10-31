@@ -55,7 +55,8 @@ class RepairRequestAdapter(
             tvDescription.text = item.description
             tvRequestDate.text = formatDate(item.requestDate)
             tvBranch.text = branch?.branchName ?: "Unknown Branch"
-            tvEstimatedCost.text = "Estimated: ${MoneyUtils.formatVietnameseCurrency(item.estimatedCost)}"
+            tvEstimatedCost.visibility = View.GONE;
+//            tvEstimatedCost.text = "Estimated: ${MoneyUtils.formatVietnameseCurrency(item.estimatedCost)}"
 
             // Set status với background phù hợp
             val statusText = getStatusText(item.status)
@@ -63,7 +64,8 @@ class RepairRequestAdapter(
             tvStatus.setBackgroundResource(getStatusBackground(item.status))
 
             // Show update button chỉ cho pending status
-            btnUpdate.visibility = if (item.status == 0) View.VISIBLE else View.GONE
+            btnUpdate.visibility = View.GONE;
+//            btnUpdate.visibility = if (item.status == 0) View.VISIBLE else View.GONE
             btnUpdate.setOnClickListener { onUpdateClick(item) }
 
             cardView.setOnClickListener { onItemClick(item) }
@@ -81,12 +83,19 @@ class RepairRequestAdapter(
         }
 
         private fun getStatusText(status: Int): String {
+//            return when (status) {
+//                0 -> "PENDING"
+//                1 -> "ACCEPTED"
+//                2 -> "ARRIVED"
+//                3 -> "CANCELLED"
+//                else -> "UNKNOWN"
+//            }
             return when (status) {
-                0 -> "PENDING"
-                1 -> "ACCEPTED"
-                2 -> "ARRIVED"
-                3 -> "CANCELLED"
-                else -> "UNKNOWN"
+                0 -> "Đang chờ xử lý"
+                1 -> "Đã chấp nhận"
+                2 -> "Đã đến nơi"
+                3 -> "Đã hủy"
+                else -> "Không xác định"
             }
         }
 

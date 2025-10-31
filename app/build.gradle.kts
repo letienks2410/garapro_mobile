@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.gridlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -75,6 +76,8 @@ dependencies {
 
 // Fragment
     implementation("androidx.fragment:fragment-ktx:1.8.3")
+// Navigation
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.0")
 
 // Retrofit + OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

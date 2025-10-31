@@ -7,7 +7,10 @@
     android:layout_margin="8dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    app:cardUseCompatPadding="true"
+    app:cardBackgroundColor="#FFFFFF"
+    app:strokeColor="#E0E0E0"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,13 +25,13 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvVehicle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Toyota Camry - 51A-12345"
-                android:textColor="@color/text_primary"
+                android:textColor="#000000"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:maxLines="1"
@@ -50,13 +53,13 @@
         </LinearLayout>
 
         <!-- Description -->
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Engine oil change and general maintenance"
-            android:textColor="@color/text_secondary"
+            android:textColor="#666666"
             android:textSize="14sp"
             android:maxLines="2"
             android:ellipsize="end" />
@@ -82,14 +85,14 @@
                     android:layout_height="16dp"
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_calendar"
-                    app:tint="@color/text_secondary" />
+                    app:tint="#666666" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvRequestDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="28/10/2024 10:00"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="#666666"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -107,14 +110,14 @@
                     android:layout_height="16dp"
                     android:layout_marginEnd="4dp"
                     android:src="@drawable/ic_location"
-                    app:tint="@color/text_secondary" />
+                    app:tint="#666666" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvBranch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Main Branch"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="#666666"
                     android:textSize="12sp"
                     android:maxLines="1"
                     android:ellipsize="end" />
@@ -124,13 +127,13 @@
         </LinearLayout>
 
         <!-- Estimated cost -->
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvEstimatedCost"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Estimated: $150.00"
-            android:textColor="@color/text_primary"
+            android:textColor="#000000"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -145,7 +148,11 @@
             app:icon="@drawable/ic_settings"
             app:iconGravity="textStart"
             app:cornerRadius="8dp"
-            style="@style/Widget.Material3.Button.OutlinedButton" />
+            app:backgroundTint="#FFFFFF"
+            app:strokeColor="#000000"
+            app:strokeWidth="1dp"
+            android:textColor="#000000"
+            app:iconTint="#000000" />
 
     </LinearLayout>
 

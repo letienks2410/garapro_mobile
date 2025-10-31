@@ -39,7 +39,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         binding.btnLogin.setOnClickListener {
-            val email = binding.textEmailLogin.text.toString().trim()
+            val email = binding.textPhoneLogin.text.toString().trim()
             val password = binding.textPasswordLogin.text.toString().trim()
 
             // Validate input

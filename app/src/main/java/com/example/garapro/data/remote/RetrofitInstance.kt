@@ -23,7 +23,7 @@ object RetrofitInstance {
         this.isInitialized = true
     }
 
-    // Tạo AuthService riêng biệt không dùng interceptor
+    // Tạo AuthService riêng biệt không dùng interceptor (cho refresh token)
     private val authService: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(Constants.BASE_URL)
@@ -61,6 +61,15 @@ object RetrofitInstance {
         return AuthInterceptor(tokenManager, authService, tokenExpiredListener)
     }
 
+    val quotationService: QuotationService by lazy {
+        getRetrofit().create(QuotationService::class.java)
+    }
+
+    val RepairProgressService: RepairProgressApiService by lazy {
+        getRetrofit().create(RepairProgressApiService::class.java)
+    }
+
+    // Các service khác...
     val bookingService: BookingService by lazy {
         getRetrofit().create(BookingService::class.java)
     }

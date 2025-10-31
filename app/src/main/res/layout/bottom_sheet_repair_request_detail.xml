@@ -3,314 +3,354 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:padding="8dp"
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="8dp">
 
-        <!-- Header -->
-        <TextView
+        <!-- Tiêu đề -->
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Repair Request Details"
-            android:textColor="@color/text_primary"
+            android:text="Chi tiết yêu cầu sửa chữa"
+            android:textColor="#000000"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="20dp" />
 
-        <!-- Basic Information Card -->
+        <!-- Thông tin cơ bản -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Basic Information"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:text="Thông tin cơ bản"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="16dp" />
 
+                <!-- Mã yêu cầu -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Request ID:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Mã yêu cầu:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvRequestId"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
+                <!-- Trạng thái -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Status:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Trạng thái:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="PENDING"
+                        android:text="ĐANG CHỜ"
                         android:textColor="@color/white"
                         android:textSize="12sp"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"
-                        android:gravity="center" />
+                        android:textStyle="bold"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_status_pending" />
 
                 </LinearLayout>
 
+                <!-- Ngày yêu cầu -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Request Date:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Ngày yêu cầu:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvRequestDate"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
-                <TextView
+                <!-- Mô tả -->
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Description"
-                    android:textColor="@color/text_secondary"
+                    android:text="Mô tả"
+                    android:textColor="#666666"
                     android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvDescription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text=""
-                    android:textColor="@color/text_primary"
+                    android:textColor="#000000"
                     android:textSize="14sp"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="4dp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                <!-- Chi phí dự kiến -->
+<!--                <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:orientation="horizontal"-->
+<!--                    android:background="@drawable/bg_white_rounded_black"-->
+<!--                    android:padding="12dp">-->
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Estimated Cost:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+<!--                    <com.google.android.material.textview.MaterialTextView-->
+<!--                        android:layout_width="0dp"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_weight="1"-->
+<!--                        android:text="Chi phí dự kiến:"-->
+<!--                        android:textColor="#000000"-->
+<!--                        android:textSize="16sp"-->
+<!--                        android:textStyle="bold" />-->
 
-                    <TextView
-                        android:id="@+id/tvEstimatedCost"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text=""
-                        android:textColor="@color/primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+<!--                    <com.google.android.material.textview.MaterialTextView-->
+<!--                        android:id="@+id/tvEstimatedCost"-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text=""-->
+<!--                        android:textColor="#000000"-->
+<!--                        android:textSize="18sp"-->
+<!--                        android:textStyle="bold" />-->
 
-                </LinearLayout>
+<!--                </LinearLayout>-->
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Vehicle Information Card -->
+        <!-- Thông tin xe -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Vehicle Information"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:text="Thông tin xe"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="16dp" />
 
+                <!-- Tên xe -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Vehicle:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Xe:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvVehicle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
+                <!-- Biển số -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="License Plate:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Biển số:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvLicensePlate"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
+                <!-- Số khung -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="VIN:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Số khung:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvVin"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
+                <!-- Năm sản xuất -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Year:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Năm sản xuất:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvYear"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
+                <!-- Số km -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Odometer:"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:text="Số km:"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvOdometer"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1.5"
                         android:text=""
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:gravity="end" />
 
                 </LinearLayout>
 
@@ -318,64 +358,69 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Services Card -->
+        <!-- Dịch vụ & Phụ tùng -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Services  Parts"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:text="Dịch vụ"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="16dp" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvServices"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_marginBottom="20dp" />
 
+                <!-- Đường phân cách -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="@color/divider"
-                    android:layout_marginBottom="8dp" />
+                    android:background="#E0E0E0"
+                    android:layout_marginBottom="16dp" />
 
+                <!-- Tổng chi phí -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_white_rounded_black"
+                    android:padding="16dp">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Total Cost:"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
+                        android:text="Tổng chi phí:"
+                        android:textColor="#000000"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvTotalCost"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text=""
-                        android:textColor="@color/primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:gravity="end" />
+                        android:textColor="#000000"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
 
                 </LinearLayout>
 

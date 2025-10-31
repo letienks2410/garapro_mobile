@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background"
+        android:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/background"
+            app:title="Repair Progress"
+            app:menu="@menu/menu_repair_progress" />
+
+        <!-- Filter Chips -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/filterChipGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone"
+            app:chipSpacingHorizontal="8dp"
+            app:singleLine="true" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!-- Filter Section -->
+            <LinearLayout
+                android:id="@+id/filterContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:background="@color/surface"
+                android:elevation="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Filter Options"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:padding="16dp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="16dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <!-- Status Filter -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/statusFilterLayout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Status"
+                            app:endIconMode="dropdown_menu">
+
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/statusFilter"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:focusable="false" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- RO Type Filter -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/roTypeFilterLayout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="RO Type"
+                            app:endIconMode="dropdown_menu">
+
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/roTypeFilter"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:focusable="false" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Paid Status Filter -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/paidStatusFilterLayout"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="Paid Status"
+                            app:endIconMode="dropdown_menu">
+
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/paidStatusFilter"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:focusable="false" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Date Range Filter -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/dateFilter"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Select Date Range"
+                            app:icon="@drawable/ic_calendar" />
+
+                        <!-- Action Buttons -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/clearFilterButton"
+                                style="@style/Widget.Material3.Button.TextButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Clear" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/applyFilterButton"
+                                style="@style/Widget.Material3.Button"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="8dp"
+                                android:text="Apply" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Content Area -->
+            <androidx.core.widget.NestedScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Progress Bar -->
+                    <ProgressBar
+                        android:id="@+id/progressBar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="4dp"
+                        android:visibility="gone" />
+
+                    <!-- RecyclerView -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:padding="8dp"
+                        tools:listitem="@layout/item_repair_order" />
+
+                    <!-- Empty State -->
+                    <LinearLayout
+                        android:id="@+id/emptyState"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="64dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:src="@drawable/ic_empty_orders"
+                            app:tint="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/emptyText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="No repair orders found"
+                            android:textColor="@color/gray"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"
+                            android:text="There are no repair orders to display at the moment"
+                            android:textColor="@color/gray"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+        </LinearLayout>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Filter FAB -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/filterButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_filter"
+        app:tint="@color/white" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

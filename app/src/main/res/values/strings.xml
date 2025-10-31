@@ -4,4 +4,7 @@
     <string-array name="empty_array">
         <item></item>
     </string-array>
+    <string name="login_image">Login illustration</string>
+
+
 </resources>

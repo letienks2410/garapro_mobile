@@ -1,5 +1,6 @@
 package com.example.garapro.ui.repairRequest
 
+import android.graphics.Color
 import com.example.garapro.databinding.FragmentBranchSelectionBinding
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -59,6 +60,8 @@ class BranchSelectionFragment : BaseBookingFragment() {
             branch?.let {
                 binding.tvSelectedBranch.text = it.branchName
                 binding.btnNext.isEnabled = true
+                binding.btnNext.setBackgroundColor(Color.BLACK)
+
             }
         }
     }

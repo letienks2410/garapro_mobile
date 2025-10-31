@@ -16,6 +16,7 @@ import com.example.garapro.R
 import java.util.Calendar
 import android.text.TextWatcher
 import android.widget.Toast
+import androidx.compose.ui.graphics.Color
 
 class DetailsFragment : BaseBookingFragment() {
 
@@ -80,7 +81,9 @@ class DetailsFragment : BaseBookingFragment() {
 
         binding.btnNext.setOnClickListener {
             if (validateForm()) {
+
                 showNextFragment(R.id.action_details_to_confirmation)
+
             }
         }
 
@@ -187,9 +190,21 @@ class DetailsFragment : BaseBookingFragment() {
                 bookingViewModel.description.value?.isNotBlank() == true
 
         binding.btnNext.isEnabled = isValid
+
+        if (isValid) {
+            // Khi hợp lệ: nền đen, chữ trắng
+            binding.btnNext.setBackgroundColor(android.graphics.Color.BLACK)
+            binding.btnNext.setTextColor(android.graphics.Color.WHITE)
+        } else {
+            // Khi không hợp lệ: nền xám nhạt, chữ xám
+            binding.btnNext.setBackgroundColor(android.graphics.Color.parseColor("#E0E0E0"))
+            binding.btnNext.setTextColor(android.graphics.Color.parseColor("#9E9E9E"))
+        }
+
         bookingViewModel.updateDetailsCompletion(isValid)
         return isValid
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

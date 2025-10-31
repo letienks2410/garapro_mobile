@@ -1,6 +1,5 @@
 package com.example.garapro.ui.repairRequest
 
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -8,15 +7,10 @@ import android.text.Editable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
 import com.example.garapro.data.model.repairRequest.Service
-import com.example.garapro.data.model.repairRequest.ServiceCategory
 import com.example.garapro.databinding.FragmentChildBookingCategorySelectionBinding
-import com.google.android.material.chip.Chip
 import android.text.TextWatcher
 import android.util.Log
 
@@ -281,16 +275,17 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
 
         binding.btnNext.setOnClickListener {
             val selectedServices = bookingViewModel.selectedServices.value ?: emptyList()
+            showNextFragment(R.id.action_childCategorySelection_to_details);
 
-            if (selectedServices.isEmpty()) {
-                // KHÔNG chọn service nào -> đi thẳng đến details
-                Log.d("Navigation", "No services selected, going directly to details")
-                showNextFragment(R.id.action_childCategorySelection_to_details)
-            } else {
-                // CÓ chọn service -> đi đến parts selection
-                Log.d("Navigation", "${selectedServices.size} services selected, going to parts selection")
-                showNextFragment(R.id.action_childCategorySelection_to_servicePartsSelection)
-            }
+//            if (selectedServices.isEmpty()) {
+//                // KHÔNG chọn service nào -> đi thẳng đến details
+//                Log.d("Navigation", "No services selected, going directly to details")
+//                showNextFragment(R.id.action_childCategorySelection_to_details)
+//            } else {
+//                // CÓ chọn service -> đi đến parts selection
+//                Log.d("Navigation", "${selectedServices.size} services selected, going to parts selection")
+//                showNextFragment(R.id.action_childCategorySelection_to_servicePartsSelection)
+//            }
         }
         // Enable nút Next ngay từ đầu
         binding.btnNext.isEnabled = true
@@ -309,10 +304,10 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
             else -> "Bộ lọc"
         }
 
-        val iconRes = if (isFilterExpanded) R.drawable.ic_expand_less else R.drawable.ic_filter
+        val iconRes = if (isFilterExpanded) R.drawable.ic_ft_expand_less else R.drawable.ic_filter
 
-        binding.btnToggleFilter.text = buttonText
-        binding.btnToggleFilter.setIconResource(iconRes)
+//        binding.btnToggleFilter.text = buttonText
+        binding.btnToggleFilter.setImageResource(iconRes)
     }
 
     private fun updateActiveFilterDisplay() {

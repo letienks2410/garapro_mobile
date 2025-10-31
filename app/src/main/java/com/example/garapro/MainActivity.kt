@@ -4,16 +4,21 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupWithNavController
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.remote.TokenExpiredListener
 import com.example.garapro.ui.login.LoginActivity
 import com.example.garapro.utils.Constants
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), TokenExpiredListener {
@@ -41,28 +46,27 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     }
 
     private fun setupNavigationByRole(role: String?) {
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         val navInflater = navController.navInflater
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
+        val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
         when (role) {
             "Technician" -> {
                 navController.graph = navInflater.inflate(R.navigation.nav_technician)
-                bottomNav.menu.clear()
-                bottomNav.inflateMenu(R.menu.bottom_nav_technician)
+                bottomNavigation.menu.clear()
+                bottomNavigation.inflateMenu(R.menu.bottom_nav_technician)
             }
             else -> {
-//                navController.graph = navInflater.inflate(R.navigation.nav_customer)
                 navController.graph = navInflater.inflate(R.navigation.nav_customer)
-                bottomNav.menu.clear()
-                bottomNav.inflateMenu(R.menu.bottom_nav_customer)
+                bottomNavigation.menu.clear()
+                bottomNavigation.inflateMenu(R.menu.bottom_nav_customer)
             }
         }
 
-        bottomNav.setupWithNavController(navController)
+        // Setup Bottom Navigation với NavController
+        bottomNavigation.setupWithNavController(navController)
     }
     override fun onTokenExpired() {
         runOnUiThread {

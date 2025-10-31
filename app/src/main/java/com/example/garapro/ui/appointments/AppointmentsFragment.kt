@@ -1,7 +1,5 @@
 package com.example.garapro.ui.appointments
 
-import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,12 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,18 +17,11 @@ import com.example.garapro.R
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.repairRequest.Branch
 import com.example.garapro.data.model.repairRequest.RepairRequest
-import com.example.garapro.data.model.repairRequest.RepairRequestDetail
-import com.example.garapro.data.model.repairRequest.RepairRequestStatus
 import com.example.garapro.data.model.repairRequest.Vehicle
-import com.example.garapro.data.remote.BookingService
-import com.example.garapro.data.remote.TokenExpiredListener
 import com.example.garapro.data.repository.repairRequest.BookingRepository
 import com.example.garapro.databinding.FragmentAppointmentsBinding
 import com.example.garapro.ui.repairRequest.BookingActivity
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 // AppointmentsFragment.kt
 class AppointmentsFragment : Fragment() {
@@ -133,7 +121,7 @@ class AppointmentsFragment : Fragment() {
             android.R.layout.simple_spinner_item
         ).apply {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            add("All Vehicles") // Thêm item mặc định
+            add("Tất cả") // Thêm item mặc định
         }
 
         binding.spinnerVehicle.adapter = adapter
@@ -162,7 +150,7 @@ class AppointmentsFragment : Fragment() {
             android.R.layout.simple_spinner_item
         ).apply {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            add("All Branches") // Thêm item mặc định
+            add("Tất cả") // Thêm item mặc định
         }
 
         binding.spinnerBranch.adapter = adapter
@@ -187,8 +175,8 @@ class AppointmentsFragment : Fragment() {
         isFilterVisible = !isFilterVisible
         binding.cardFilter.visibility = if (isFilterVisible) View.VISIBLE else View.GONE
 
-        val icon = if (isFilterVisible) R.drawable.ic_expand_less else R.drawable.ic_filter
-        binding.btnFilter.setIconResource(icon)
+        val icon = if (isFilterVisible) R.drawable.ic_ft_expand_less else R.drawable.ic_filter
+        binding.btnFilter.setImageResource(icon)
     }
 
     private fun setupSwipeRefresh() {
@@ -242,7 +230,7 @@ class AppointmentsFragment : Fragment() {
         }
 
         // Thêm item "All Vehicles" đầu tiên
-        adapter.add("All Vehicles")
+        adapter.add("Tất cả")
 
         // Thêm các vehicles
         vehicles.forEach { vehicle ->
@@ -261,7 +249,7 @@ class AppointmentsFragment : Fragment() {
         }
 
         // Thêm item "All Branches" đầu tiên
-        adapter.add("All Branches")
+        adapter.add("Tất cả")
 
         // Thêm các branches
         branches.forEach { branch ->
@@ -298,5 +286,9 @@ class AppointmentsFragment : Fragment() {
     private fun updateRepairRequest(repairRequest: RepairRequest) {
         // Navigate to update screen
         Toast.makeText(requireContext(), "Update: ${repairRequest.repairRequestID}", Toast.LENGTH_SHORT).show()
+    }
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadInitialData() // hoặc refresh dữ liệu gì đó
     }
 }

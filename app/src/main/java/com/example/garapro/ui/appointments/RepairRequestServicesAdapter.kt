@@ -20,10 +20,10 @@ class RepairRequestServicesAdapter(private val services: List<RequestServiceDeta
             itemView.findViewById<TextView>(R.id.tvServicePrice).text = "${MoneyUtils.formatVietnameseCurrency(service.price)}"
 
             // Setup parts
-            val rvParts = itemView.findViewById<RecyclerView>(R.id.rvParts)
-            val adapter = PartsAdapter(service.parts)
-            rvParts.adapter = adapter
-            rvParts.layoutManager = LinearLayoutManager(itemView.context)
+//            val rvParts = itemView.findViewById<RecyclerView>(R.id.rvParts)
+//            val adapter = PartsAdapter(service.parts)
+//            rvParts.adapter = adapter
+//            rvParts.layoutManager = LinearLayoutManager(itemView.context)
         }
     }
 

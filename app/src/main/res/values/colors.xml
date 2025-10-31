@@ -39,10 +39,14 @@
     <color name="blue">#2196F3</color>
 
 
+    <color name="gray_light">#D3D3D3</color> <!-- Light Gray -->
+
 
     <color name="divider">#E0E0E0</color>
 
+    <!-- Quotation status colors -->
+    <!-- Chip selector -->
+    <color name="chip_selector">#E0E0E0</color>
 
-
-
+    <color name="checkbox_disabled">#BDBDBD</color>
 </resources>

@@ -4,71 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="#FFFFFF">
 
-    <!-- Header với title và filter button -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="2dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp"
-            android:gravity="center_vertical"
-            android:background="?attr/colorSurface">
-
-            <!-- Tiêu đề -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Lịch hẹn"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <!-- Nút Filter -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFilter"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Lọc"
-                android:textAllCaps="false"
-                android:icon="@drawable/ic_filter"
-                app:iconPadding="6dp"
-                app:iconGravity="textStart"
-                app:iconTint="?attr/colorOnSurface"
-                app:cornerRadius="12dp"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_marginEnd="8dp" />
-
-
-            <!-- Nút Add -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCreateBooking"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Đặt lịch"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:layout_marginStart="8dp"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/primary_color"
-                style="@style/Widget.Material3.Button.OutlinedButton" />
-
-
-        </LinearLayout>
-
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Filter section - ẩn hiện -->
+    <!-- Filter section -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardFilter"
         android:layout_width="match_parent"
@@ -76,7 +14,11 @@
         android:layout_margin="8dp"
         android:visibility="gone"
         app:cardCornerRadius="8dp"
-        app:cardElevation="2dp">
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:strokeColor="#E0E0E0"
+        app:strokeWidth="1dp"
+        >
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -84,7 +26,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Status filter -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -100,45 +41,43 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
 
-<!--                <com.google.android.material.chip.Chip-->
-<!--                    android:id="@+id/chipAll"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="All"-->
-<!--                    android:checked="true"-->
-<!--                    style="@style/Widget.Material3.Chip.Filter" />-->
-
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipPending"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pending"
+                    android:text="Đang xử lý"
+                    app:chipBackgroundColor="#F5F5F5"
+                    app:chipStrokeColor="#000000"
                     style="@style/Widget.Material3.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAccept"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Accept"
+                    android:text="Đã tiếp nhận"
+                    app:chipBackgroundColor="#F5F5F5"
+                    app:chipStrokeColor="#000000"
                     style="@style/Widget.Material3.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipArrived"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Arrived"
+                    android:text="Đã Đến"
+                    app:chipBackgroundColor="#F5F5F5"
+                    app:chipStrokeColor="#000000"
                     style="@style/Widget.Material3.Chip.Filter" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipCancelled"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Cancelled"
+                    android:text="Đã hủy"
+                    app:chipBackgroundColor="#F5F5F5"
+                    app:chipStrokeColor="#000000"
                     style="@style/Widget.Material3.Chip.Filter" />
-
             </com.google.android.material.chip.ChipGroup>
 
-            <!-- Vehicle filter -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -153,9 +92,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/spinner_background" />
 
-            <!-- Branch filter -->
+                android:background="@drawable/spinner_background_black"
+                />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -170,27 +110,59 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:background="@drawable/spinner_background" />
-
+                android:background="@drawable/spinner_background_black" />
         </LinearLayout>
-
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Appointments list -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefreshLayout"
+    <!-- Phần danh sách + nút hành động -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
+        <!-- Danh sách -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="8dp" />
+            android:layout_height="match_parent">
 
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Nút Đặt lịch chính (FAB) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnCreateBooking"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:src="@drawable/ic_add"
+            app:backgroundTint="#FFFFFF"
+            app:tint="#000000"
+            app:borderWidth="1dp"
+             />
+
+        <!-- Nút Filter (nhỏ hơn, nằm trên FAB) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="80dp"
+            android:src="@drawable/ic_filter"
+            app:backgroundTint="#FFFFFF"
+            app:tint="#000000"
+            app:borderWidth="1dp"
+
+            app:fabSize="mini" />
+
+    </FrameLayout>
 
     <!-- Loading indicator -->
     <ProgressBar
@@ -200,5 +172,4 @@
         android:layout_gravity="center"
         android:layout_margin="16dp"
         android:visibility="gone" />
-
 </LinearLayout>

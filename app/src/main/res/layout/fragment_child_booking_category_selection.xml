@@ -5,16 +5,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@color/background">
+    android:background="#FFFFFF">
 
     <!-- Selected Parent Category -->
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvSelectedParent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Danh mục: Bảo dưỡng"
         android:textSize="14sp"
-        android:textColor="@color/primary"
+        android:textColor="#000000"
         android:gravity="center"
         android:layout_marginBottom="16dp" />
 
@@ -31,37 +31,45 @@
             android:layout_weight="1"
             app:cardCornerRadius="8dp"
             app:cardElevation="1dp"
-            android:layout_marginEnd="8dp">
+            android:layout_marginEnd="8dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Tìm kiếm dịch vụ...">
+                android:hint="Tìm kiếm dịch vụ..."
+                app:boxBackgroundColor="#FFFFFF"
+                app:boxStrokeColor="#000000"
+                app:hintTextColor="#666666">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSearch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="#000000" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Filter Toggle Button -->
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/btnToggleFilter"
-            android:layout_width="wrap_content"
+            android:layout_width="52dp"
             android:layout_height="52dp"
-            android:text=""
-            android:icon="@drawable/ic_filter"
-            app:iconGravity="textStart"
-            app:iconPadding="4dp"
-            style="@style/Widget.Material3.Button.OutlinedButton" />
+            android:backgroundTint="#FFFFFF"
+            android:src="@drawable/ic_filter"
+            android:background="@drawable/ic_filter"
+            android:scaleType="centerInside"
+            app:tint="#000000" />
+
 
     </LinearLayout>
 
-    <!-- Active Filter Indicator (LUÔN hiển thị, không phụ thuộc filter expand) -->
+    <!-- Active Filter Indicator -->
     <LinearLayout
         android:id="@+id/containerActiveFilter"
         android:layout_width="match_parent"
@@ -71,22 +79,23 @@
         android:layout_marginBottom="8dp"
         android:visibility="gone">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Bộ lọc:"
             android:textSize="14sp"
-            android:textColor="@color/text_secondary"
+            android:textColor="#666666"
             android:layout_marginEnd="8dp" />
 
-        <!-- THÊM chipActiveFilter vào đây -->
         <com.google.android.material.chip.Chip
             android:id="@+id/chipActiveFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Tất cả"
+            android:textColor="#000000"
+            app:chipBackgroundColor="#F5F5F5"
             app:closeIconVisible="true"
-            app:closeIconTint="@color/text_secondary" />
+            app:closeIconTint="#666666" />
 
     </LinearLayout>
 
@@ -97,6 +106,7 @@
         android:layout_height="wrap_content"
         app:cardCornerRadius="8dp"
         app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF"
         android:layout_marginBottom="16dp"
         android:visibility="gone">
 
@@ -107,12 +117,12 @@
             android:padding="16dp">
 
             <!-- Filter Chips -->
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Lọc theo kiểu dịch vụ:"
                 android:textSize="16sp"
-                android:textColor="@color/text_primary"
+                android:textColor="#000000"
                 android:textStyle="bold"
                 android:layout_marginBottom="12dp" />
 
@@ -140,6 +150,9 @@
         android:layout_height="wrap_content"
         app:cardCornerRadius="8dp"
         app:cardElevation="2dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:strokeColor="#E0E0E0"
+        app:strokeWidth="1dp"
         android:layout_marginBottom="16dp">
 
         <LinearLayout
@@ -148,13 +161,13 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvSelectedCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Chưa chọn dịch vụ nào"
                 android:textSize="14sp"
-                android:textColor="@color/text_primary"
+                android:textColor="#000000"
                 android:textStyle="bold" />
 
             <!-- Selected Services Preview -->
@@ -176,26 +189,27 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPrevious"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
             android:text="Quay lại"
-            android:backgroundTint="@color/divider"
-            android:textColor="@color/text_primary" />
+            android:backgroundTint="#E0E0E0"
+            android:textColor="#000000"
+            app:cornerRadius="8dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNext"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:text="Tiếp theo"
-            android:backgroundTint="@color/primary"
-            android:textColor="@android:color/white"
-             />
+            android:backgroundTint="#000000"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="8dp" />
 
     </LinearLayout>
 

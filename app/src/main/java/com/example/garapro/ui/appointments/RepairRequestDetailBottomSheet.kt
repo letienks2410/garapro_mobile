@@ -81,7 +81,8 @@ class RepairRequestDetailBottomSheet : BottomSheetDialogFragment() {
         tvRequestDate?.text = formatDate(detail.requestDate)
         tvStatus?.text = getStatusText(detail.status)
         tvStatus?.setBackgroundResource(getStatusBackground(detail.status))
-        tvEstimatedCost?.text = "${MoneyUtils.formatVietnameseCurrency(detail.estimatedCost)}"
+//        tvEstimatedCost?.text = "${MoneyUtils.formatVietnameseCurrency(detail.estimatedCost)}"
+        tvEstimatedCost?.visibility = View.GONE
 
         // Vehicle info
         tvVehicle?.text = "${detail.vehicle.brandName ?: ""} ${detail.vehicle.modelName ?: ""}"
@@ -90,14 +91,13 @@ class RepairRequestDetailBottomSheet : BottomSheetDialogFragment() {
         tvYear?.text = detail.vehicle.year.toString()
         tvOdometer?.text = "${detail.vehicle.odometer} km"
 
-        // Services and parts
+//         Services and parts
         if (rvServices != null) {
             setupServicesList(rvServices, detail.requestServices)
         }
-
-        // Total calculation
-        val totalCost = detail.requestServices.sumOf { it.price } +
-                detail.requestServices.flatMap { it.parts }.sumOf { it.price}
+//
+//        // Total calculation
+        val totalCost = detail.requestServices.sumOf { it.price }
         tvTotalCost?.text = "${MoneyUtils.formatVietnameseCurrency(totalCost)}"
     }
 
@@ -119,12 +119,19 @@ class RepairRequestDetailBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun getStatusText(status: Int): String {
+//        return when (status) {
+//            0 -> "PENDING"
+//            1 -> "ACCEPTED"
+//            2 -> "ARRIVED"
+//            3 -> "CANCELLED"
+//            else -> "UNKNOWN"
+//        }
         return when (status) {
-            0 -> "PENDING"
-            1 -> "ACCEPTED"
-            2 -> "ARRIVED"
-            3 -> "CANCELLED"
-            else -> "UNKNOWN"
+            0 -> "Đang chờ xử lý"
+            1 -> "Đã chấp nhận"
+            2 -> "Đã đến nơi"
+            3 -> "Đã hủy"
+            else -> "Không xác định"
         }
     }
 

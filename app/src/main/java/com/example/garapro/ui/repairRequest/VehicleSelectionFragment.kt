@@ -1,5 +1,6 @@
 package com.example.garapro.ui.repairRequest
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +34,7 @@ class VehicleSelectionFragment : BaseBookingFragment() {
             bookingViewModel.selectVehicle(vehicle)
             binding.tvSelectedVehicle.text = "${vehicle.brandName} ${vehicle.modelName} - ${vehicle.licensePlate}"
             binding.btnNext.isEnabled = true
+            binding.btnNext.setBackgroundColor(Color.BLACK)
         }
 
 
