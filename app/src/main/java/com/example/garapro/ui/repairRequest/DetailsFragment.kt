@@ -16,7 +16,6 @@ import com.example.garapro.R
 import java.util.Calendar
 import android.text.TextWatcher
 import android.widget.Toast
-import androidx.compose.ui.graphics.Color
 
 class DetailsFragment : BaseBookingFragment() {
 
