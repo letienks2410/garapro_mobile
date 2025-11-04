@@ -65,6 +65,10 @@ object RetrofitInstance {
         getRetrofit().create(QuotationService::class.java)
     }
 
+    val UserService: AuthService by lazy {
+        getRetrofit().create(AuthService::class.java)
+    }
+
     val RepairProgressService: RepairProgressApiService by lazy {
         getRetrofit().create(RepairProgressApiService::class.java)
     }

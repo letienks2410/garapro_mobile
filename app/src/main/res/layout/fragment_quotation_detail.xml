@@ -95,7 +95,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="10dp">
 
                     <TextView
                         android:layout_width="match_parent"
@@ -217,11 +217,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="8dp"
+                app:cardCornerRadius="0dp"
                 app:cardElevation="2dp"
                 app:cardBackgroundColor="#FFFFFF"
-                app:strokeColor="#E0E0E0"
-                app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -243,6 +241,7 @@
                         android:id="@+id/rvServices"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_margin="0dp"
                         tools:listitem="@layout/item_quotation_service" />
 
                 </LinearLayout>

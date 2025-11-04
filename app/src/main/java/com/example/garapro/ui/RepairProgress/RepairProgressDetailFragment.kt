@@ -240,7 +240,7 @@ class RepairProgressDetailFragment : Fragment() {
     }
 
     companion object {
-        private const val ARG_REPAIR_ORDER_ID = "repair_order_id"
+        private const val ARG_REPAIR_ORDER_ID = "repairOrderId"
 
         fun newInstance(repairOrderId: String): RepairProgressDetailFragment {
             val args = Bundle().apply {

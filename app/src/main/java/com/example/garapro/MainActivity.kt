@@ -15,6 +15,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
@@ -22,6 +24,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.remote.TokenExpiredListener
+import com.example.garapro.ui.home.NavigationInfo
 import com.example.garapro.ui.login.LoginActivity
 import com.example.garapro.utils.Constants
 import com.google.android.material.appbar.MaterialToolbar
@@ -33,6 +36,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
     private lateinit var tokenManager: TokenManager
+    private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +45,11 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         tokenManager = TokenManager(this)
         // 🔹 Khởi tạo RetrofitInstance ở đây
         RetrofitInstance.initialize(tokenManager, this)
+
+        // Khởi tạo navController
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
+
         // Kiểm tra token khi khởi động
         lifecycleScope.launch {
             val token = tokenManager.getAccessTokenSync()
@@ -50,6 +59,8 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             } else {
                 val role = tokenManager.getUserRole() // lấy role bạn lưu khi login
                 setupNavigationByRole(role)
+                // Xử lý intent sau khi setup navigation
+                handleIntent(intent)
             }
         }
 
@@ -63,9 +74,8 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         }
 
         requestNotificationPermission()
-
-
     }
+
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(
@@ -82,12 +92,136 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        // Extract tất cả possible IDs từ intent
+        val allIds = extractAllIds(intent)
+        val screen = intent.getStringExtra("screen")
+        val notificationType = intent.getStringExtra("notificationType")
+        val action = intent.getStringExtra("action")
+
+        Log.d("Notification", "Handling - screen: $screen, type: $notificationType, action: $action, ids: $allIds")
+
+        // Xác định destination dựa trên sự kết hợp của các tham số
+        val navigationInfo = determineNavigation(screen, notificationType, action, allIds)
+
+        lifecycleScope.launch {
+            executeNavigation(navigationInfo)
+        }
+    }
+    private fun determineNavigation(
+        screen: String?,
+        notificationType: String?,
+        action: String?,
+        ids: Map<String, String>
+    ): NavigationInfo {
+
+        return when {
+            // Case 1: Appointment được chấp nhận
+            screen == "QuotationDetailFragment" && ids.containsKey("quotationId") ->
+            {
+                Log.d("quo","quoday")
+                NavigationInfo(R.id.quotationDetailFragment, ids, "quotationId")
+            }
+
+            // Case 2: Repair progress được cập nhật
+            screen == "RepairProgressDetailFragment" && ids.containsKey("repairOrderId") ->
+                NavigationInfo(R.id.repairProgressDetailFragment, ids, "repair_updated")
+
+            // Case 3: Payment thông báo
+//            notificationType == "payment_completed" && ids.containsKey("paymentId") ->
+//                NavigationInfo(R.id.paymentStatusFragment, ids, "payment_done")
+
+            // Case 4: Chat message
+//            action == "new_message" && ids.containsKey("chatId") ->
+//                NavigationInfo(R.id.chatFragment, ids, "new_message")
+//
+//            // Case 5: Dựa trên sự kết hợp của các IDs
+//            ids.containsKey("invoiceId") && ids.containsKey("paymentId") ->
+//                NavigationInfo(R.id.invoiceDetailFragment, ids, "invoice_payment")
+
+            // Thêm các case khác...
+            else -> {
+                Log.d("quo","home")
+
+                NavigationInfo(R.id.homeFragment, ids, "default")}
+        }
+    }
+
+    private suspend fun executeNavigation(navigationInfo: NavigationInfo) {
+        try {
+            val role = tokenManager.getUserRole()
+            val targetGraph = when (role) {
+                "Technician" -> R.navigation.nav_technician
+                else -> R.navigation.nav_customer
+            }
+
+            // Đảm bảo đúng graph
+            if (navController.graph.id != targetGraph) {
+                navController.graph = navController.navInflater.inflate(targetGraph)
+            }
+
+            val parentMenuItemId = getParentMenuItemId(navigationInfo.destinationId)
+            val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+            bottomNavigation.selectedItemId = parentMenuItemId
+
+            // Tạo bundle với tất cả IDs
+            val bundle = Bundle().apply {
+                navigationInfo.ids.forEach { (key, value) ->
+                    putString(key, value)
+                }
+                putString("notificationType", navigationInfo.type)
+                putBoolean("fromNotification", true)
+            }
+
+            // Navigate với clear back stack
+            val navOptions = NavOptions.Builder()
+                .setPopUpTo(navController.graph.startDestinationId, false)
+                .build()
+
+            navController.navigate(navigationInfo.destinationId, bundle, navOptions)
+
+        } catch (e: Exception) {
+            Log.e("Navigation", "Failed to navigate: ${e.message}")
+            navigateToHome()
+        }
+    }
+
+    private fun getParentMenuItemId(destinationId: Int): Int {
+        return when (destinationId) {
+            R.id.quotationDetailFragment, R.id.quotationsFragment -> R.id.appointmentNavFragment
+            R.id.repairProgressDetailFragment -> R.id.repairTrackingFragment
+            else -> destinationId // Nếu là fragment chính thì dùng chính nó
+        }
+    }
+    private fun extractAllIds(intent: Intent): Map<String, String> {
+        val idMap = mutableMapOf<String, String>()
+
+        // Danh sách tất cả các key ID có thể có
+        val possibleIdKeys = listOf(
+            "repairRequestId", "repairOrderId", "quotationId", "bookingId",
+            "appointmentId", "serviceId", "technicianId", "customerId",
+            "paymentId", "invoiceId", "chatId", "messageId",
+            "quoteId", "estimateId", "taskId"
+        )
+
+        possibleIdKeys.forEach { key ->
+            intent.getStringExtra(key)?.let { value ->
+                if (value.isNotEmpty()) {
+                    idMap[key] = value
+                }
+            }
+        }
+
+        return idMap
+    }
 
     private fun setupNavigationByRole(role: String?) {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
         val navInflater = navController.navInflater
-
         val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
         when (role) {
@@ -106,13 +240,19 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         // Setup Bottom Navigation với NavController
         bottomNavigation.setupWithNavController(navController)
     }
+
     override fun onTokenExpired() {
         runOnUiThread {
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
-//            tokenManager.clearTokens()
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
     }
-
+    private fun navigateToHome() {
+        try {
+            navController.navigate(R.id.homeFragment)
+        } catch (e: Exception) {
+            Log.e("Navigation", "Failed to navigate to home: ${e.message}")
+        }
+    }
 }

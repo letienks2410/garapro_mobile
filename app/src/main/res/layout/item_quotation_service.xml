@@ -3,12 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="6dp"
-    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="0dp"
+    android:layout_marginHorizontal="0dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
+    app:cardElevation="0dp"
+    android:clipToPadding="false"
+    android:padding="0dp"
     android:background="@color/white"
-
+    android:layout_margin="0dp"
     app:strokeWidth="1dp"
     app:cardUseCompatPadding="true">
 
@@ -24,7 +26,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            app:strokeWidth="2dp"
+            >
 
             <com.google.android.material.checkbox.MaterialCheckBox
                 android:id="@+id/cbService"
@@ -43,12 +47,11 @@
                     android:id="@+id/tvServiceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Bảo dưỡng định kỳ"
+                    android:text="Periodic Maintenance"
                     android:textAppearance="@style/TextAppearance.Material3.TitleSmall.Emphasized"
                     android:textSize="11dp"
                     android:textColor="?attr/colorOnSurface"
                     android:maxLines="1"
-
                     android:ellipsize="end" />
 
                 <TextView
@@ -56,7 +59,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Thay nhớt, lọc gió, kiểm tra hệ thống"
+                    android:text="Oil change, air filter, system check"
                     android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textSize="7dp"
                     android:textColor="?attr/colorOnSurfaceVariant"
@@ -82,7 +85,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Quan trọng"
+            android:text="Required"
             android:textSize="10dp"
             style="@style/Widget.Material3.Chip.Assist.Elevated"
             app:chipBackgroundColor="?attr/colorErrorContainer"
@@ -108,7 +111,7 @@
                 android:id="@+id/tvSelectedPartsTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Đã chọn:"
+                android:text="Selected:"
                 android:textSize="12dp"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
                 android:textColor="?attr/colorOnSurface" />
@@ -130,7 +133,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Hiển thị phụ tùng"
+            android:text="Show Parts"
             android:textSize="10dp"
             style="@style/Widget.Material3.Button.TextButton"
             app:icon="@drawable/ic_expand_more_black"
@@ -144,6 +147,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:maxHeight="300dp"
             android:visibility="gone" />
 
     </LinearLayout>

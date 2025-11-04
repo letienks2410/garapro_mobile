@@ -14,21 +14,30 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.garapro.MainActivity
 import com.example.garapro.R
+import com.example.garapro.data.model.UpdateDeviceIdRequest
+import com.example.garapro.data.remote.RetrofitInstance
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class NotificationService: FirebaseMessagingService() {
+class NotificationService : FirebaseMessagingService() {
 
     private val CHANNEL_ID = "my_channel_id"
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+
+        updateDeviceIdToServer(token)
         Log.d("DeviceToken", "Refreshed token: $token")
         // TODO: Send token to your server
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
+
+        Log.d("Notification", "Message received:  ${remoteMessage.toString()}${remoteMessage.data}")
 
         // 1️⃣ Tạo Notification Channel nếu chưa tồn tại
         createNotificationChannel()
@@ -51,33 +60,95 @@ class NotificationService: FirebaseMessagingService() {
             val title = remoteMessage.data["title"] ?: "Thông báo"
             val body = remoteMessage.data["body"] ?: ""
             val screen = remoteMessage.data["screen"]
-            val orderId = remoteMessage.data["order_id"]
+            val notificationType = remoteMessage.data["type"]
+            val action = remoteMessage.data["action"]
+            Log.d("screen",screen.toString())
+            // 4️⃣ Extract tất cả IDs từ remoteMessage
+            val allIds = extractAllIdsFromMessage(remoteMessage.data)
 
-            // 4️⃣ Tạo Intent mở MainActivity kèm dữ liệu
+            // 5️⃣ Tạo Intent mở MainActivity kèm dữ liệu
             val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("screen", screen)
-                putExtra("order_id", orderId)
+                // Clear any existing tasks and start fresh
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+                // Put extras chính
+                putExtra("screen", screen)
+                putExtra("type", notificationType)
+                putExtra("body", body)
+                putExtra("action", action)
+                putExtra("from_notification", true)
+
+                // Put tất cả IDs
+                allIds.forEach { (key, value) ->
+                    putExtra(key, value)
+                }
+                Log.d("allIds",allIds.toString())
+
             }
+
+            // 6️⃣ Tạo unique ID cho notification dựa trên tất cả IDs
+            val notificationId = generateNotificationId(allIds)
 
             val pendingIntent = PendingIntent.getActivity(
                 this,
-                0,
+                notificationId, // Unique request code
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // 5️⃣ Tạo Notification
+            // 7️⃣ Tạo Notification
             val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_camera) // đổi icon theo project
+                .setSmallIcon(R.drawable.ic_notifications) // đổi icon theo project
                 .setContentTitle(title)
                 .setContentText(body)
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
+                .setAutoCancel(true) // Tự động đóng khi nhấp
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
 
+            // Thêm style cho notification dài
+            if (body.length > 50) {
+                builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            }
+
             NotificationManagerCompat.from(this)
-                .notify(orderId?.hashCode() ?: System.currentTimeMillis().toInt(), builder.build())
+                .notify(notificationId, builder.build())
+
+            Log.d("Notification", "Notification shown with ID: $notificationId, IDs: $allIds")
+        }
+    }
+
+    private fun extractAllIdsFromMessage(data: Map<String, String>): Map<String, String> {
+        val idMap = mutableMapOf<String, String>()
+
+        // Danh sách tất cả các key ID có thể có (đồng bộ với MainActivity)
+        val possibleIdKeys = listOf(
+            "repairRequestId", "repairOrderId", "orderId", "quotationId",
+            "appointmentId", "serviceId", "technicianId", "customerId",
+            "paymentId", "invoiceId", "chatId", "messageId",
+            "quoteId", "estimateId", "taskId", "requestId"
+        )
+
+        possibleIdKeys.forEach { key ->
+            data[key]?.let { value ->
+                if (value.isNotEmpty()) {
+                    idMap[key] = value
+                }
+            }
+        }
+
+        return idMap
+    }
+
+    private fun generateNotificationId(ids: Map<String, String>): Int {
+        // Tạo ID duy nhất dựa trên tất cả IDs
+        val combinedString = ids.entries
+            .sortedBy { it.key }
+            .joinToString("|") { "${it.key}=${it.value}" }
+
+        return if (combinedString.isNotEmpty()) {
+            combinedString.hashCode() and 0x7fffffff // Đảm bảo positive
+        } else {
+            System.currentTimeMillis().toInt() and 0x7fffffff
         }
     }
 
@@ -91,6 +162,24 @@ class NotificationService: FirebaseMessagingService() {
             }
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun updateDeviceIdToServer(deviceToken: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                Log.d("go","gogo")
+                val request = UpdateDeviceIdRequest(deviceId = deviceToken)
+                val response = RetrofitInstance.UserService.updateDeviceId(request)
+
+                if (response.isSuccessful) {
+                    Log.d("DeviceToken", "Device ID updated successfully")
+                } else {
+                    Log.e("DeviceToken", "Failed to update device ID: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("DeviceToken", "Error updating device ID: ${e.message}")
+            }
         }
     }
 }

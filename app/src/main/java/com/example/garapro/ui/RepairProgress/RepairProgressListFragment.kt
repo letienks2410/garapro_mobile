@@ -321,7 +321,7 @@ class RepairProgressListFragment : Fragment() {
 
     private fun navigateToDetail(repairOrderId: String) {
         val bundle = Bundle().apply {
-            putString("repair_order_id", repairOrderId)
+            putString("repairOrderId", repairOrderId)
         }
         findNavController().navigate(R.id.action_repairTrackingFragment_to_repairProgressDetailFragment, bundle)
     }

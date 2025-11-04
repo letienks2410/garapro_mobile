@@ -20,7 +20,7 @@ class QuotationServiceAdapter(
 ) : RecyclerView.Adapter<QuotationServiceAdapter.ViewHolder>() {
 
     private val expandedStates = mutableMapOf<String, Boolean>()
-
+    private var currentlyExpandedServiceId: String? = null
     fun updateEditable(editable: Boolean) {
         this.isEditable = editable
         notifyDataSetChanged()
@@ -92,8 +92,8 @@ class QuotationServiceAdapter(
             }
 
             // Xử lý ẩn/hiện part categories
-            val isExpanded = expandedStates[service.quotationServiceId] ?: false
-            setupPartCategoriesVisibility(service, isExpanded)
+//            val isExpanded = expandedStates[service.quotationServiceId] ?: false
+//            setupPartCategoriesVisibility(service, isExpanded)
 
             binding.btnToggleParts.setOnClickListener {
                 togglePartCategories(service)
@@ -105,7 +105,7 @@ class QuotationServiceAdapter(
                 // Hiển thị danh sách part categories
                 binding.rvPartCategories.visibility = View.VISIBLE
                 binding.selectedPartsSummary.visibility = View.GONE
-                binding.btnToggleParts.text = "Ẩn phụ tùng"
+                binding.btnToggleParts.text = "Hide"
                 binding.btnToggleParts.setIconResource(R.drawable.ic_arrow_drop_up_24dp)
 
                 setupPartCategories(service.partCategories, service)
@@ -113,7 +113,7 @@ class QuotationServiceAdapter(
                 // Ẩn danh sách, hiển thị summary
                 binding.rvPartCategories.visibility = View.GONE
                 binding.selectedPartsSummary.visibility = View.VISIBLE
-                binding.btnToggleParts.text = "Hiển thị phụ tùng"
+                binding.btnToggleParts.text = "Show"
                 binding.btnToggleParts.setIconResource(R.drawable.ic_arrow_drop_down_24dp)
 
                 setupSelectedPartsSummary(service)
@@ -123,7 +123,15 @@ class QuotationServiceAdapter(
         private fun togglePartCategories(service: QuotationServiceDetail) {
             val serviceId = service.quotationServiceId
             val currentState = expandedStates[serviceId] ?: false
+
+            if (!currentState && currentlyExpandedServiceId != null) {
+                expandedStates[currentlyExpandedServiceId!!] = false
+                notifyItemChanged(services.indexOfFirst { it.quotationServiceId == currentlyExpandedServiceId })
+            }
+
             expandedStates[serviceId] = !currentState
+            currentlyExpandedServiceId = if (!currentState) serviceId else null
+
             setupPartCategoriesVisibility(service, !currentState)
         }
 
