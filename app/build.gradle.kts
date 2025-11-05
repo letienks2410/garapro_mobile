@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    id("kotlin-parcelize")
+
+
 }
 
 android {
@@ -66,6 +69,17 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    // Goong Maps
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("org.maplibre.gl:android-sdk:9.5.2")
+    implementation("org.maplibre.gl:android-plugin-annotation-v9:1.0.0")
+//    implementation("io.goong.goongmaps:android-sdk:2.0.1")
+    implementation("com.github.goong-io:goong-map-android-sdk:1.5@aar") { isTransitive = true }
+
+
+    implementation ("com.google.dagger:hilt-android:2.51.1")
+
+
     // Retrofit + OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
@@ -75,6 +89,10 @@ dependencies {
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.androidx.gridlayout)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.androidx.runtime)
+    implementation(libs.androidx.material3)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // Khác

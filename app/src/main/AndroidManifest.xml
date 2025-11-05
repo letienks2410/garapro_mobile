@@ -9,6 +9,11 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
+
+    <!-- Location permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:name=".data.local.MyApplication"
         android:allowBackup="true"
@@ -21,6 +26,11 @@
         android:theme="@style/Theme.GaraPro"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
+
+        <meta-data
+            android:name="com.goong.sdk.API_KEY"
+            android:value="@string/goong_map_key" />
+
         <activity
             android:name=".ui.repairRequest.BookingActivity"
             android:exported="true">
@@ -53,6 +63,9 @@
             android:exported="true"/>
         <activity
             android:name=".ui.profile.EditProfileActivity"
+            android:exported="true"/>
+        <activity
+            android:name=".ui.emergencies.MapActivity"
             android:exported="true"/>
 <!--        <activity android:name=".ui.repairRequest.BookingActivity" />-->
         <service

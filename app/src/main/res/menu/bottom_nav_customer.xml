@@ -16,6 +16,11 @@
         android:title="sửa chữa" />
 
     <item
+        android:id="@+id/test"
+        android:icon="@drawable/gr_logo"
+        android:title="test" />
+
+    <item
         android:id="@+id/profileFragment"
         android:icon="@drawable/ic_user"
         android:title="Hồ sơ" />
