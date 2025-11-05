@@ -3,12 +3,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 
-    id("com.google.gms.google-services") // Bắt buộc để dùng Firebase
 }
 
 android {
     namespace = "com.example.garapro"
-    compileSdk = 34 // ⚠️ compileSdk 36 chưa chính thức, nên giữ ở 34 để ổn định
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.garapro"
