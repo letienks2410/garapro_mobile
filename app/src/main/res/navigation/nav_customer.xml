@@ -33,6 +33,13 @@
             app:destination="@id/repairProgressDetailFragment" />
     </fragment>
 
+    <fragment
+        android:id="@+id/test"
+        android:name="com.example.garapro.ui.emergency_technician.TechnicianEmergencyFragment"
+        android:label="Cứu hộ khẩn cấp" />
+
+
+
     <!-- Profile -->
     <fragment
         android:id="@+id/profileFragment"

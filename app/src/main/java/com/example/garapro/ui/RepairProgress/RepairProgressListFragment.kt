@@ -1,9 +1,15 @@
 package com.example.garapro.ui.RepairProgress
 
+import android.app.AlertDialog
+import android.content.Context
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +25,10 @@ import com.example.garapro.databinding.FragmentRepairProgressListBinding
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
+import com.example.garapro.data.model.payments.CreatePaymentRequest
+
 import kotlinx.coroutines.launch
 
 class RepairProgressListFragment : Fragment() {
@@ -42,9 +52,14 @@ class RepairProgressListFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = RepairOrderAdapter { repairOrder ->
-            navigateToDetail(repairOrder.repairOrderId)
-        }
+        adapter = RepairOrderAdapter(
+            onItemClick = { repairOrder ->
+                navigateToDetail(repairOrder.repairOrderId)
+            },
+            onPaymentClick = { repairOrder ->
+                showPaymentDialog(repairOrder)
+            }
+        )
 
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -53,6 +68,51 @@ class RepairProgressListFragment : Fragment() {
         }
     }
 
+    private fun showPaymentDialog(item: RepairOrderListItem) {
+        // Hiển thị dialog hoặc navigate đến màn hình thanh toán
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Thanh toán")
+            .setMessage("Bạn có muốn thanh toán cho đơn hàng ${item.repairOrderId}?")
+            .setPositiveButton("Thanh toán") { _, _ ->
+                // Xử lý thanh toán
+                processPayment(item)
+            }
+            .setNegativeButton("Hủy", null)
+            .create()
+        dialog.show()
+    }
+    private fun processPayment(item: RepairOrderListItem) {
+        val ctx = requireContext()
+        lifecycleScope.launch {
+            try {
+                val body = CreatePaymentRequest(
+                    repairOrderId = item.repairOrderId,
+                    amount =  2000,
+                    description = "Thanh toán đơn ${item.vehicleModel}"
+
+                )
+
+                val res = viewModel.createPaymentLinkDirect(body)
+
+                if (res != null) {
+                    openInAppCheckout(ctx, res.checkoutUrl)
+                } else {
+                    Toast.makeText(ctx, "Không tạo được link thanh toán", Toast.LENGTH_SHORT).show()
+                }
+
+            } catch (e: Exception) {
+                Log.e("Payment", "create-link failed", e)
+                Toast.makeText(ctx, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun openInAppCheckout(context: Context, url: String) {
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+        customTabsIntent.launchUrl(context, Uri.parse(url))
+    }
     private fun setupFilter() {
         // Filter button
         binding.filterButton.setOnClickListener {
@@ -154,9 +214,8 @@ class RepairProgressListFragment : Fragment() {
         val paidStatuses = arrayOf("Chờ thanh toán", "Thanh toán một phần", "Đã thanh toán")
         val currentFilter = viewModel.filterState.value.paidStatus
         val checkedItem = when (currentFilter) {
-            "Pending" -> 0
-            "Partial" -> 1
-            "Paid" -> 2
+            "Unpaid" -> 0
+            "Paid" -> 1
             else -> -1
         }
 
@@ -164,9 +223,8 @@ class RepairProgressListFragment : Fragment() {
             .setTitle("Lọc theo trạng thái thanh toán")
             .setSingleChoiceItems(paidStatuses, checkedItem) { dialog, which ->
                 val selectedStatus = when (which) {
-                    0 -> "Pending"
-                    1 -> "Partial"
-                    2 -> "Paid"
+                    0 -> "Unpaid"
+                    1 -> "Paid"
                     else -> null
                 }
                 viewModel.updatePaidStatusFilter(selectedStatus)
@@ -319,7 +377,7 @@ class RepairProgressListFragment : Fragment() {
 
     private fun navigateToDetail(repairOrderId: String) {
         val bundle = Bundle().apply {
-            putString("repair_order_id", repairOrderId)
+            putString("repairOrderId", repairOrderId)
         }
         findNavController().navigate(R.id.action_repairTrackingFragment_to_repairProgressDetailFragment, bundle)
     }

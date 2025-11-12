@@ -9,6 +9,7 @@ import android.widget.Button
 //import androidx.compose.material3.Button
 import androidx.fragment.app.Fragment
 import com.example.garapro.R
+import com.example.garapro.ui.emergencies.MapActivity
 import com.example.garapro.ui.repairRequest.BookingActivity
 
 class HomeFragment : Fragment() {
@@ -22,6 +23,11 @@ class HomeFragment : Fragment() {
         val btnGoToBooking = view.findViewById<Button>(R.id.btnGoToBooking)
         btnGoToBooking.setOnClickListener {
             val intent = Intent(requireContext(), BookingActivity::class.java)
+            startActivity(intent)
+        }
+        val btnGoToMap = view.findViewById<Button>(R.id.btnGoToMap)
+        btnGoToMap.setOnClickListener {
+            val intent = Intent(requireContext(), MapActivity::class.java)
             startActivity(intent)
         }
 
