@@ -2,6 +2,7 @@ package com.example.garapro.ui.RepairProgress
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -28,8 +30,10 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
+import com.example.garapro.ui.feedback.RatingActivity
 
 import kotlinx.coroutines.launch
+
 
 class RepairProgressListFragment : Fragment() {
 
@@ -51,6 +55,17 @@ class RepairProgressListFragment : Fragment() {
         setupSwipeRefresh()
     }
 
+    private val ratingLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Khi RatingActivity trả về RESULT_FEEDBACK_POSTED -> reload danh sách
+        if (result.resultCode == RatingActivity.RESULT_FEEDBACK_POSTED) {
+            // gọi lại API để refresh
+            viewModel.loadRepairOrders()
+            // hoặc nếu dùng paging/flow khác thì trigger reload tương ứng
+        }
+    }
+
     private fun setupRecyclerView() {
         adapter = RepairOrderAdapter(
             onItemClick = { repairOrder ->
@@ -58,6 +73,12 @@ class RepairProgressListFragment : Fragment() {
             },
             onPaymentClick = { repairOrder ->
                 showPaymentDialog(repairOrder)
+            },
+            onRatingClick = { item ->
+                val intent = Intent(requireContext(), RatingActivity::class.java).apply {
+                    putExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID, item.repairOrderId)
+                }
+                ratingLauncher.launch(intent)
             }
         )
 

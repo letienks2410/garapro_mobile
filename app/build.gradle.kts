@@ -33,10 +33,7 @@ android {
         }
     }
 
-    buildFeatures {
-        viewBinding = true
-        compose = true
-    }
+    buildFeatures.viewBinding = true
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -91,8 +88,6 @@ dependencies {
 
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
     implementation(libs.androidx.gridlayout)
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
@@ -111,14 +106,4 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-
-    implementation ("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
-
-    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
-    implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.firebase:firebase-analytics")
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-
-
 }

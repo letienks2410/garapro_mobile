@@ -1,5 +1,7 @@
 package com.example.garapro.data.remote
 
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackResponse
 import com.example.garapro.data.model.RepairProgresses.OrderStatus
 import com.example.garapro.data.model.RepairProgresses.PagedResult
 import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
@@ -39,6 +41,9 @@ interface RepairProgressApiService {
     suspend fun getStatus(@Path("orderCode") orderCode: Long): PaymentStatusDto
     @GET("OrderStatus")
     suspend fun getOrderStatuses(): List<OrderStatus>
+
+    @POST("/api/FeedBack")
+    suspend fun createFeedback(@Body request: CreateFeedbackRequest): CreateFeedbackResponse
 }
 
 // Extension function để hỗ trợ filter object

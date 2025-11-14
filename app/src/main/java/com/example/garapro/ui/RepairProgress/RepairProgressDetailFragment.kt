@@ -1,5 +1,6 @@
 package com.example.garapro.ui.RepairProgress
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -15,10 +16,12 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
+import com.example.garapro.data.model.RepairProgresses.Feedback
 import com.example.garapro.data.model.RepairProgresses.Label
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
+import com.example.garapro.ui.feedback.RatingActivity
 import com.google.android.material.chip.Chip
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
@@ -104,6 +107,25 @@ class RepairProgressDetailFragment : Fragment() {
         } ?: showError("Repair order ID is null")
     }
 
+    private fun bindFeedback(feedback: Feedback?) {
+        if (feedback != null) {
+            binding.feedbackCard.visibility = View.VISIBLE
+            binding.ratingBarFeedback.rating = feedback.rating.toFloat()
+            binding.tvFeedbackRatingValue.text = String.format(Locale.getDefault(), "%.1f", feedback.rating.toFloat())
+            binding.tvFeedbackDescription.text = feedback.description.takeIf { it.isNotBlank() } ?: "Không có nhận xét."
+
+
+        } else {
+            // No feedback yet — encourage user to rate
+            binding.feedbackCard.visibility = View.VISIBLE
+            binding.ratingBarFeedback.rating = 0f
+            binding.tvFeedbackRatingValue.text = ""
+            binding.tvFeedbackDescription.text = "Chưa có đánh giá cho đơn này."
+
+        }
+    }
+
+
     private fun bindRepairOrderDetail(detail: RepairProgressDetail) {
         binding.apply {
             // Vehicle Info
@@ -137,6 +159,7 @@ class RepairProgressDetailFragment : Fragment() {
             // Jobs
             jobAdapter.submitList(detail.jobs)
 
+            bindFeedback(detail.feedBacks)
             // Show/hide completion date if available
             detail.completionDate?.let { completionDate ->
                 // You can add completion date to the layout if needed

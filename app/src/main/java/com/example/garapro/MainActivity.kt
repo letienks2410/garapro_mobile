@@ -47,6 +47,10 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            Log.e("AppCrash", "Uncaught: ${e.message}", e)
+        }
+
         tokenManager = TokenManager(this)
         // 🔹 Khởi tạo RetrofitInstance ở đây
         RetrofitInstance.initialize(tokenManager, this)
