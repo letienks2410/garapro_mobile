@@ -11,11 +11,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
-import com.example.garapro.data.model.RepairProgresses.Label
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
@@ -113,8 +111,8 @@ class RepairProgressDetailFragment : Fragment() {
             // Order Details
             receiveDate.text = formatDate(detail.receiveDate)
             estimatedCompletionDate.text = formatDate(detail.estimatedCompletionDate)
-            roType.text = getROTypeNameVietnamese(detail.roType)
-            paidStatus.text = getPaidStatusVietnamese(detail.paidStatus)
+            roType.text = getROTypeName(detail.roType)
+            paidStatus.text = getPaidStatusName(detail.paidStatus)
             note.text = detail.note ?: "No note"
 
             // Financial Info
@@ -126,13 +124,10 @@ class RepairProgressDetailFragment : Fragment() {
             progressStatus.text = detail.progressStatus
             progressPercentage.text = "${detail.progressPercentage}%"
             progressJobBar.progress = detail.progressPercentage
-            statusName.text = getStatusNameVietnamese(detail.orderStatus.statusName)
+            statusName.text = getStatusName(detail.orderStatus.statusName)
 
             // Set status color based on status
             setStatusColor(detail.orderStatus.statusName)
-
-            // Setup labels
-//            setupLabels(detail.orderStatus.labels)
 
             // Jobs
             jobAdapter.submitList(detail.jobs)
@@ -144,30 +139,17 @@ class RepairProgressDetailFragment : Fragment() {
         }
     }
 
-    private fun setupLabels(labels: List<Label>) {
-//        binding.labelsContainer.removeAllViews()
-//        labels.forEach { label ->
-//            val chip = Chip(requireContext()).apply {
-//                text = label.labelName
-//                setTextColor(Color.parseColor(label.hexCode))
-//                chipStrokeColor = ColorStateList.valueOf(Color.parseColor(label.hexCode))
-//                chipStrokeWidth = 1f
-//                setChipBackgroundColorResource(android.R.color.transparent)
-//            }
-//            binding.labelsContainer.addView(chip)
-//        }
-    }
-
-    private fun getJobStatusNameVietnamese(statusName: String): String {
+    private fun getJobStatusName(statusName: String): String {
         return when (statusName) {
-            "Pending" -> "Đang chờ"
-            "New" -> "Mới"
-            "InProgress" -> "Đang sửa"
-            "Completed" -> "Hoàn tất"
-            "OnHold" -> "Tạm dừng"
-            else -> "Không xác định"
+            "Pending" -> "Pending"
+            "New" -> "New"
+            "InProgress" -> "In Progress"
+            "Completed" -> "Completed"
+            "OnHold" -> "On Hold"
+            else -> "Unknown"
         }
     }
+
     private fun setStatusColor(statusName: String) {
         val color = when (statusName) {
             "Completed" -> ContextCompat.getColor(requireContext(), R.color.green)
@@ -179,38 +161,37 @@ class RepairProgressDetailFragment : Fragment() {
         binding.statusName.setBackgroundColor(color)
     }
 
-    private fun getStatusNameVietnamese(statusName: String): String{
+    private fun getStatusName(statusName: String): String {
         return when (statusName) {
-            "Completed" -> "Hoàn tất"
-            "In Progress" -> "Đang sửa"
-            "Pending" -> "Đang xử lý"
-            else -> "Không xác định"
-        }
-    }
-    private fun getPaidStatusVietnamese(statusName: String): String{
-        return when (statusName) {
-            "Paid" -> "Đã thanh toán"
-            "Partial" -> "Trả 1 phần"
-            "Pending" -> "chưa thanh toán"
-            else -> "Không xác định"
+            "Completed" -> "Completed"
+            "In Progress" -> "In Progress"
+            "Pending" -> "Pending"
+            else -> "Unknown"
         }
     }
 
-    private fun getROTypeNameVietnamese(statusName: String): String{
+    private fun getPaidStatusName(statusName: String): String {
         return when (statusName) {
-            "WalkIn" -> "vãng lai"
-            "Scheduled" -> "Đặt lịch"
-            "Breakdown" -> "Sự cố"
-            else -> "Không xác định"
+            "Paid" -> "Paid"
+            "Unpaid" -> "Pending Payment"
+            else -> "Unknown"
         }
     }
 
+    private fun getROTypeName(statusName: String): String {
+        return when (statusName) {
+            "WalkIn" -> "Walk-in"
+            "Scheduled" -> "Scheduled"
+            "Breakdown" -> "Breakdown"
+            else -> "Unknown"
+        }
+    }
 
     private fun formatDate(dateString: String?): String {
         if (dateString == null) return "N/A"
         return try {
             val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault())
             val date = inputFormat.parse(dateString)
             outputFormat.format(date!!)
         } catch (e: Exception) {

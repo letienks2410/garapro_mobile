@@ -26,6 +26,7 @@ import okhttp3.RequestBody
 import java.io.File
 import java.io.InputStream
 import android.util.Log
+import com.example.garapro.data.model.NetworkResult
 import com.example.garapro.data.model.repairRequest.ArrivalWindow
 import com.example.garapro.data.model.repairRequest.ChildCategoriesResponse
 import com.example.garapro.data.model.repairRequest.ParentServiceCategory
@@ -469,41 +470,36 @@ class BookingViewModel(
                         )
                     } ?: emptyList()
                 )
+
+                // Log cho dễ debug
                 val gson = GsonBuilder().setPrettyPrinting().create()
-                Log.e("RepairRequest", gson.toJson(request))
+                Log.d("RepairRequest", gson.toJson(request))
 
-// ✅ Cách 2: Log chi tiết từng phần nếu muốn tách riêng
-                Log.d("RepairRequest", """
-                        Branch ID: ${request.branchId}
-                        Vehicle ID: ${request.vehicleID}
-                        Description: ${request.description}
-                        Request Date: ${request.requestDate}
-                        Images: ${request.images.joinToString(", ")}
-                        Services: ${
-                                        request.services.joinToString("\n") { service ->
-                                            " - ServiceID: ${service.serviceId}, Parts: ${
-                                                service.parts.joinToString(", ") { it.partId }
-                                            }"
-                                        }
-                                    }
-                    """.trimIndent())
-
-                val result = repository.submitRepairRequest(request)
-                _submitResult.value = result as? Boolean ?: false
-
-
-                if (result is Boolean && !result) {
-                    _errorMessage.value = "Gửi yêu cầu thất bại. Vui lòng thử lại."
+                when (val result = repository.submitRepairRequest(request)) {
+                    is NetworkResult.Success -> {
+                        _submitResult.value = true
+                        // có thể show toast "Tạo yêu cầu thành công"
+                    }
+                    is NetworkResult.Error -> {
+                        _submitResult.value = false
+                        _errorMessage.value = result.message // ví dụ: "Bạn vừa tạo yêu cầu trước đó..."
+//                        if (result.code == 401) {
+//                            // nếu bạn có xử lý token
+//                            checkTokenExpired(UnauthorizedException(result.message))
+//                        }
+                    }
                 }
             } catch (e: Exception) {
                 _submitResult.value = false
                 _errorMessage.value = "Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại."
                 checkTokenExpired(e)
+                Log.e("RepairRequest", "submitRepairRequest error: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
 
     private suspend fun convertImageUrisToMultipart(context: Context): List<MultipartBody.Part> {
         return withContext(Dispatchers.IO) {

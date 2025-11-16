@@ -1,12 +1,15 @@
 package com.example.garapro.ui.RepairProgress
 
 import android.R.attr.orientation
+import android.animation.ValueAnimator
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.LinearInterpolator
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -37,6 +40,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
                 return oldItem == newItem
             }
         }
+        private var progressAnimator: ValueAnimator? = null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -83,7 +87,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
                     }
 
                     // Repair times
-                    setupRepairTimes(repair)
+                    setupRepairTimes(repair , job.status)
                 } ?: run {
                     serviceDetailsCard.visibility = View.GONE
                 }
@@ -126,43 +130,57 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
             }
         }
 
-        private fun setupRepairTimes(repair: Repair) {
+        private fun setupRepairTimes(repair: Repair, status: String) {
             var hasTimeInfo = false
 
-            // Reset all layouts
             binding.repairTimeLogsLayout.visibility = View.GONE
             binding.startTimeLayout.visibility = View.GONE
             binding.endTimeLayout.visibility = View.GONE
             binding.actualTimeLayout.visibility = View.GONE
+//            binding.liveRow?.visibility = View.GONE // nếu trước đó bạn đã thêm liveRow
 
-            // Setup start time
-            repair.startTime?.let { startTimeString ->
-                parseTimeString(startTimeString)?.let { startTime ->
+            var startDate: Date? = null
+            var endDate: Date? = null
+
+            // Start
+            repair.startTime?.let { s ->
+                parseTimeString(s)?.let { d ->
+                    startDate = d
                     binding.startTimeLayout.visibility = View.VISIBLE
-                    binding.tvStartTime.text = formatDateTime(startTime)
+                    binding.tvStartTime.text = formatDateTime(d)
                     hasTimeInfo = true
                 }
             }
 
-            // Setup end time
-            repair.endTime?.let { endTimeString ->
-                parseTimeString(endTimeString)?.let { endTime ->
+            // End
+            repair.endTime?.let { e ->
+                parseTimeString(e)?.let { d ->
+                    endDate = d
                     binding.endTimeLayout.visibility = View.VISIBLE
-                    binding.tvEndTime.text = formatDateTime(endTime)
+                    binding.tvEndTime.text = formatDateTime(d)
                     hasTimeInfo = true
                 }
             }
 
-            // Setup actual time
+            // Estimated restore: dùng deadline của job nếu có; nếu không, có thể suy ra từ estimatedTime
+            val estRestore: Date? = (bindingAdapterPosition.takeIf { it != RecyclerView.NO_POSITION }?.let {
+                currentList[it]
+            })?.deadline?.let { parseTimeString(it) }
+
+            // Actual / Duration (giữ nguyên như cũ)
             repair.actualTime?.let { actualTime ->
                 binding.actualTimeLayout.visibility = View.VISIBLE
                 binding.tvActualTime.text = formatDuration(actualTime)
                 hasTimeInfo = true
             }
 
-            // Show time logs section if any time info exists
-            binding.repairTimeLogsLayout.visibility = if (hasTimeInfo) View.VISIBLE else View.GONE
+            // Show section
+            binding.repairTimeLogsLayout.visibility = if (hasTimeInfo || status == "InProgress") View.VISIBLE else View.GONE
+
+            // Setup timeline look
+            setupTimeline(status, startDate, estRestore, endDate)
         }
+
 
         private fun formatDateTime(date: Date): String {
             val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
@@ -258,6 +276,93 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
             binding.partsRecyclerView.adapter = adapter
         }
 
+
+        private fun setupTimeline(status: String, startDate: Date?, estRestore: Date?, endDate: Date?) {
+            // Ẩn mặc định
+            binding.timelineContainer.visibility = View.GONE
+
+
+            // Map thời gian hiển thị
+            startDate?.let { binding.tvReportedTime.text = formatPrettyShort(it) }
+            estRestore?.let { binding.tvRestoreTime.text = formatPrettyShort(it) }
+
+            // Trạng thái
+            when (status) {
+                "InProgress" -> {
+                    binding.timelineContainer.visibility = View.VISIBLE
+
+                    binding.node1Icon.setBackgroundResource(R.drawable.timeline_node_active)
+                    binding.node2Icon.setBackgroundResource(R.drawable.timeline_node_active)
+                    binding.node3Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+                    binding.line12.setBackgroundResource(R.drawable.timeline_line_active)
+                    binding.line23.setBackgroundResource(R.drawable.timeline_line_inactive)
+
+//                    startSimpleLoopAnimation()
+                }
+
+                "Completed" -> {
+                    binding.timelineContainer.visibility = View.VISIBLE
+//                    stopSimpleLoopAnimation()
+
+                    binding.node1Icon.setBackgroundResource(R.drawable.timeline_node_active)
+                    binding.node2Icon.setBackgroundResource(R.drawable.timeline_node_active)
+                    binding.node3Icon.setBackgroundResource(R.drawable.timeline_node_active)
+                    binding.line12.setBackgroundResource(R.drawable.timeline_line_active)
+                    binding.line23.setBackgroundResource(R.drawable.timeline_line_active)
+                    binding.line23Fill.layoutParams.width = binding.line23.width
+                    binding.line23Fill.requestLayout()
+                }
+
+                else -> stopSimpleLoopAnimation()
+            }
+        }
+
+        private fun formatPrettyShort(date: Date): String {
+            val dayFormat = SimpleDateFormat("MMM d", Locale.getDefault())   // e.g., Oct 29
+            val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault()) // e.g., 1:00 PM
+            val dateCompareFormat = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+
+            val day = dayFormat.format(date)
+            val time = timeFormat.format(date)
+            val isToday = dateCompareFormat.format(date) == dateCompareFormat.format(Date())
+
+            return if (isToday) {
+                "Today $time"
+            } else {
+                "$day $time"
+            }
+        }
+
+        private fun startSimpleLoopAnimation() {
+            stopSimpleLoopAnimation() // tránh chồng
+
+            binding.line23.doOnLayout {
+                val totalWidth = binding.line23.width
+                val fillWidth = (totalWidth * 0.4f).toInt().coerceAtLeast(30)
+
+                progressAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                    duration = 1200L
+                    interpolator = LinearInterpolator()
+                    repeatCount = ValueAnimator.INFINITE
+                    repeatMode = ValueAnimator.REVERSE
+                    addUpdateListener { anim ->
+                        val frac = anim.animatedFraction
+                        val left = ((totalWidth - fillWidth) * frac).toInt()
+                        binding.line23Fill.layoutParams.width = fillWidth
+                        binding.line23Fill.translationX = left.toFloat()
+                        binding.line23Fill.requestLayout()
+                    }
+                    start()
+                }
+            }
+        }
+
+        private fun stopSimpleLoopAnimation() {
+            progressAnimator?.cancel()
+            progressAnimator = null
+            binding.line23Fill.translationX = 0f
+        }
+
         private fun toggleExpansion() {
             binding.apply {
                 serviceDetailsCard.visibility = if (isExpanded) View.VISIBLE else View.GONE
@@ -274,7 +379,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
         private fun setJobStatusColor(status: String) {
             val color = when (status) {
                 "Completed" -> R.color.green
-                "In Progress" -> R.color.blue
+                "InProgress" -> R.color.blue
                 "New" -> R.color.orange
                 "Pending" -> R.color.orange
                 "OnHold" -> R.color.red

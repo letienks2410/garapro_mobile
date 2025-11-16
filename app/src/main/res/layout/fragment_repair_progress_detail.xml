@@ -310,7 +310,7 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Progress Section -->
+            <!-- Progress Section (đã gộp Jobs vào chung) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -327,6 +327,7 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
+                    <!-- Header -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -341,6 +342,7 @@
                         android:layout_marginVertical="12dp"
                         android:background="#E0E0E0" />
 
+                    <!-- Progress summary row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -363,7 +365,6 @@
                             android:textColor="@color/primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
-
                     </LinearLayout>
 
                     <ProgressBar
@@ -402,53 +403,35 @@
                             android:layout_weight="1"
                             app:chipSpacingHorizontal="4dp"
                             app:singleLine="true" />
-
                     </LinearLayout>
 
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Jobs Section -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF"
-                app:strokeColor="#E0E0E0"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Jobs"
-                        android:textColor="#000000"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
+                    <!-- Divider trước Jobs -->
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginVertical="12dp"
+                        android:layout_marginTop="16dp"
                         android:background="#E0E0E0" />
 
+                    <!-- Jobs header (gộp vào trong Progress) -->
+
+
+                    <!-- Jobs list -->
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/jobsRecyclerView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:paddingHorizontal="0dp"
+                        android:layout_marginHorizontal="0dp"
+                        android:nestedScrollingEnabled="false"
                         tools:listitem="@layout/item_job" />
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+
+
 
         </LinearLayout>
 
