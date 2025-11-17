@@ -1,8 +1,7 @@
 package com.example.garapro.ui.RepairProgress
 
-import android.content.res.ColorStateList
-import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,7 +16,10 @@ import com.example.garapro.R
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
-import com.google.android.material.chip.Chip
+import com.example.garapro.hubs.JobSignalRService
+import com.example.garapro.hubs.RepairOrderEvent
+import com.example.garapro.hubs.RepairOrderSignalRService
+import com.example.garapro.utils.Constants
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -32,6 +34,12 @@ class RepairProgressDetailFragment : Fragment() {
     private lateinit var jobAdapter: JobAdapter
 
     private var repairOrderId: String? = null
+
+    // ✅ SignalR service chỉ dùng cho màn này
+    private var signalRService: RepairOrderSignalRService? = null
+
+    private var repairHubService: RepairOrderSignalRService? = null
+    private var jobHubService: JobSignalRService? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,6 +58,12 @@ class RepairProgressDetailFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
         loadRepairOrderDetail()
+
+        initRepairHub()
+        observeRepairHubEvents()
+
+        initJobHub()
+        observeJobHubEvents()
     }
 
     private fun getRepairOrderIdFromArguments() {
@@ -57,6 +71,50 @@ class RepairProgressDetailFragment : Fragment() {
         if (repairOrderId.isNullOrEmpty()) {
             showError("Repair order ID not found")
             findNavController().navigateUp()
+        }
+    }
+
+    private fun initRepairHub() {
+        // ⚠️ ĐÂY PHẢI LÀ URL ĐÚNG CỦA HUB: vd: https://your-api.com/repairHub
+        val hubUrl =Constants.BASE_URL_SIGNALR +"/hubs/repair"
+
+        signalRService = RepairOrderSignalRService(hubUrl).apply {
+            setupListeners()
+        }
+
+        repairOrderId?.let { id ->
+            signalRService?.connectAndJoin(id)
+        }
+    }
+
+    private fun observeRepairHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            signalRService?.events?.collect { roId ->
+                Log.d("SignalR", "Received event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
+        }
+    }
+    private fun initJobHub() {
+        val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
+        jobHubService = JobSignalRService(jobHubUrl).apply {
+            setupListeners()
+        }
+        repairOrderId?.let { id ->
+            jobHubService?.connectAndJoinRepairOrder(id)
+        }
+    }
+
+    private fun observeJobHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "JobHub event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
         }
     }
 
@@ -105,7 +163,8 @@ class RepairProgressDetailFragment : Fragment() {
     private fun bindRepairOrderDetail(detail: RepairProgressDetail) {
         binding.apply {
             // Vehicle Info
-            vehicleInfo.text = "${detail.vehicle.licensePlate} • ${detail.vehicle.model} • ${detail.vehicle.year}"
+            vehicleInfo.text =
+                "${detail.vehicle.licensePlate} • ${detail.vehicle.model} • ${detail.vehicle.year}"
             vehicleBrand.text = detail.vehicle.brand
 
             // Order Details
@@ -131,22 +190,6 @@ class RepairProgressDetailFragment : Fragment() {
 
             // Jobs
             jobAdapter.submitList(detail.jobs)
-
-            // Show/hide completion date if available
-            detail.completionDate?.let { completionDate ->
-                // You can add completion date to the layout if needed
-            }
-        }
-    }
-
-    private fun getJobStatusName(statusName: String): String {
-        return when (statusName) {
-            "Pending" -> "Pending"
-            "New" -> "New"
-            "InProgress" -> "In Progress"
-            "Completed" -> "Completed"
-            "OnHold" -> "On Hold"
-            else -> "Unknown"
         }
     }
 
@@ -190,7 +233,8 @@ class RepairProgressDetailFragment : Fragment() {
     private fun formatDate(dateString: String?): String {
         if (dateString == null) return "N/A"
         return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
+            val inputFormat =
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
             val outputFormat = SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault())
             val date = inputFormat.parse(dateString)
             outputFormat.format(date!!)
@@ -217,8 +261,16 @@ class RepairProgressDetailFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        signalRService?.leaveGroupAndStop()
+        signalRService = null
+
+        jobHubService?.leaveRepairOrderGroupAndStop();
+        jobHubService = null
+
         _binding = null
     }
+
 
     companion object {
         private const val ARG_REPAIR_ORDER_ID = "repairOrderId"

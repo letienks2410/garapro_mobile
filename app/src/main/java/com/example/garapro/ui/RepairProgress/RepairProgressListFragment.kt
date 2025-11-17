@@ -27,6 +27,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
+import com.example.garapro.hubs.JobSignalRService
+import com.example.garapro.utils.Constants
 
 import kotlinx.coroutines.launch
 
@@ -35,6 +37,8 @@ class RepairProgressListFragment : Fragment() {
     private lateinit var binding: FragmentRepairProgressListBinding
     private val viewModel: RepairProgressViewModel by viewModels()
     private lateinit var adapter: RepairOrderAdapter
+
+    private var jobHubService: JobSignalRService? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentRepairProgressListBinding.inflate(inflater, container, false)
@@ -48,6 +52,8 @@ class RepairProgressListFragment : Fragment() {
         setupFilter()
         observeViewModel()
         setupSwipeRefresh()
+        initJobHub()
+        observeJobHubEvents()
     }
 
     private fun setupRecyclerView() {
@@ -66,6 +72,26 @@ class RepairProgressListFragment : Fragment() {
             addItemDecoration(DividerItemDecoration(requireContext(), LinearLayoutManager.VERTICAL))
         }
     }
+
+    private fun initJobHub() {
+        // ⚠️ ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
+        val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
+
+        jobHubService = JobSignalRService(jobHubUrl).apply {
+            setupListeners()
+            start()
+        }
+    }
+    private fun observeJobHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "JobHub event for RO in list: $roId")
+                //  Cứ có tín hiệu là reload list
+                viewModel.loadRepairOrders()
+            }
+        }
+    }
+
 
     private fun showPaymentDialog(item: RepairOrderListItem) {
         val dialog = AlertDialog.Builder(requireContext())
@@ -249,7 +275,9 @@ class RepairProgressListFragment : Fragment() {
 
                         val orders = response.data.items
                         adapter.submitList(orders)
-
+                        orders.forEach { order ->
+                            jobHubService?.joinRepairOrderGroup(order.repairOrderId)
+                        }
                         binding.emptyState.visibility = if (orders.isEmpty()) View.VISIBLE else View.GONE
                         binding.emptyText.text = if (viewModel.filterChips.value.isNotEmpty()) {
                             "No orders match the current filters"
@@ -367,5 +395,24 @@ class RepairProgressListFragment : Fragment() {
 
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+    }
+    override fun onDestroyView() {
+        super.onDestroyView()
+
+        // Ngắt kết nối JobHub nếu đang chạy
+        try {
+            jobHubService?.leaveRepairOrderGroupAndStop()
+        } catch (e: Exception) {
+            Log.e("SignalR", "Error stopping JobHubService", e)
+        }
+
+        jobHubService = null
+
+        // Xoá binding tránh leak memory
+        // (list fragment dùng biến binding = lateinit nên KHÔNG cần set null)
+        // Nhưng nếu bạn dùng _binding kiểu nullable thì dùng _binding = null
+
+        // Nếu sau này bạn thêm nhiều hub khác,
+        // thì cleanup ở đây luôn cho tiện.
     }
 }

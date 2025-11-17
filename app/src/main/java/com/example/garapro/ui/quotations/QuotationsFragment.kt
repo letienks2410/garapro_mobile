@@ -1,10 +1,12 @@
 package com.example.garapro.ui.quotations
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
@@ -13,7 +15,9 @@ import com.example.garapro.data.model.quotations.QuotationStatus
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.repository.QuotationRepository
 import com.example.garapro.databinding.FragmentQuotationsBinding
+import com.example.garapro.hubs.QuotationSignalRService
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 
 class QuotationsFragment : Fragment() {
     private var _binding: FragmentQuotationsBinding? = null
@@ -21,6 +25,12 @@ class QuotationsFragment : Fragment() {
     private lateinit var viewModel: QuotationListViewModel
     private var isFilterVisible = false
 
+    private var quotationHubService: QuotationSignalRService? = null
+
+    companion object {
+        private const val PREFS_AUTH = "auth_prefs"
+        private const val KEY_USER_ID = "user_id"
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -38,6 +48,8 @@ class QuotationsFragment : Fragment() {
 
         setupUI()
         setupObservers()
+        initQuotationHub()
+        observeQuotationHubEvents()
     }
 
     private fun setupUI() {
@@ -64,6 +76,31 @@ class QuotationsFragment : Fragment() {
         // Chip selection listener
         binding.chipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
             updateChipAppearance()
+        }
+    }
+    private fun initQuotationHub() {
+        // Lấy userId đã lưu sau login
+        val prefs = requireContext().getSharedPreferences(PREFS_AUTH, Context.MODE_PRIVATE)
+        val userId = prefs.getString(KEY_USER_ID, null)
+
+        if (userId.isNullOrEmpty()) {
+            // Chưa đăng nhập / không có userId -> không cần connect SignalR
+            return
+        }
+
+        val hubUrl = com.example.garapro.utils.Constants.BASE_URL_SIGNALR + "/hubs/quotation"
+
+        quotationHubService = QuotationSignalRService(hubUrl).apply {
+            setupListeners()
+            startAndJoinUser(userId)
+        }
+    }
+    private fun observeQuotationHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            quotationHubService?.events?.collect {
+                // chỉ cần reload lại
+                viewModel.loadQuotations()
+            }
         }
     }
 
@@ -168,6 +205,13 @@ class QuotationsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        try {
+            quotationHubService?.stop()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        quotationHubService = null
         _binding = null
     }
 }

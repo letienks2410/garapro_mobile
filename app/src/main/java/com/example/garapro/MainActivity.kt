@@ -23,6 +23,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupWithNavController
 import com.example.garapro.data.local.TokenManager
+import com.example.garapro.data.model.UpdateDeviceIdRequest
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.remote.TokenExpiredListener
 import com.example.garapro.ui.home.NavigationInfo
@@ -33,6 +34,8 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), TokenExpiredListener {
@@ -72,6 +75,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val token = task.result
+                updateDeviceIdToServer(token)
                 Log.d("DeviceToken", "Current token: $token")
             } else {
                 Log.w("DeviceToken", "Fetching FCM token failed", task.exception)
@@ -126,7 +130,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 //            Log.d(TAG, "Handling Deep Link: $data")
 //
 //            // Chuyển hướng đến PaymentResultActivity nếu là link payment
-//            if (data.scheme == "myapp" && data.host == "payment") {
+//            if (data.scheme == "myapp" && data.host == "p                                                                                                                                                                                                                                                                                                                          ayment") {
 //                val paymentIntent = Intent(this, PaymentResultActivity::class.java)
 //                paymentIntent.data = data
 //                startActivity(paymentIntent)
@@ -276,6 +280,24 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
         // Setup Bottom Navigation với NavController
         bottomNavigation.setupWithNavController(navController)
+    }
+
+    private fun updateDeviceIdToServer(deviceToken: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                Log.d("go","gogo")
+                val request = UpdateDeviceIdRequest(deviceId = deviceToken)
+                val response = RetrofitInstance.UserService.updateDeviceId(request)
+
+                if (response.isSuccessful) {
+                    Log.d("DeviceToken", "Device ID updated successfully")
+                } else {
+                    Log.e("DeviceToken", "Failed to update device ID: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("DeviceToken", "Error updating device ID: ${e.message}")
+            }
+        }
     }
 
     override fun onTokenExpired() {

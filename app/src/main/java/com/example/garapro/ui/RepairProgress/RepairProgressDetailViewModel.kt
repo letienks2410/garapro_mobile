@@ -24,7 +24,4 @@ class RepairProgressDetailViewModel : ViewModel() {
             _repairOrderDetail.value = result
         }
     }
-    fun RepairOrderFilter.hasActiveFilters(): Boolean {
-        return statusId != null || roType != null || paidStatus != null || fromDate != null || toDate != null
-    }
 }
