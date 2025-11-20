@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:id="@+id/tvServiceName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Thay nhớt máy"
+        android:textColor="#000"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvServicePrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Giá: 500.000 đ"
+        android:textColor="#333"
+        android:textSize="13sp"
+        android:paddingTop="2dp" />
+
+
+
+    <!-- RecyclerView Phụ tùng -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvParts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="6dp" />
+
+</LinearLayout>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    app:cardCornerRadius="0dp"
+    app:cardUseCompatPadding="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tvHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Repair Invoice"
+            android:textColor="#000000"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center_horizontal"
+            android:padding="20dp" />
+
+        <!-- CONTENT SCROLL AREA -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:id="@+id/contentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Order Info Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardOrderInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#E0E0E0"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <!-- SECTION TITLE -->
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/tvOrderInfoLabel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Order Details"
+                            android:textColor="#000000"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:paddingBottom="12dp" />
+
+                        <!-- 2 COLUMN GRID -->
+                        <GridLayout
+                            android:id="@+id/orderGrid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:columnCount="2"
+                            android:alignmentMode="alignMargins"
+                            android:useDefaultMargins="true">
+
+                            <!-- Vehicle -->
+                            <com.google.android.material.textview.MaterialTextView
+                                android:text="Vehicle:"
+                                android:textStyle="bold"
+                                android:textSize="14sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvVehicleValue"
+                                android:textColor="#444"
+                                android:textSize="14sp" />
+
+                            <!-- License Plate -->
+                            <com.google.android.material.textview.MaterialTextView
+                                android:text="License Plate:"
+                                android:textStyle="bold"
+                                android:textSize="14sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvPlateValue"
+                                android:textColor="#444"
+                                android:textSize="14sp" />
+
+                            <!-- Odometer -->
+                            <com.google.android.material.textview.MaterialTextView
+                                android:text="Odometer:"
+                                android:textStyle="bold"
+                                android:textSize="14sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvOdometerValue"
+                                android:textColor="#444"
+                                android:textSize="14sp" />
+
+                            <!-- Estimated Amount -->
+                            <com.google.android.material.textview.MaterialTextView
+                                android:text="Estimated:"
+                                android:textStyle="bold"
+                                android:textSize="14sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvEstimatedValue"
+                                android:textColor="#444"
+                                android:textSize="14sp" />
+
+                            <!-- Paid -->
+                            <com.google.android.material.textview.MaterialTextView
+                                android:text="Paid:"
+                                android:textStyle="bold"
+                                android:textSize="14sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvPaidValue"
+                                android:textColor="#444"
+                                android:textSize="14sp" />
+
+                        </GridLayout>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Services title -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/tvServicesTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Services and Parts"
+                    android:textSize="18sp"
+                    android:textColor="#000"
+                    android:textStyle="bold"
+                    android:paddingBottom="8dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvServices"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Bottom Payment Bar (Fixed) -->
+        <LinearLayout
+            android:id="@+id/bottomBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFFFFF"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:elevation="8dp">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tvTotalToPay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Amount Due: 0 đ"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:paddingBottom="12dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPay"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:text="Pay Now"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                app:cornerRadius="8dp"
+                android:backgroundTint="#000000" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

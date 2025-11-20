@@ -2,6 +2,7 @@ package com.example.garapro.ui.RepairProgress
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -28,6 +29,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.hubs.JobSignalRService
+import com.example.garapro.ui.payments.PaymentBillActivity
 import com.example.garapro.utils.Constants
 
 import kotlinx.coroutines.launch
@@ -62,7 +64,8 @@ class RepairProgressListFragment : Fragment() {
                 navigateToDetail(repairOrder.repairOrderId)
             },
             onPaymentClick = { repairOrder ->
-                showPaymentDialog(repairOrder)
+//                showPaymentDialog(repairOrder)
+                navigateToPaymentBill(repairOrder.repairOrderId)
             }
         )
 
@@ -182,6 +185,7 @@ class RepairProgressListFragment : Fragment() {
             showDateRangePicker()
         }
     }
+
 
     private fun showStatusFilterDialog() {
         val statuses = viewModel.orderStatuses.value
@@ -392,6 +396,12 @@ class RepairProgressListFragment : Fragment() {
         }
         findNavController().navigate(R.id.action_repairTrackingFragment_to_repairProgressDetailFragment, bundle)
     }
+    private fun navigateToPaymentBill(repairOrderId: String) {
+        val intent = Intent(requireContext(), PaymentBillActivity::class.java)
+        intent.putExtra(PaymentBillActivity.EXTRA_REPAIR_ORDER_ID, repairOrderId)
+        startActivity(intent)
+    }
+
 
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()

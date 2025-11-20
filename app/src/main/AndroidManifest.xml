@@ -65,7 +65,7 @@
                     android:pathPrefix="/cancel" />
             </intent-filter>
         </activity>
-
+        <activity android:name=".ui.payments.PaymentBillActivity" />
         <!-- Các activity khác giữ nguyên -->
         <activity
             android:name=".ui.repairRequest.BookingActivity"

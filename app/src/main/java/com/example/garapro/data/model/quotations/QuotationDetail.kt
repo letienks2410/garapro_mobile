@@ -32,23 +32,28 @@ data class QuotationServiceDetail(
     val isRequired: Boolean, // 🔥 THÊM: Service bắt buộc không được bỏ
     val price: Double,
     val quantity: Int,
-    val totalPrice: Double,
+
     val createdAt: String,
+    val discountValue: Double?,            // số tiền giảm (hoặc 0 / null nếu không có)
+    val finalPrice: Double?,               // giá sau giảm cho service
+    val appliedPromotionId: String?,       // id ưu đãi áp dụng (nếu có)
+    val appliedPromotion: AppliedPromotion?,
     val serviceName: String,
     val serviceDescription: String?,
     val partCategories: List<PartCategory>
 )
+data class AppliedPromotion(
+    val id: String,
+    val name: String,
+    val description: String?
+//    val type: Int,
+//    val discountType: Int,
+//    val discountValue: Double
 
+)
 data class PartCategory(
     val partCategoryId: String,
     val partCategoryName: String,
     val parts: List<QuotationServicePart>
 )
 
-data class SelectedService(
-    val quotationServiceId: String
-)
-
-data class SelectedServicePart(
-    val quotationServicePartId: String
-)

@@ -1,5 +1,6 @@
 package com.example.garapro.data.remote
 
+import com.example.garapro.data.model.quotations.CustomerPromotionResponse
 import com.example.garapro.data.model.quotations.CustomerResponseRequest
 import com.example.garapro.data.model.quotations.Quotation
 import com.example.garapro.data.model.quotations.QuotationDetail
@@ -21,9 +22,15 @@ interface QuotationService {
     ): Response<QuotationResponse>
 
 
-        @GET("Quotations/{id}/details")
+    @GET("Quotations/{id}/details")
         suspend fun getQuotationDetailById(@Path("id") id: String): Response<QuotationDetail>
 
-    @PUT("Quotations/customer-response")
+    @PUT("CustomerQuotations/customer-response")
     suspend fun submitCustomerResponse(@Body responseDto: CustomerResponseRequest): Response<Unit>
+
+    @GET("CustomerPromotionals/services/{serviceId}/customer-promotions")
+    suspend fun getCustomerPromotions(
+        @Path("serviceId") serviceId: String,
+        @Query("currentOrderValue") currentOrderValue: Double
+    ): Response<CustomerPromotionResponse>
 }

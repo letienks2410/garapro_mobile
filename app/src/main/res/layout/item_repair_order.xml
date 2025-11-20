@@ -141,7 +141,16 @@
             android:visibility="gone"
             app:backgroundTint="@color/green"
             style="@style/Widget.Material3.Button" />
-
+        <TextView
+            android:id="@+id/pickupMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Your vehicle is ready for pickup."
+            android:textColor="@color/green"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:visibility="gone" />
         <!-- Footer Info -->
         <LinearLayout
             android:layout_width="match_parent"

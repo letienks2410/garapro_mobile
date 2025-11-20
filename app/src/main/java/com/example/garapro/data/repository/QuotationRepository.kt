@@ -2,6 +2,7 @@ package com.example.garapro.data.repository
 
 import android.util.Log
 import com.example.garapro.data.local.TokenManager
+import com.example.garapro.data.model.quotations.CustomerPromotionResponse
 import com.example.garapro.data.model.quotations.CustomerResponseRequest
 import com.example.garapro.data.model.quotations.Quotation
 import com.example.garapro.data.model.quotations.QuotationDetail
@@ -51,6 +52,21 @@ class QuotationRepository(
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Failed to submit response: ${response.code()} - ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    suspend fun getCustomerPromotions(
+        serviceId: String,
+        currentOrderValue: Double
+    ): Result<CustomerPromotionResponse> {
+        return try {
+            val response = quotationService.getCustomerPromotions(serviceId, currentOrderValue)
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch promotions: ${response.code()} - ${response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
