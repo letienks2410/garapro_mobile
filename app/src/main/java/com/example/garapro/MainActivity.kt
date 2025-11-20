@@ -124,35 +124,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         }
     }
 
-//    private fun handleDeepLink(intent: Intent) {
-//        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-//            val data = intent.data!!
-//            Log.d(TAG, "Handling Deep Link: $data")
-//
-//            // Chuyển hướng đến PaymentResultActivity nếu là link payment
-//            if (data.scheme == "myapp" && data.host == "p                                                                                                                                                                                                                                                                                                                          ayment") {
-//                val paymentIntent = Intent(this, PaymentResultActivity::class.java)
-//                paymentIntent.data = data
-//                startActivity(paymentIntent)
-//                finish() // Kết thúc MainActivity nếu cần
-//            } else {
-//                // Xử lý các deep link khác tại đây
-//                handleOtherDeepLinks(data)
-//            }
-//        }
-//    }
-    private fun handleOtherDeepLinks(uri: Uri) {
-        // Xử lý các deep link khác không phải payment
-        when {
-            uri.host == "profile" -> {
-                // Mở profile
-            }
-            uri.host == "booking" -> {
-                // Mở booking
-            }
-            // Thêm các case khác...
-        }
-    }
+
 
     private fun determineNavigation(
         screen: String?,
@@ -201,16 +173,14 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                 else -> R.navigation.nav_customer
             }
 
-            // Đảm bảo đúng graph
             if (navController.graph.id != targetGraph) {
                 navController.graph = navController.navInflater.inflate(targetGraph)
             }
 
             val parentMenuItemId = getParentMenuItemId(navigationInfo.destinationId)
             val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-            bottomNavigation.selectedItemId = parentMenuItemId
+            bottomNavigation.selectedItemId = parentMenuItemId   // sẽ vào QuotationsFragment (giả sử parent là nó)
 
-            // Tạo bundle với tất cả IDs
             val bundle = Bundle().apply {
                 navigationInfo.ids.forEach { (key, value) ->
                     putString(key, value)
@@ -219,12 +189,13 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                 putBoolean("fromNotification", true)
             }
 
-            // Navigate với clear back stack
-            val navOptions = NavOptions.Builder()
-                .setPopUpTo(navController.graph.startDestinationId, false)
-                .build()
+            // ❌ Bỏ navOptions có popUpTo startDestinationId
+            // val navOptions = NavOptions.Builder()
+            //    .setPopUpTo(navController.graph.startDestinationId, false)
+            //    .build()
 
-            navController.navigate(navigationInfo.destinationId, bundle, navOptions)
+            // ✅ Navigate bình thường
+            navController.navigate(navigationInfo.destinationId, bundle)
 
         } catch (e: Exception) {
             Log.e("Navigation", "Failed to navigate: ${e.message}")

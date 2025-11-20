@@ -152,7 +152,13 @@ class QuotationDetailFragment : Fragment() {
 
         viewModel.hasUnselectedServices.observe(viewLifecycleOwner) { hasUnselected ->
             // Show customer note field when services are unselected
-            binding.customerNoteSection.visibility = if (hasUnselected) View.VISIBLE else View.GONE
+            if (hasUnselected)
+            {
+                binding.titleCustomerNote.text = "Note"
+                binding.customerNoteSection.visibility = View.VISIBLE
+            }else {
+                binding.customerNoteSection.visibility = View.GONE
+            }
         }
     }
 
@@ -274,7 +280,9 @@ class QuotationDetailFragment : Fragment() {
     }
 
     private fun setupRejectWithNoteMode() {
-        binding.btnReject.text = "Submit rejection reason"
+        binding.btnReject.text = "Submit rejection"
+        binding.titleCustomerNote.text = "Note(*)"
+        binding.etCustomerNote.setText(viewModel.customerNote.value ?: "")
         binding.btnReject.setOnClickListener {
             val note = viewModel.customerNote.value ?: ""
             if (note.length >= 10) {
@@ -311,7 +319,7 @@ class QuotationDetailFragment : Fragment() {
         if (hasNote) {
             // Disable edit text and show note
             binding.etCustomerNote.isEnabled = false
-            binding.etCustomerNote.setText(quotation?.note)
+            binding.etCustomerNote.setText(quotation?.customerNote)
             binding.tilCustomerNote.helperText = "Your note"
             binding.tilCustomerNote.boxBackgroundColor = ContextCompat.getColor(requireContext(), R.color.gray_light)
         } else {

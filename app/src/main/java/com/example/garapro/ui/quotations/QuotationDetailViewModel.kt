@@ -100,7 +100,7 @@ private val repository: QuotationRepository
     }
 
     private fun loadCustomerNoteFromQuotation(quotation: QuotationDetail) {
-        val note = quotation.note ?: ""
+        val note = quotation.customerNote ?: ""
         _customerNote.value = note
         Log.d("quotation note load", note)
 
@@ -472,7 +472,7 @@ private val repository: QuotationRepository
 
                     // Lấy promotion (nếu có) dựa trên serviceId
                     val promoState = promotionMap[service.serviceId]
-                    val appliedPromotionId = promoState?.selectedPromotion?.id ?: ""
+                    val appliedPromotionId = promoState?.selectedPromotion?.id ?: null
 
                     SelectedService(
                         quotationServiceId = service.quotationServiceId,
@@ -481,14 +481,11 @@ private val repository: QuotationRepository
                     )
                 }
 
-            // Status: nếu có service nào bị bỏ chọn -> Rejected, ngược lại Approved
-            val status =
-                if (quotation.quotationServices.any { !it.isSelected }) QuotationStatus.Rejected
-                else QuotationStatus.Approved
+            
 
             val request = CustomerResponseRequest(
                 quotationId = quotation.quotationId,
-                status = status,
+                status = QuotationStatus.Approved,
                 customerNote = _customerNote.value,
                 selectedServices = selectedServices
             )

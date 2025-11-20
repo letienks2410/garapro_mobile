@@ -10,5 +10,5 @@ data class CustomerResponseRequest(
 data class SelectedService(
     val quotationServiceId: String,
     val selectedPartIds: List<String>,
-    val appliedPromotionId: String
+    val appliedPromotionId: String?
 )
