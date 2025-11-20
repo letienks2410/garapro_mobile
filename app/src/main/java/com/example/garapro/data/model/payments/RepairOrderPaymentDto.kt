@@ -4,8 +4,6 @@ data class RepairOrderPaymentDto(
     val repairOrderId: String,
     val receiveDate: String,
     val cost: Double,
-    val estimatedAmount: Double,
-    val paidAmount: Double,
     val paidStatus: Int, // hoặc enum nếu bạn có
     val vehicle: VehiclePaymentDto,
     val approvedQuotations: List<ApprovedQuotationDto>
@@ -39,6 +37,8 @@ data class QuotationServiceDto(
     val isSelected: Boolean,
     val isRequired: Boolean,
     val price: Double,
+    val discountValue: Double?,
+    val finalPrice: Double?,
     val parts: List<QuotationServicePartDto>
 )
 

@@ -178,7 +178,7 @@ class RepairProgressDetailFragment : Fragment() {
             note.text = detail.note ?: "No note"
 
             // Financial Info
-            
+
             cost.text = formatCurrency(detail.cost)
 
             // Progress Section

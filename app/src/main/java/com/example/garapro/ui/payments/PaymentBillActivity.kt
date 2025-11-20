@@ -20,6 +20,7 @@ import com.example.garapro.data.model.payments.RepairOrderPaymentDto
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.repository.PaymentRepository
 import com.example.garapro.utils.MoneyUtils
+import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.launch
 
 class PaymentBillActivity : AppCompatActivity() {
@@ -28,16 +29,21 @@ class PaymentBillActivity : AppCompatActivity() {
         const val EXTRA_REPAIR_ORDER_ID = "extra_repair_order_id"
     }
 
-    private lateinit var tvHeader: TextView
 
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var tvVehicleValue: TextView
     private lateinit var tvPlateValue: TextView
     private lateinit var tvOdometerValue: TextView
 
-    private lateinit var tvEstimatedValue: TextView
-    private lateinit var tvPaidValue: TextView
+    private lateinit var tvCost: TextView
+
+
+
+
 
     private lateinit var tvTotalToPay: TextView
+
+
     private lateinit var btnPay: Button
     private lateinit var rvServices: RecyclerView
 
@@ -70,20 +76,26 @@ class PaymentBillActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        tvHeader = findViewById(R.id.tvHeader)
+        toolbar = findViewById(R.id.toolbar)
+        toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
 
         tvVehicleValue = findViewById(R.id.tvVehicleValue)
         tvPlateValue = findViewById(R.id.tvPlateValue)
         tvOdometerValue = findViewById(R.id.tvOdometerValue)
 
-        tvEstimatedValue = findViewById(R.id.tvEstimatedValue)
-        tvPaidValue = findViewById(R.id.tvPaidValue)
+
+
+        tvCost = findViewById(R.id.tvCost)
+
 
         tvTotalToPay = findViewById(R.id.tvTotalToPay)
+
         btnPay = findViewById(R.id.btnPay)
         rvServices = findViewById(R.id.rvServices)
 
-        tvHeader.text = "Repair Invoice"
+
 
         btnPay.setOnClickListener {
             currentBill?.let { bill ->
@@ -125,19 +137,17 @@ class PaymentBillActivity : AppCompatActivity() {
         tvVehicleValue.text = "${v.brandName} ${v.modelName} (${v.year})"
         tvPlateValue.text = v.licensePlate
         tvOdometerValue.text = "${v.odometer ?: 0} km"
-
-        // Money formatted
-        tvEstimatedValue.text = MoneyUtils.formatVietnameseCurrency(bill.estimatedAmount)
-        tvPaidValue.text = MoneyUtils.formatVietnameseCurrency(bill.paidAmount)
-
-        val totalNet = bill.approvedQuotations.sumOf { it.netAmount }
-        val remaining = totalNet - bill.paidAmount
-
-        tvTotalToPay.text = "Amount Due: ${MoneyUtils.formatVietnameseCurrency(remaining)}"
+        tvCost.text = MoneyUtils.formatVietnameseCurrency(bill.cost)
 
         // Services
         val allServices = bill.approvedQuotations.flatMap { it.services }
         serviceAdapter.submitList(allServices)
+
+        // Tổng tiền
+        tvTotalToPay.text = "Amount Due: ${MoneyUtils.formatVietnameseCurrency(bill.cost)}"
+
+        // Summary: "Service Name: partPrice - discount = finalPrice"
+
     }
 
     // --------------------------------------------------
@@ -148,7 +158,7 @@ class PaymentBillActivity : AppCompatActivity() {
         val vehicleLabel = "${bill.vehicle.brandName} ${bill.vehicle.modelName}"
         val totalNet = bill.approvedQuotations.sumOf { it.netAmount }
 //        val remaining = totalNet - bill.paidAmount
-        val remaining = bill.paidAmount
+        val remaining = bill.cost
 
         AlertDialog.Builder(this)
             .setTitle("Confirm payment")

@@ -27,7 +27,9 @@ class QuotationServiceAdapter :
     inner class ServiceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvServiceName: TextView = view.findViewById(R.id.tvServiceName)
         val tvServicePrice: TextView = view.findViewById(R.id.tvServicePrice)
+        val tvDiscountPrice: TextView = view.findViewById(R.id.tvDiscountPrice)
 
+        val tvFinalPrice: TextView = view.findViewById(R.id.tvFinalPrice)
         val rvParts: RecyclerView = view.findViewById(R.id.rvParts)
 
         val partAdapter = QuotationPartAdapter()
@@ -45,18 +47,15 @@ class QuotationServiceAdapter :
         holder.tvServiceName.text = item.serviceName ?: "Service ${item.serviceId}"
 
         // Format price
-        holder.tvServicePrice.text = "Service Price: ${
+        holder.tvServicePrice.text = "${
             MoneyUtils.formatVietnameseCurrency(item.price)
         }"
 
-        // Flags
-//        val flags = mutableListOf<String>()
-//        if (item.isRequired) flags.add("Required")
-//        if (item.isSelected) flags.add("Selected")
-//
-//        holder.tvFlags.text =
-//            if (flags.isNotEmpty()) flags.joinToString(" • ")
-//            else "Optional"
+        holder.tvDiscountPrice.text = "Discount:${MoneyUtils.formatVietnameseCurrency(item.discountValue ?: 0.0)}"
+
+
+        holder.tvFinalPrice.text ="Final:"+
+            MoneyUtils.formatVietnameseCurrency(item.finalPrice ?: 0.0)
 
         // Setup parts adapter
         holder.rvParts.apply {

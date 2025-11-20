@@ -10,19 +10,19 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:background="#FFFFFF">
 
         <!-- Header -->
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/tvHeader"
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Repair Invoice"
-            android:textColor="#000000"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:gravity="center_horizontal"
-            android:padding="20dp" />
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/white"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:title="Repair Invoice"
+            app:titleTextColor="@android:color/black" />
+
 
         <!-- CONTENT SCROLL AREA -->
         <ScrollView
@@ -36,7 +36,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:background="#FFFFFF">
 
                 <!-- Order Info Card -->
                 <com.google.android.material.card.MaterialCardView
@@ -46,14 +47,16 @@
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp"
                     app:strokeWidth="1dp"
-                    app:strokeColor="#E0E0E0"
-                    android:layout_marginBottom="16dp">
+                    app:strokeColor="#000000"
+                    android:layout_marginBottom="16dp"
+                    android:backgroundTint="#FFFFFF">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="12dp">
+                        android:padding="12dp"
+                        android:background="#FFFFFF">
 
                         <!-- SECTION TITLE -->
                         <com.google.android.material.textview.MaterialTextView
@@ -79,55 +82,48 @@
                             <com.google.android.material.textview.MaterialTextView
                                 android:text="Vehicle:"
                                 android:textStyle="bold"
-                                android:textSize="14sp" />
+                                android:textSize="14sp"
+                                android:textColor="#000000" />
 
                             <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvVehicleValue"
-                                android:textColor="#444"
+                                android:textColor="#000000"
                                 android:textSize="14sp" />
 
                             <!-- License Plate -->
                             <com.google.android.material.textview.MaterialTextView
                                 android:text="License Plate:"
                                 android:textStyle="bold"
-                                android:textSize="14sp" />
+                                android:textSize="14sp"
+                                android:textColor="#000000" />
 
                             <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvPlateValue"
-                                android:textColor="#444"
+                                android:textColor="#000000"
                                 android:textSize="14sp" />
 
                             <!-- Odometer -->
                             <com.google.android.material.textview.MaterialTextView
                                 android:text="Odometer:"
                                 android:textStyle="bold"
-                                android:textSize="14sp" />
+                                android:textSize="14sp"
+                                android:textColor="#000000" />
 
                             <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvOdometerValue"
-                                android:textColor="#444"
+                                android:textColor="#000000"
                                 android:textSize="14sp" />
 
                             <!-- Estimated Amount -->
                             <com.google.android.material.textview.MaterialTextView
-                                android:text="Estimated:"
+                                android:text="Cost:"
                                 android:textStyle="bold"
-                                android:textSize="14sp" />
+                                android:textSize="14sp"
+                                android:textColor="#000000" />
 
                             <com.google.android.material.textview.MaterialTextView
-                                android:id="@+id/tvEstimatedValue"
-                                android:textColor="#444"
-                                android:textSize="14sp" />
-
-                            <!-- Paid -->
-                            <com.google.android.material.textview.MaterialTextView
-                                android:text="Paid:"
-                                android:textStyle="bold"
-                                android:textSize="14sp" />
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:id="@+id/tvPaidValue"
-                                android:textColor="#444"
+                                android:id="@+id/tvCost"
+                                android:textColor="#000000"
                                 android:textSize="14sp" />
 
                         </GridLayout>
@@ -142,7 +138,7 @@
                     android:layout_height="wrap_content"
                     android:text="Services and Parts"
                     android:textSize="18sp"
-                    android:textColor="#000"
+                    android:textColor="#000000"
                     android:textStyle="bold"
                     android:paddingBottom="8dp" />
 
@@ -173,7 +169,17 @@
                 android:textColor="#000000"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:paddingBottom="12dp" />
+                android:paddingBottom="8dp" />
+
+            <!-- NEW: Summary under Amount Due -->
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tvSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="12dp"
+                android:textColor="#000000"
+                android:textSize="13sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPay"

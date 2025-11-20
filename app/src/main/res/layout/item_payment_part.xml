@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:padding="8dp"
+    android:background="@drawable/part_item_border">
 
     <TextView
         android:id="@+id/tvPartName"
@@ -13,15 +14,6 @@
         android:text="Lọc nhớt"
         android:textColor="#000"
         android:textSize="14sp" />
-
-<!--    <TextView-->
-<!--        android:id="@+id/tvPartQuantity"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:text="x1"-->
-<!--        android:textColor="#444"-->
-<!--        android:textSize="13sp"-->
-<!--        android:paddingEnd="12dp" />-->
 
     <TextView
         android:id="@+id/tvPartPrice"
