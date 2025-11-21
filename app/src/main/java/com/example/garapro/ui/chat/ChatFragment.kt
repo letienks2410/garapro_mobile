@@ -102,13 +102,13 @@ class ChatFragment : Fragment() {
                     fcmToken = fcmToken,
                     onSuccess = { _responseBody ->
                         Handler(Looper.getMainLooper()).post {
-                            adapter.addMessage(Message("Gửi đến n8n thành công", false))
+                          //  adapter.addMessage(Message("Gửi đến n8n thành công", false))
                             rv.scrollToPosition(adapter.itemCount - 1)
                         }
                     },
                     onFailure = { err ->
                         Handler(Looper.getMainLooper()).post {
-                            adapter.addMessage(Message("Gửi thất bại: $err", false))
+                         //   adapter.addMessage(Message("Gửi thất bại: $err", false))
                             rv.scrollToPosition(adapter.itemCount - 1)
                         }
                     }
