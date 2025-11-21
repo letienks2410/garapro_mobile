@@ -37,6 +37,9 @@ class AuthRepository(
                     loginResponse.roles.let {
                         tokenManager.saveUserRole(it.first())
                     }
+                    loginResponse.userId?.let { id ->
+                        tokenManager.saveUserId(id)
+                    }
                     emit(Resource.Success(loginResponse))
                 } else {
                     emit(Resource.Error(loginResponse.toString()))

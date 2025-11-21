@@ -39,6 +39,10 @@
         android:label="Cứu hộ khẩn cấp" />
 
 
+    <fragment
+        android:id="@+id/chat"
+        android:name="com.example.garapro.ui.chat.ChatFragment"
+        android:label="Cứu hộ khẩn cấp" />
 
     <!-- Profile -->
     <fragment

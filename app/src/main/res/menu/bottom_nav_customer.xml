@@ -19,6 +19,10 @@
         android:id="@+id/test"
         android:icon="@drawable/gr_logo"
         android:title="test" />
+    <item
+        android:id="@+id/chat"
+        android:icon="@drawable/gr_logo"
+        android:title="Chat" />
 
     <item
         android:id="@+id/profileFragment"

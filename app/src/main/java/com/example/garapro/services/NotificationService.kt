@@ -1,10 +1,11 @@
 package com.example.garapro.services
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -12,6 +13,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.garapro.MainActivity
 import com.example.garapro.R
 import com.example.garapro.data.model.UpdateDeviceIdRequest
@@ -28,26 +30,18 @@ class NotificationService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-
-        // If you want to send messages to this application instance or
-        // manage this apps subscriptions on the server side, send the
-        // FCM registration token to your app server.
-
-        //sendRegistrationToServer(token)
         updateDeviceIdToServer(token)
         Log.d("DeviceToken", "Refreshed token: $token")
-        // TODO: Send token to your server
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
+        Log.d("Notification", "Message received: ${remoteMessage.data}")
 
-        Log.d("Notification", "Message received:  ${remoteMessage.toString()}${remoteMessage.data}")
-
-        // 1️⃣ Tạo Notification Channel nếu chưa tồn tại
+        // 1) Create channel if needed
         createNotificationChannel()
 
-        // 2️⃣ Check permission Android 13+
+        // 2) Permission check Android 13+
         val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.checkSelfPermission(
                 this,
@@ -57,82 +51,115 @@ class NotificationService : FirebaseMessagingService() {
 
         if (!canNotify) {
             Log.w("Notification", "Notification permission not granted")
-            return
+            // still attempt to deliver to UI via broadcast if foreground
         }
 
-        // 3️⃣ Lấy dữ liệu từ data message
-        if (remoteMessage.data.isNotEmpty()) {
-            val title = remoteMessage.data["title"] ?: "Thông báo"
-            val body = remoteMessage.data["body"] ?: ""
-            val screen = remoteMessage.data["screen"]
-            val notificationType = remoteMessage.data["type"]
-            val action = remoteMessage.data["action"]
-            Log.d("screen",screen.toString())
-            // 4️⃣ Extract tất cả IDs từ remoteMessage
-            val allIds = extractAllIdsFromMessage(remoteMessage.data)
+        // 3) If data payload present, handle it
+        val data = remoteMessage.data
+        if (data.isNotEmpty()) {
+            val type = data["type"] ?: ""
+            val message = data["message"] ?: ""
+            val fromUserId = data["fromUserId"]
+            val conversationId = data["conversationId"]
 
-            // 5️⃣ Tạo Intent mở MainActivity kèm dữ liệu
-            val intent = Intent(this, MainActivity::class.java).apply {
-                // Clear any existing tasks and start fresh
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-
-                // Put extras chính
-                putExtra("screen", screen)
-                putExtra("type", notificationType)
-                putExtra("body", body)
-                putExtra("action", action)
-                putExtra("from_notification", true)
-
-                // Put tất cả IDs
-                allIds.forEach { (key, value) ->
-                    putExtra(key, value)
+            // If chat message type -> prefer to send to UI when app is foreground
+            if (type == "chat_message") {
+                if (isAppInForeground()) {
+                    // send broadcast so ChatFragment can update UI directly
+                    val intent = Intent("com.example.garapro.NEW_CHAT_MESSAGE").apply {
+                        putExtra("message", message)
+                        putExtra("fromUserId", fromUserId)
+                        putExtra("conversationId", conversationId)
+                    }
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+                    Log.d("Notification", "Broadcast sent to UI (foreground). message=$message")
+                    return // do not show system notification when app foreground
+                } else {
+                    // App background -> show system notification (recommended for reliability)
+                    showSystemNotification(
+                        title = data["title"] ?: "Tin nhắn mới",
+                        body = message,
+                        conversationId = conversationId,
+                        fromUserId = fromUserId
+                    )
+                    return
                 }
-                Log.d("allIds",allIds.toString())
-
             }
 
-            // 6️⃣ Tạo unique ID cho notification dựa trên tất cả IDs
-            val notificationId = generateNotificationId(allIds)
-
-            val pendingIntent = PendingIntent.getActivity(
-                this,
-                notificationId, // Unique request code
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            // 7️⃣ Tạo Notification
-            val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notifications) // đổi icon theo project
-                .setContentTitle(title)
-                .setContentText(body)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true) // Tự động đóng khi nhấp
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-
-            // Thêm style cho notification dài
-            if (body.length > 50) {
-                builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            }
-
-            NotificationManagerCompat.from(this)
-                .notify(notificationId, builder.build())
-
-            Log.d("Notification", "Notification shown with ID: $notificationId, IDs: $allIds")
+            // If other types, fallback to existing behavior: extract ids and show notification
+            val title = data["title"] ?: "Thông báo"
+            val body = data["body"] ?: message
+            showSystemNotification(title, body, conversationId, fromUserId)
         }
+    }
+
+    private fun showSystemNotification(
+        title: String?,
+        body: String?,
+        conversationId: String?,
+        fromUserId: String?
+    ) {
+        // Build intent to open MainActivity (and pass ids so activity can open chat)
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("from_notification", true)
+            putExtra("conversationId", conversationId)
+            putExtra("fromUserId", fromUserId)
+        }
+
+        val allIds = mutableMapOf<String, String>()
+        conversationId?.let { allIds["conversationId"] = it }
+        fromUserId?.let { allIds["fromUserId"] = it }
+
+        val notificationId = generateNotificationId(allIds)
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notifications)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        if (body != null && body.length > 50) {
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
+        }
+
+        NotificationManagerCompat.from(this)
+            .notify(notificationId, builder.build())
+
+        Log.d("Notification", "System notification shown with ID: $notificationId")
+    }
+
+    private fun isAppInForeground(): Boolean {
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appProcesses = activityManager.runningAppProcesses ?: return false
+        val packageName = applicationContext.packageName
+        for (appProcess in appProcesses) {
+            if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                && appProcess.processName == packageName) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun extractAllIdsFromMessage(data: Map<String, String>): Map<String, String> {
         val idMap = mutableMapOf<String, String>()
-
-        // Danh sách tất cả các key ID có thể có (đồng bộ với MainActivity)
         val possibleIdKeys = listOf(
             "repairRequestId", "repairOrderId", "orderId", "quotationId",
             "appointmentId", "serviceId", "technicianId", "customerId",
             "paymentId", "invoiceId", "chatId", "messageId",
-            "quoteId", "estimateId", "taskId", "requestId"
+            "quoteId", "estimateId", "taskId", "requestId",
+            "conversationId", "fromUserId"
         )
-
         possibleIdKeys.forEach { key ->
             data[key]?.let { value ->
                 if (value.isNotEmpty()) {
@@ -140,18 +167,15 @@ class NotificationService : FirebaseMessagingService() {
                 }
             }
         }
-
         return idMap
     }
 
     private fun generateNotificationId(ids: Map<String, String>): Int {
-        // Tạo ID duy nhất dựa trên tất cả IDs
         val combinedString = ids.entries
             .sortedBy { it.key }
             .joinToString("|") { "${it.key}=${it.value}" }
-
         return if (combinedString.isNotEmpty()) {
-            combinedString.hashCode() and 0x7fffffff // Đảm bảo positive
+            combinedString.hashCode() and 0x7fffffff
         } else {
             System.currentTimeMillis().toInt() and 0x7fffffff
         }
@@ -173,10 +197,8 @@ class NotificationService : FirebaseMessagingService() {
     private fun updateDeviceIdToServer(deviceToken: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                Log.d("go","gogo")
                 val request = UpdateDeviceIdRequest(deviceId = deviceToken)
                 val response = RetrofitInstance.UserService.updateDeviceId(request)
-
                 if (response.isSuccessful) {
                     Log.d("DeviceToken", "Device ID updated successfully")
                 } else {
