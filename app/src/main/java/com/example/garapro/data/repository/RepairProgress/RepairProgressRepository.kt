@@ -1,5 +1,7 @@
 package com.example.garapro.data.repository.RepairProgress
 
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackResponse
 import com.example.garapro.data.model.RepairProgresses.OrderStatus
 import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
@@ -84,6 +86,16 @@ class RepairProgressRepository(private val apiService: RepairProgressApiService)
             ApiResponse.Error(e.message ?: "Unknown error")
         }
     }
+
+    suspend fun createFeedback(request: CreateFeedbackRequest): ApiResponse<CreateFeedbackResponse> {
+        return try {
+            val response = apiService.createFeedback(request)
+            ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
+
     sealed class ApiResponse<T> {
         data class Success<T>(val data: T) : ApiResponse<T>()
         data class Error<T>(val message: String) : ApiResponse<T>()

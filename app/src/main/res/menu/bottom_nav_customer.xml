@@ -20,7 +20,10 @@
         android:id="@+id/repairArchivedGraph"
         android:icon="@drawable/gr_logo"
         android:title="Repair Archived" />
-
+    <item
+        android:id="@+id/chat"
+        android:icon="@drawable/gr_logo"
+        android:title="Chat" />
     <item
         android:id="@+id/profileFragment"
         android:icon="@drawable/ic_user"

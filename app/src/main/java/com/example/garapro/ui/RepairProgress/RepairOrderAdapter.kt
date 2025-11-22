@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -21,7 +22,8 @@ import java.util.Locale
 
 class RepairOrderAdapter(
     private val onItemClick: (RepairOrderListItem) -> Unit,
-    private val onPaymentClick: (RepairOrderListItem) -> Unit
+    private val onPaymentClick: (RepairOrderListItem) -> Unit,
+    private val onRatingClick: (RepairOrderListItem) -> Unit
 ) : ListAdapter<RepairOrderListItem, RepairOrderAdapter.ViewHolder>(DiffCallback) {
 
     companion object {
@@ -65,6 +67,13 @@ class RepairOrderAdapter(
                     onPaymentClick(getItem(position))
                 }
             }
+
+            binding.ratingButton.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onRatingClick(getItem(position))
+                }
+            }
         }
 
 
@@ -75,7 +84,7 @@ class RepairOrderAdapter(
                 statusText.text = getStatusNameEnglish(item.statusName)
                 progressStatus.text = item.progressStatus
                 progressPercentage.text = (item.progressPercentage?.toString() ?: "0") + "%"
-                progressBar.progress = item.progressPercentage
+                progressBar.progress = item.progressPercentage?.toInt() ?: 0
                 costText.text = formatCurrency(item.cost)
                 paidStatusText.text = getPaidStatusEnglish(item.paidStatus)
                 roTypeText.text = getROTypeNameEnglish(item.roType)
@@ -83,6 +92,8 @@ class RepairOrderAdapter(
                 // Set status color
                 val statusColor = getStatusColor(item.statusName)
                 statusText.setBackgroundColor(statusColor)
+                //showPaymentButton(item)
+                showFeedbackButton(item)
                 updateViews(item)
                 // Setup labels
                 setupLabels(item.labels)
@@ -115,6 +126,15 @@ class RepairOrderAdapter(
                     pickupMessage.visibility = View.GONE
                     paymentButton.visibility = View.GONE
                 }
+            }
+        }
+
+        private fun showFeedbackButton(item: RepairOrderListItem) {
+            val showFeedbackButton = item.statusName == "Completed" && item.paidStatus == "Paid" && item.feedBacks == null;
+            binding.ratingButton.visibility = if (showFeedbackButton) {
+                View.VISIBLE
+            } else {
+                View.GONE
             }
         }
         private fun setupLabels(labels: List<Label>) {

@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -28,11 +29,13 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
+import com.example.garapro.ui.feedback.RatingActivity
 import com.example.garapro.hubs.JobSignalRService
 import com.example.garapro.ui.payments.PaymentBillActivity
 import com.example.garapro.utils.Constants
 
 import kotlinx.coroutines.launch
+
 
 class RepairProgressListFragment : Fragment() {
 
@@ -58,14 +61,32 @@ class RepairProgressListFragment : Fragment() {
         observeJobHubEvents()
     }
 
+    private val ratingLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Khi RatingActivity trả về RESULT_FEEDBACK_POSTED -> reload danh sách
+        if (result.resultCode == RatingActivity.RESULT_FEEDBACK_POSTED) {
+            // gọi lại API để refresh
+            viewModel.loadRepairOrders()
+            // hoặc nếu dùng paging/flow khác thì trigger reload tương ứng
+        }
+    }
+
     private fun setupRecyclerView() {
         adapter = RepairOrderAdapter(
             onItemClick = { repairOrder ->
                 navigateToDetail(repairOrder.repairOrderId)
             },
             onPaymentClick = { repairOrder ->
+                showPaymentDialog(repairOrder)
+            },
+            onRatingClick = { item ->
+                val intent = Intent(requireContext(), RatingActivity::class.java).apply {
+                    putExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID, item.repairOrderId)
+                }
+                ratingLauncher.launch(intent)
 //                showPaymentDialog(repairOrder)
-                navigateToPaymentBill(repairOrder.repairOrderId)
+                navigateToPaymentBill(item.repairOrderId)
             }
         )
 

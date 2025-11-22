@@ -15,7 +15,8 @@ data class RepairProgressDetail(
     val orderStatus: OrderStatus,
     val jobs: List<Job>,
     val progressPercentage: Int,
-    val progressStatus: String
+    val progressStatus: String,
+    val feedBacks: Feedback?
 )
 
 data class Vehicle(

@@ -1,5 +1,7 @@
 package com.example.garapro.data.remote
 
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackResponse
 import com.example.garapro.data.model.RepairProgresses.OrderStatus
 import com.example.garapro.data.model.RepairProgresses.PagedResult
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedDetail
@@ -43,6 +45,8 @@ interface RepairProgressApiService {
     @GET("OrderStatus")
     suspend fun getOrderStatuses(): List<OrderStatus>
 
+    @POST("/api/FeedBack")
+    suspend fun createFeedback(@Body request: CreateFeedbackRequest): CreateFeedbackResponse
     @GET("RepairProgress/archived")
     suspend fun getArchivedRepairOrdersWithFilter(
         @Query("fromDate") fromDate: String? = null,

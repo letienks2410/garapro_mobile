@@ -37,7 +37,8 @@ data class RepairOrderArchivedDetail(
 
     val note: String?,
 
-    val jobs: List<ArchivedJob>
+    val jobs: List<ArchivedJob>,
+    val feedBacks: Feedback?
 )
 @Parcelize
 data class ArchivedJob(
