@@ -27,10 +27,12 @@ import com.example.garapro.databinding.FragmentRepairProgressListBinding
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.ui.feedback.RatingActivity
+import com.example.garapro.hubs.JobSignalRService
+import com.example.garapro.ui.payments.PaymentBillActivity
+import com.example.garapro.utils.Constants
 
 import kotlinx.coroutines.launch
 
@@ -40,6 +42,8 @@ class RepairProgressListFragment : Fragment() {
     private lateinit var binding: FragmentRepairProgressListBinding
     private val viewModel: RepairProgressViewModel by viewModels()
     private lateinit var adapter: RepairOrderAdapter
+
+    private var jobHubService: JobSignalRService? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentRepairProgressListBinding.inflate(inflater, container, false)
@@ -53,6 +57,8 @@ class RepairProgressListFragment : Fragment() {
         setupFilter()
         observeViewModel()
         setupSwipeRefresh()
+        initJobHub()
+        observeJobHubEvents()
     }
 
     private val ratingLauncher = registerForActivityResult(
@@ -79,6 +85,8 @@ class RepairProgressListFragment : Fragment() {
                     putExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID, item.repairOrderId)
                 }
                 ratingLauncher.launch(intent)
+//                showPaymentDialog(repairOrder)
+                navigateToPaymentBill(repairOrder.repairOrderId)
             }
         )
 
@@ -89,28 +97,46 @@ class RepairProgressListFragment : Fragment() {
         }
     }
 
+    private fun initJobHub() {
+        // ⚠️ ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
+        val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
+
+        jobHubService = JobSignalRService(jobHubUrl).apply {
+            setupListeners()
+            start()
+        }
+    }
+    private fun observeJobHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "JobHub event for RO in list: $roId")
+                //  Cứ có tín hiệu là reload list
+                viewModel.loadRepairOrders()
+            }
+        }
+    }
+
+
     private fun showPaymentDialog(item: RepairOrderListItem) {
-        // Hiển thị dialog hoặc navigate đến màn hình thanh toán
         val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Thanh toán")
-            .setMessage("Bạn có muốn thanh toán cho đơn hàng ${item.repairOrderId}?")
-            .setPositiveButton("Thanh toán") { _, _ ->
-                // Xử lý thanh toán
+            .setTitle("Payment")
+            .setMessage("Do you want to pay for order ${item.vehicleModel}?")
+            .setPositiveButton("Pay") { _, _ ->
                 processPayment(item)
             }
-            .setNegativeButton("Hủy", null)
+            .setNegativeButton("Cancel", null)
             .create()
         dialog.show()
     }
+
     private fun processPayment(item: RepairOrderListItem) {
         val ctx = requireContext()
         lifecycleScope.launch {
             try {
                 val body = CreatePaymentRequest(
                     repairOrderId = item.repairOrderId,
-                    amount =  2000,
-                    description = "Thanh toán đơn ${item.vehicleModel}"
-
+                    amount = 2000,
+                    description = "Payment for ${item.vehicleModel}"
                 )
 
                 val res = viewModel.createPaymentLinkDirect(body)
@@ -118,12 +144,12 @@ class RepairProgressListFragment : Fragment() {
                 if (res != null) {
                     openInAppCheckout(ctx, res.checkoutUrl)
                 } else {
-                    Toast.makeText(ctx, "Không tạo được link thanh toán", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, "Could not create payment link", Toast.LENGTH_SHORT).show()
                 }
 
             } catch (e: Exception) {
                 Log.e("Payment", "create-link failed", e)
-                Toast.makeText(ctx, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -134,6 +160,7 @@ class RepairProgressListFragment : Fragment() {
             .build()
         customTabsIntent.launchUrl(context, Uri.parse(url))
     }
+
     private fun setupFilter() {
         // Filter button
         binding.filterButton.setOnClickListener {
@@ -151,7 +178,6 @@ class RepairProgressListFragment : Fragment() {
 
     private fun setupFilterOptions() {
         // Status filter
-
         binding.statusFilterLayout.setEndIconOnClickListener {
             showStatusFilterDialog()
         }
@@ -179,13 +205,8 @@ class RepairProgressListFragment : Fragment() {
         binding.dateFilter.setOnClickListener {
             showDateRangePicker()
         }
-
-        // Apply filter button
-//        binding.applyFilterButton.setOnClickListener {
-//            viewModel.toggleFilterVisibility()
-//            // Không cần gọi loadRepairOrders() vì đã được gọi khi update filter
-//        }
     }
+
 
     private fun showStatusFilterDialog() {
         val statuses = viewModel.orderStatuses.value
@@ -195,24 +216,23 @@ class RepairProgressListFragment : Fragment() {
         } ?: -1
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Lọc theo trạng thái")
+            .setTitle("Filter by Status")
             .setSingleChoiceItems(items, checkedItem) { dialog, which ->
                 val selectedStatus = statuses.getOrNull(which)
                 viewModel.updateStatusFilter(selectedStatus?.orderStatusId)
                 dialog.dismiss()
             }
-            .setNegativeButton("Hủy", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
-
     private fun showRoTypeFilterDialog() {
-        val roTypes = arrayOf("Khách vãng lai", "Đã lên lịch", "Sự cố")
+        val roTypes = arrayOf("Walk-in", "Scheduled", "Breakdown")
         val currentFilter = viewModel.filterState.value.roType
         val checkedItem = currentFilter?.ordinal ?: -1
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Lọc theo loại RO")
+            .setTitle("Filter by RO Type")
             .setSingleChoiceItems(roTypes, checkedItem) { dialog, which ->
                 val selectedType = when (which) {
                     0 -> RoType.WalkIn
@@ -223,7 +243,7 @@ class RepairProgressListFragment : Fragment() {
                 viewModel.updateRoTypeFilter(selectedType)
                 dialog.dismiss()
             }
-            .setNegativeButton("Xóa") { dialog, _ ->
+            .setNegativeButton("Clear") { dialog, _ ->
                 viewModel.updateRoTypeFilter(null)
                 dialog.dismiss()
             }
@@ -232,7 +252,7 @@ class RepairProgressListFragment : Fragment() {
     }
 
     private fun showPaidStatusFilterDialog() {
-        val paidStatuses = arrayOf("Chờ thanh toán", "Thanh toán một phần", "Đã thanh toán")
+        val paidStatuses = arrayOf("Pending Payment", "Partially Paid", "Paid")
         val currentFilter = viewModel.filterState.value.paidStatus
         val checkedItem = when (currentFilter) {
             "Unpaid" -> 0
@@ -241,7 +261,7 @@ class RepairProgressListFragment : Fragment() {
         }
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Lọc theo trạng thái thanh toán")
+            .setTitle("Filter by Payment Status")
             .setSingleChoiceItems(paidStatuses, checkedItem) { dialog, which ->
                 val selectedStatus = when (which) {
                     0 -> "Unpaid"
@@ -251,7 +271,7 @@ class RepairProgressListFragment : Fragment() {
                 viewModel.updatePaidStatusFilter(selectedStatus)
                 dialog.dismiss()
             }
-            .setNegativeButton("Xóa") { dialog, _ ->
+            .setNegativeButton("Clear") { dialog, _ ->
                 viewModel.updatePaidStatusFilter(null)
                 dialog.dismiss()
             }
@@ -280,12 +300,14 @@ class RepairProgressListFragment : Fragment() {
 
                         val orders = response.data.items
                         adapter.submitList(orders)
-
+                        orders.forEach { order ->
+                            jobHubService?.joinRepairOrderGroup(order.repairOrderId)
+                        }
                         binding.emptyState.visibility = if (orders.isEmpty()) View.VISIBLE else View.GONE
                         binding.emptyText.text = if (viewModel.filterChips.value.isNotEmpty()) {
-                            "Không có đơn hàng nào phù hợp với bộ lọc"
+                            "No orders match the current filters"
                         } else {
-                            "Không tìm thấy đơn sửa chữa"
+                            "No repair orders found"
                         }
                     }
                     is RepairProgressRepository.ApiResponse.Error -> {
@@ -303,15 +325,8 @@ class RepairProgressListFragment : Fragment() {
                 binding.filterButton.setImageResource(
                     if (show) R.drawable.ic_ft_expand_less else R.drawable.ic_filter
                 )
-
             }
         }
-
-//        viewLifecycleOwner.lifecycleScope.launch {
-//            viewModel.filterChips.collect { chips ->
-//                updateFilterChips(chips)
-//            }
-//        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.filterState.collect { filter ->
@@ -321,40 +336,40 @@ class RepairProgressListFragment : Fragment() {
     }
 
     private fun updateFilterInputs(filter: RepairOrderFilter) {
-        // Cập nhật trạng thái
+        // Update status
         filter.statusId?.let { statusId ->
-            val statusName = viewModel.orderStatuses.value.find { it.orderStatusId == statusId }?.statusName ?: "Trạng thái"
-            var statusVietnamese= when (statusName) {
-                "Completed" -> "Hoàn tất"
-                "In Progress" -> "Đang sửa"
-                "Pending" -> "Đang xử lý"
-                else -> {"Không xác định"}
+            val statusName = viewModel.orderStatuses.value.find { it.orderStatusId == statusId }?.statusName ?: "Status"
+            val statusEnglish = when (statusName) {
+                "Completed" -> "Completed"
+                "In Progress" -> "In Progress"
+                "Pending" -> "Pending"
+                else -> "Unknown"
             }
-            binding.statusFilter.setText(statusVietnamese)
+            binding.statusFilter.setText(statusEnglish)
         } ?: run {
             binding.statusFilter.setText("")
         }
 
-        // Cập nhật loại RO
+        // Update RO Type
         filter.roType?.let { roType ->
             binding.roTypeFilter.setText(
                 when (roType) {
-                    RoType.WalkIn -> "Khách vãng lai"
-                    RoType.Scheduled -> "Đã lên lịch"
-                    RoType.Breakdown -> "Sự cố"
+                    RoType.WalkIn -> "Walk-in"
+                    RoType.Scheduled -> "Scheduled"
+                    RoType.Breakdown -> "Breakdown"
                 }
             )
         } ?: run {
             binding.roTypeFilter.setText("")
         }
 
-        // Cập nhật trạng thái thanh toán
+        // Update payment status
         filter.paidStatus?.let { paidStatus ->
             binding.paidStatusFilter.setText(
                 when (paidStatus) {
-                    "Pending" -> "Chờ thanh toán"
-                    "Partial" -> "Thanh toán một phần"
-                    "Paid" -> "Đã thanh toán"
+                    "Unpaid" -> "Pending Payment"
+                   
+                    "Paid" -> "Paid"
                     else -> paidStatus
                 }
             )
@@ -362,13 +377,13 @@ class RepairProgressListFragment : Fragment() {
             binding.paidStatusFilter.setText("")
         }
 
-        // Cập nhật ngày
+        // Update date
         if (filter.fromDate != null || filter.toDate != null) {
             val fromText = filter.fromDate ?: ""
             val toText = filter.toDate ?: ""
             binding.dateFilter.text = "$fromText - $toText"
         } else {
-            binding.dateFilter.text = "Chọn khoảng ngày"
+            binding.dateFilter.text = "Select date range"
         }
     }
 
@@ -402,8 +417,33 @@ class RepairProgressListFragment : Fragment() {
         }
         findNavController().navigate(R.id.action_repairTrackingFragment_to_repairProgressDetailFragment, bundle)
     }
+    private fun navigateToPaymentBill(repairOrderId: String) {
+        val intent = Intent(requireContext(), PaymentBillActivity::class.java)
+        intent.putExtra(PaymentBillActivity.EXTRA_REPAIR_ORDER_ID, repairOrderId)
+        startActivity(intent)
+    }
+
 
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+    }
+    override fun onDestroyView() {
+        super.onDestroyView()
+
+        // Ngắt kết nối JobHub nếu đang chạy
+        try {
+            jobHubService?.leaveRepairOrderGroupAndStop()
+        } catch (e: Exception) {
+            Log.e("SignalR", "Error stopping JobHubService", e)
+        }
+
+        jobHubService = null
+
+        // Xoá binding tránh leak memory
+        // (list fragment dùng biến binding = lateinit nên KHÔNG cần set null)
+        // Nhưng nếu bạn dùng _binding kiểu nullable thì dùng _binding = null
+
+        // Nếu sau này bạn thêm nhiều hub khác,
+        // thì cleanup ở đây luôn cho tiện.
     }
 }

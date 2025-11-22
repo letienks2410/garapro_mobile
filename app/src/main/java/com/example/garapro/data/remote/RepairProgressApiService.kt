@@ -4,6 +4,9 @@ import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
 import com.example.garapro.data.model.RepairProgresses.CreateFeedbackResponse
 import com.example.garapro.data.model.RepairProgresses.OrderStatus
 import com.example.garapro.data.model.RepairProgresses.PagedResult
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedDetail
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListItem
 import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
@@ -44,6 +47,21 @@ interface RepairProgressApiService {
 
     @POST("/api/FeedBack")
     suspend fun createFeedback(@Body request: CreateFeedbackRequest): CreateFeedbackResponse
+    @GET("RepairProgress/archived")
+    suspend fun getArchivedRepairOrdersWithFilter(
+        @Query("fromDate") fromDate: String? = null,
+        @Query("toDate") toDate: String? = null,
+        @Query("roType") roType: RoType? = null,
+        @Query("paidStatus") paidStatus: String? = null,
+        @Query("pageNumber") pageNumber: Int = 1,
+        @Query("pageSize") pageSize: Int = 10
+    ): PagedResult<RepairOrderArchivedListItem>
+
+    @GET("RepairProgress/archived/{repairOrderId}")
+    suspend fun getArchivedRepairOrderDetail(
+        @Path("repairOrderId") repairOrderId: String
+    ): RepairOrderArchivedDetail
+
 }
 
 // Extension function để hỗ trợ filter object
@@ -54,6 +72,20 @@ suspend fun RepairProgressApiService.getMyRepairOrders(filter: RepairOrderFilter
         paidStatus = filter.paidStatus,
         fromDate = filter.fromDate,
         toDate = filter.toDate,
+        pageNumber = filter.pageNumber,
+        pageSize = filter.pageSize
+    )
+}
+
+
+suspend fun RepairProgressApiService.getArchivedRepairOrders(
+    filter: RepairOrderArchivedFilter
+): PagedResult<RepairOrderArchivedListItem> {
+    return getArchivedRepairOrdersWithFilter(
+        fromDate = filter.fromDate,
+        toDate = filter.toDate,
+        roType = filter.roType,
+        paidStatus = filter.paidStatus,
         pageNumber = filter.pageNumber,
         pageSize = filter.pageSize
     )

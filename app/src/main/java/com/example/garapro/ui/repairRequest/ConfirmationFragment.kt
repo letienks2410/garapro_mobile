@@ -55,7 +55,8 @@ class ConfirmationFragment : BaseBookingFragment() {
                 if (it) {
                     showSuccessDialog()
                 } else {
-                    showErrorDialog()
+                    val message = bookingViewModel.errorMessage.value
+                    showErrorDialog(message)
                 }
                 bookingViewModel.resetSubmitResult()
             }
@@ -181,10 +182,10 @@ class ConfirmationFragment : BaseBookingFragment() {
             .show()
     }
 
-    private fun showErrorDialog() {
+    private fun showErrorDialog(message: String?) {
         AlertDialog.Builder(requireContext())
             .setTitle("Lỗi")
-            .setMessage("Đặt lịch thất bại. Vui lòng thử lại.")
+            .setMessage(message ?: "Đặt lịch thất bại. Vui lòng thử lại.")
             .setPositiveButton("Thử lại", null)
             .setNegativeButton("Hủy") { _, _ ->
                 requireActivity().finish()

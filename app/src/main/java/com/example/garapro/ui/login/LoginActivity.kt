@@ -21,6 +21,11 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var viewModel: LoginViewModel
 
+    companion object {
+        private const val PREFS_AUTH = "auth_prefs"
+        private const val KEY_USER_ID = "user_id"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
@@ -68,6 +73,15 @@ class LoginActivity : AppCompatActivity() {
 
                 is Resource.Success -> {
 
+                    val loginResponse = result.data
+
+                    if (loginResponse != null) {
+                        //  Lưu userId vào SharedPreferences
+                        val prefs = getSharedPreferences(PREFS_AUTH, MODE_PRIVATE)
+                        prefs.edit()
+                            .putString(KEY_USER_ID, loginResponse.userId)
+                            .apply()
+                    }
                     Toast.makeText(
                         this,
                         "Đăng nhập thành công!",

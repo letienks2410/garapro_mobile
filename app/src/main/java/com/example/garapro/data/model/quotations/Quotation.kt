@@ -90,11 +90,5 @@ data class QuotationResponse(
     val totalPages: Int
 )
 
-data class CustomerResponseRequest(
-    val quotationId: String,
-    val status: QuotationStatus,
-    val customerNote: String?,
-    val selectedServices: List<SelectedService>,
-    val selectedServiceParts: List<SelectedServicePart>
-)
+
 

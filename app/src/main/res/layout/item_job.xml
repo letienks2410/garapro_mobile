@@ -46,8 +46,7 @@
                     android:layout_marginTop="4dp"
                     android:text="Level 1"
                     android:textColor="#666666"
-                    android:textSize="12sp"
-                    android:textStyle="normal" />
+                    android:textSize="12sp" />
 
             </LinearLayout>
 
@@ -82,6 +81,8 @@
 
             </LinearLayout>
 
+
+
         </LinearLayout>
 
         <!-- Deadline & Basic Info -->
@@ -105,10 +106,157 @@
                 android:layout_height="wrap_content"
                 android:text="Oct 29, 2025 15:42"
                 android:textColor="#666666"
-                android:textSize="13sp"
-                android:textStyle="normal" />
+                android:textSize="13sp" />
 
         </LinearLayout>
+
+        <!-- TIMELINE -->
+        <LinearLayout
+            android:id="@+id/timelineContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="0dp"
+            android:visibility="visible">
+
+            <!-- Node 1: Reported -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <ImageView
+                    android:id="@+id/node1Icon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/timeline_node_active"/>
+
+                <TextView
+                    android:id="@+id/tvReportedLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Start"
+                    android:textAllCaps="true"
+                    android:textSize="10sp"
+                    android:textColor="#666666"/>
+
+
+            </LinearLayout>
+
+            <!-- line between 1-2 -->
+            <View
+                android:id="@+id/line12"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
+                android:background="@drawable/timeline_line_active"/>
+
+            <!-- Node 2: Work -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <ImageView
+                    android:id="@+id/node2Icon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/timeline_node_active"/>
+
+                <TextView
+                    android:id="@+id/tvNode2Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="REPAIRING"
+                    android:textAllCaps="true"
+                    android:textSize="10sp"
+                    android:textColor="#666666"/>
+            </LinearLayout>
+
+            <!-- line between 2-3 -->
+            <FrameLayout
+                android:id="@+id/line23"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="8dp"
+                android:background="@drawable/timeline_line_inactive">
+
+                <View
+                    android:id="@+id/line23Fill"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/timeline_line_active" />
+            </FrameLayout>
+
+            <!-- Node 3: Est. Restore -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <ImageView
+                    android:id="@+id/node3Icon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/timeline_node_inactive"/>
+
+                <TextView
+                    android:id="@+id/tvRestoreLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="FINISH"
+                    android:textAllCaps="true"
+                    android:textSize="10sp"
+                    android:textColor="#666666"/>
+
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- TIMELINE -->
+        <LinearLayout
+            android:id="@+id/timelineDesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="visible">
+
+            <!-- Reported time - bên trái -->
+            <TextView
+                android:id="@+id/tvReportedTime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="start"
+                android:text=""
+                android:textSize="12sp"
+                android:textColor="#000000" />
+
+            <!-- Estimated Restore - bên phải -->
+            <TextView
+                android:id="@+id/tvRestoreTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:text=""
+                android:textSize="12sp"
+                android:textColor="#000000" />
+
+        </LinearLayout>
+
 
         <!-- Service Description -->
         <TextView
@@ -127,7 +275,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:visibility="gone"
+            android:visibility="visible"
             app:cardBackgroundColor="#ffffff"
             app:cardCornerRadius="8dp"
             app:strokeColor="#ffffff"
@@ -137,201 +285,283 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="0dp">
+                android:padding="16dp">
 
-
-
-
-
-                <!-- Estimated Time -->
+                <!-- Estimated Time (giữ nguyên ID, chuẩn hóa nhãn/giá trị) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_timer"
+                        app:tint="#666666" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Estimated"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.04"
+                        android:textColor="#666666"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="12dp">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Estimated:"
+                        android:text="Duration"
                         android:textColor="#666666"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:textSize="12sp" />
 
                     <TextView
                         android:id="@+id/estimatedTime"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="2"
                         android:text="1 hour 30 minutes"
                         android:textColor="#000000"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
-
                 </LinearLayout>
 
-                <!-- Repair Times -->
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#F0F0F0" />
+
+                <!-- ===================== REPAIRS (đã làm gọn & chuyên nghiệp) ===================== -->
+                <LinearLayout
+                    android:id="@+id/repairTimeLogsLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="visible">
+
+                    <!-- Section Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_build"
+                            app:tint="#000000" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Repair Time"
+                            android:textColor="#000000"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Content Card -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="10dp"
+                        android:background="#FAFAFA"
+                        android:padding="12dp"
+                        android:clipToPadding="false">
+
+
+
+                        <!-- Start Time (giữ nguyên ID) -->
+                        <LinearLayout
+                            android:id="@+id/startTimeLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingVertical="6dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Start"
+                                android:textColor="#666666"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvStartTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Not started"
+                                android:textColor="#000000"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <!-- Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE" />
+
+                        <!-- End Time (giữ nguyên ID) -->
+                        <LinearLayout
+                            android:id="@+id/endTimeLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingVertical="6dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="End"
+                                android:textColor="#666666"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvEndTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Not completed"
+                                android:textColor="#000000"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <!-- Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE" />
+
+                        <!-- Actual Time (giữ nguyên ID) -->
+                        <LinearLayout
+                            android:id="@+id/actualTimeLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingVertical="6dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Duration"
+                                android:textColor="#666666"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvActualTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="N/A"
+                                android:textColor="#000000"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE" />
+
+                        <!-- Description (giữ nguyên ID) -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="2dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Description"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:layout_marginBottom="4dp" />
+
+                            <TextView
+                                android:id="@+id/repairDescription"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Tire rotation service including wheel balancing and pressure adjustment"
+                                android:textColor="#000000"
+                                android:textSize="13sp"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+                </LinearLayout>
+                <!-- ===================== /REPAIRS ===================== -->
+
+                <!-- Additional Notes (giữ nguyên ID) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginBottom="8dp"
-                    android:visibility="gone"
-                    android:id="@+id/repairTimeLogsLayout">
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp">
 
                     <TextView
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Repair Time"
-                        android:textColor="#000000"
-                        android:textSize="13sp"
+                        android:text="Notes"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.04"
+                        android:textColor="#666666"
+                        android:textSize="11sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_marginBottom="6dp" />
 
-                    <!-- Start Time -->
                     <LinearLayout
-                        android:id="@+id/startTimeLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="6dp"
-                        android:visibility="gone">
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Start Time:"
+                            android:text="Notes:"
                             android:textColor="#666666"
                             android:textSize="12sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:visibility="gone" />
 
                         <TextView
-                            android:id="@+id/tvStartTime"
-                            android:layout_width="0dp"
+                            android:id="@+id/repairNotes"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="2"
-                            android:text="Not started"
-                            android:textColor="#000000"
-                            android:textSize="12sp" />
-
-                    </LinearLayout>
-
-                    <!-- End Time -->
-                    <LinearLayout
-                        android:id="@+id/endTimeLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="6dp"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="End Time:"
+                            android:text="Scheduled service. Includes tire pressure adjustment and visual inspection for uneven wear."
                             android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvEndTime"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="2"
-                            android:text="Not completed"
-                            android:textColor="#000000"
-                            android:textSize="12sp" />
-
-                    </LinearLayout>
-
-                    <!-- Actual Time -->
-                    <LinearLayout
-                        android:id="@+id/actualTimeLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Duration:"
-                            android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvActualTime"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="2"
-                            android:text="N/A"
-                            android:textColor="#000000"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                    </LinearLayout>
-
-                    <!-- Description -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Description:"
-                            android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/repairDescription"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="2"
-                            android:text="Tire rotation service including wheel balancing and pressure adjustment"
-                            android:textColor="#000000"
                             android:textSize="12sp"
                             android:lineSpacingExtra="2dp" />
-
                     </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- Additional Notes -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Notes:"
-                        android:textColor="#666666"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/repairNotes"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="2"
-                        android:text="Scheduled service. Includes tire pressure adjustment and visual inspection for uneven wear."
-                        android:textColor="#666666"
-                        android:textSize="12sp"
-                        android:lineSpacingExtra="2dp" />
-
                 </LinearLayout>
 
             </LinearLayout>

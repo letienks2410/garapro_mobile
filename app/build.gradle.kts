@@ -5,6 +5,7 @@ plugins {
     id("kotlin-parcelize")
 
 
+
 }
 
 android {
@@ -50,6 +51,8 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics:21.3.0")
     implementation("com.jakewharton.timber:timber:5.0.1")
     implementation("androidx.datastore:datastore-preferences:1.1.0")
+
+    implementation("com.microsoft.signalr:signalr:8.0.0")
     // AndroidX + Core libraries
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

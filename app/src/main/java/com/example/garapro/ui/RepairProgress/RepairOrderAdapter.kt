@@ -94,17 +94,38 @@ class RepairOrderAdapter(
                 statusText.setBackgroundColor(statusColor)
                 showPaymentButton(item)
                 showFeedbackButton(item)
+                updateViews(item)
                 // Setup labels
                 setupLabels(item.labels)
             }
         }
 
-        private fun showPaymentButton(item: RepairOrderListItem) {
-            val shouldShowPaymentButton = item.statusName == "Completed" && item.paidStatus == "Unpaid"
-            binding.paymentButton.visibility = if (shouldShowPaymentButton) {
-                View.VISIBLE
-            } else {
-                View.GONE
+        private fun updateViews(item: RepairOrderListItem) {
+            with(binding) {
+
+                // Nếu Completed → luôn hiện thông báo lấy xe
+                if (item.statusName == "Completed") {
+                    pickupMessage.visibility = View.VISIBLE
+
+
+                    // Nếu Completed + Unpaid → hiện nút thanh toán
+                    if (item.paidStatus == "Unpaid") {
+                        paymentButton.visibility = View.VISIBLE
+                        pickupMessage.text =
+                            "Your vehicle is ready for pickup. You can do payment online or cash when you show up at the garage."
+                    }
+                    // Nếu Completed + Paid → ẩn nút thanh toán
+                    else {
+                        paymentButton.visibility = View.GONE
+                        pickupMessage.text =
+                            "Your vehicle is ready for pickup. Thank for your payment."
+                    }
+
+                } else {
+                    // Các trạng thái khác → ẩn hết
+                    pickupMessage.visibility = View.GONE
+                    paymentButton.visibility = View.GONE
+                }
             }
         }
 

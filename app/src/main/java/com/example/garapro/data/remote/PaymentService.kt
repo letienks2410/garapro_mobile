@@ -3,6 +3,7 @@ package com.example.garapro.data.remote
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatusDto
+import com.example.garapro.data.model.payments.RepairOrderPaymentDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -16,4 +17,8 @@ interface PaymentService {
     @GET("Payments/status/{orderCode}")
     suspend fun getStatus(@Path("orderCode") orderCode: Long): PaymentStatusDto
 
+    @GET("Payments/{repairOrderId}/payment")
+    suspend fun getPaymentBill(
+        @Path("repairOrderId") repairOrderId: String
+    ): RepairOrderPaymentDto
 }

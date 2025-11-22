@@ -1,5 +1,6 @@
 package com.example.garapro.ui.quotations
 
+import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,7 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
 import com.example.garapro.data.model.quotations.PartCategory
 import com.example.garapro.data.model.quotations.QuotationServiceDetail
+import com.example.garapro.data.model.quotations.ServicePromotionUiState
 import com.example.garapro.databinding.ItemQuotationServiceBinding
+import com.example.garapro.utils.MoneyUtils
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -16,11 +19,16 @@ class QuotationServiceAdapter(
     private var services: List<QuotationServiceDetail>,
     private var onCheckChanged: (String, Boolean) -> Unit,
     private var onPartToggle: (String, String, String) -> Unit,
+    private var onPromotionClick: (QuotationServiceDetail) -> Unit,
     private var isEditable: Boolean = true
 ) : RecyclerView.Adapter<QuotationServiceAdapter.ViewHolder>() {
 
     private val expandedStates = mutableMapOf<String, Boolean>()
     private var currentlyExpandedServiceId: String? = null
+
+    // serviceId -> promotion state when user picks from bottom sheet
+    private var promotions: Map<String, ServicePromotionUiState> = emptyMap()
+
     fun updateEditable(editable: Boolean) {
         this.isEditable = editable
         notifyDataSetChanged()
@@ -36,8 +44,17 @@ class QuotationServiceAdapter(
         notifyDataSetChanged()
     }
 
+    fun updatePromotions(newPromotions: Map<String, ServicePromotionUiState>) {
+        promotions = newPromotions
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(
-        ItemQuotationServiceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        ItemQuotationServiceBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
     )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -51,22 +68,19 @@ class QuotationServiceAdapter(
 
         fun bind(service: QuotationServiceDetail) {
             binding.tvServiceName.text = service.serviceName
-            binding.tvServiceDescription.text = service.serviceDescription
-            binding.tvServicePrice.text = formatCurrency(service.totalPrice)
+            binding.tvServiceDescription.text = service.serviceDescription ?: ""
 
-            // Hiển thị chip "Bắt buộc"
+            // Required chip
             binding.tvRequired.visibility = if (service.isRequired) View.VISIBLE else View.GONE
 
-            // Vô hiệu hóa checkbox khi không được chỉnh sửa HOẶC service là required
+            // Checkbox logic
             val canToggleService = if (service.isRequired) {
-                // Service required: chỉ cho phép toggle nếu chưa được chọn
                 isEditable && !service.isSelected
             } else {
-                // Service không required: cho phép toggle bình thường
-                isEditable && !service.isRequired
+                isEditable
             }
-            binding.cbService.isEnabled = canToggleService
 
+            binding.cbService.isEnabled = canToggleService
             binding.cbService.setOnCheckedChangeListener(null)
             binding.cbService.isChecked = service.isSelected
 
@@ -75,45 +89,167 @@ class QuotationServiceAdapter(
                     onCheckChanged(service.quotationServiceId, isChecked)
                 }
             }
-            if (!service.isSelected) {
-                // Reset expanded state
-                expandedStates.remove(service.quotationServiceId)
 
-                // Ẩn tất cả
+            // ====== Prices: base, with parts, after promotion ======
+            bindPrices(service)
+
+            // ====== Promotion button & text ======
+            bindPromotionViews(service)
+
+            // ====== Parts expand/collapse ======
+            if (!service.isSelected) {
+                expandedStates.remove(service.quotationServiceId)
                 binding.rvPartCategories.visibility = View.GONE
                 binding.btnToggleParts.visibility = View.GONE
                 binding.selectedPartsSummary.visibility = View.GONE
             } else {
-                // Service được chọn -> hiện toggle button
                 binding.btnToggleParts.visibility = View.VISIBLE
-
                 val isExpanded = expandedStates[service.quotationServiceId] ?: false
                 setupPartCategoriesVisibility(service, isExpanded)
             }
-
-            // Xử lý ẩn/hiện part categories
-//            val isExpanded = expandedStates[service.quotationServiceId] ?: false
-//            setupPartCategoriesVisibility(service, isExpanded)
 
             binding.btnToggleParts.setOnClickListener {
                 togglePartCategories(service)
             }
         }
 
-        private fun setupPartCategoriesVisibility(service: QuotationServiceDetail, isExpanded: Boolean) {
+        private fun bindPrices(service: QuotationServiceDetail) {
+            val partsTotal = service.partCategories
+                .flatMap { it.parts }
+                .filter { it.isSelected }
+                .sumOf { it.price * it.quantity }
+
+            val basePrice = service.price              // base service price
+            val priceWithParts = basePrice + partsTotal      // service + parts
+
+            // 1) Always show base service price
+            binding.tvServicePriceBase.visibility = View.VISIBLE
+            binding.tvServicePriceBase.text =
+                "Service: ${formatCurrency(basePrice)}"
+
+            // 2) Service + selected parts
+            if (partsTotal > 0.0) {
+                binding.tvServicePriceWithParts.visibility = View.VISIBLE
+                binding.tvServicePriceWithParts.text =
+                    "Parts:+${formatCurrency(partsTotal)}"
+            } else {
+                binding.tvServicePriceWithParts.visibility = View.GONE
+            }
+
+            // 3) After promotion
+            val promoState = promotions[service.serviceId]
+            val hasServerPromotion =
+                !service.appliedPromotionId.isNullOrBlank() &&
+                        service.appliedPromotion != null &&
+                        (service.finalPrice ?: 0.0) > 0.0
+
+            if (isEditable) {
+                // Editable (Sent) – use client-side promotion state
+                if (promoState != null &&
+                    promoState.selectedPromotion != null &&
+                    promoState.finalPrice < priceWithParts
+                ) {
+                    binding.tvDiscountPromotion.visibility = View.VISIBLE
+                    binding.tvDiscountPromotion.text = "Discount:-${formatCurrency(promoState.selectedPromotion.calculatedDiscount)}"
+                    binding.tvServicePriceAfterPromotion.visibility = View.VISIBLE
+                    binding.tvServicePriceAfterPromotion.text =
+                        "${formatCurrency(promoState.finalPrice)}"
+                    binding.materialDivider.visibility =View.VISIBLE
+
+                } else {
+                    binding.tvServicePriceAfterPromotion.visibility = View.GONE
+                    binding.materialDivider.visibility =View.GONE
+                }
+            } else {
+                // View-only (Approved/Rejected/Expired/Pending) – use server data
+                if (hasServerPromotion) {
+                    val finalServicePrice = service.finalPrice ?: basePrice
+                    val finalTotal = finalServicePrice + partsTotal
+
+                    binding.tvDiscountPromotion.visibility = View.VISIBLE
+                    binding.tvDiscountPromotion.text =
+                        "Discount:-${formatCurrency(service.discountValue ?: 0.0)}"
+                    binding.tvServicePriceAfterPromotion.visibility = View.VISIBLE
+                    binding.tvServicePriceAfterPromotion.text =
+                        " ${formatCurrency(finalTotal)}"
+
+                    binding.materialDivider.visibility =View.VISIBLE
+
+                } else {
+                    binding.tvServicePriceAfterPromotion.visibility = View.GONE
+                    binding.materialDivider.visibility =View.GONE
+                }
+            }
+        }
+
+        private fun bindPromotionViews(service: QuotationServiceDetail) {
+            val promoState = promotions[service.serviceId]
+            val serverPromotion = service.appliedPromotion
+            val hasServerPromotion =
+                !service.appliedPromotionId.isNullOrBlank() && serverPromotion != null
+
+            if (isEditable && service.isSelected) {
+                // Editable mode: user can open bottom sheet
+                binding.btnPromotion.isEnabled = true
+                binding.btnPromotion.alpha = 1f
+                binding.btnPromotion.setOnClickListener { onPromotionClick(service) }
+
+                // Button text
+                binding.btnPromotion.text = if (promoState?.selectedPromotion != null) {
+                    "Change promotion(${promoState.selectedPromotion.name}(-${MoneyUtils.formatVietnameseCurrency(promoState.selectedPromotion.calculatedDiscount)}))"
+                } else {
+                    "Choose promotion"
+                }
+
+                // Small label under prices
+                if (promoState?.selectedPromotion != null) {
+                    binding.tvPromotionName.visibility = View.VISIBLE
+                    binding.tvPromotionName.text =
+                        "Promotion: ${promoState.selectedPromotion.name}"
+                } else {
+                    binding.tvPromotionName.visibility = View.GONE
+                }
+
+            } else {
+                // View-only mode: show applied promotion from server, do not open bottom sheet
+                binding.btnPromotion.isEnabled = false
+                binding.btnPromotion.alpha = 0.7f
+                binding.btnPromotion.setOnClickListener(null)
+
+                if (hasServerPromotion) {
+                    val discountDisplay = service.discountValue ?: 0.0
+                    val promoName = serverPromotion?.name ?: "Promotion"
+
+                    // Example: "Grand Opening Discount (-100.000 ₫)"
+                    binding.btnPromotion.text =
+                        "$promoName (-${formatCurrency(discountDisplay)})"
+
+                    binding.tvPromotionName.visibility = View.VISIBLE
+                    binding.tvPromotionName.text =
+                        "Promotion: ${serverPromotion?.name}"
+                } else {
+                    // No promotion
+                    binding.btnPromotion.text = "Promotion: (Nothing)"
+                    binding.tvPromotionName.visibility = View.GONE
+                }
+            }
+        }
+
+        private fun setupPartCategoriesVisibility(
+            service: QuotationServiceDetail,
+            isExpanded: Boolean
+        ) {
             if (isExpanded) {
-                // Hiển thị danh sách part categories
                 binding.rvPartCategories.visibility = View.VISIBLE
                 binding.selectedPartsSummary.visibility = View.GONE
-                binding.btnToggleParts.text = "Hide"
+                binding.btnToggleParts.text = "Hide parts"
                 binding.btnToggleParts.setIconResource(R.drawable.ic_arrow_drop_up_24dp)
 
                 setupPartCategories(service.partCategories, service)
             } else {
-                // Ẩn danh sách, hiển thị summary
                 binding.rvPartCategories.visibility = View.GONE
                 binding.selectedPartsSummary.visibility = View.VISIBLE
-                binding.btnToggleParts.text = "Show"
+                binding.btnToggleParts.text = "Show parts"
                 binding.btnToggleParts.setIconResource(R.drawable.ic_arrow_drop_down_24dp)
 
                 setupSelectedPartsSummary(service)
@@ -126,7 +262,9 @@ class QuotationServiceAdapter(
 
             if (!currentState && currentlyExpandedServiceId != null) {
                 expandedStates[currentlyExpandedServiceId!!] = false
-                notifyItemChanged(services.indexOfFirst { it.quotationServiceId == currentlyExpandedServiceId })
+                notifyItemChanged(
+                    services.indexOfFirst { it.quotationServiceId == currentlyExpandedServiceId }
+                )
             }
 
             expandedStates[serviceId] = !currentState
@@ -136,28 +274,38 @@ class QuotationServiceAdapter(
         }
 
         private fun setupSelectedPartsSummary(service: QuotationServiceDetail) {
-            val selectedParts = service.partCategories.flatMap { category ->
-                category.parts.filter { it.isSelected }
-            }
+            val selectedParts = service.partCategories
+                .flatMap { it.parts }
+                .filter { it.isSelected }
 
             if (selectedParts.isNotEmpty()) {
-                val partsText = selectedParts.joinToString(", ") { it.partName }
-                binding.tvSelectedParts.text = partsText
                 binding.selectedPartsSummary.visibility = View.VISIBLE
+                binding.tvSelectedParts.text =
+                    selectedParts.joinToString(", ") { it.partName }
             } else {
                 binding.selectedPartsSummary.visibility = View.GONE
             }
         }
 
-        private fun setupPartCategories(partCategories: List<PartCategory>, service: QuotationServiceDetail) {
+        private fun setupPartCategories(
+            partCategories: List<PartCategory>,
+            service: QuotationServiceDetail
+        ) {
             if (partCategories.isNotEmpty()) {
-                val adapter = PartCategoryAdapter(partCategories, service, onPartToggle, isEditable)
+                val adapter = PartCategoryAdapter(
+                    partCategories,
+                    service,
+                    onPartToggle,
+                    isEditable
+                )
                 binding.rvPartCategories.adapter = adapter
-                binding.rvPartCategories.layoutManager = LinearLayoutManager(binding.root.context)
+                binding.rvPartCategories.layoutManager =
+                    LinearLayoutManager(binding.root.context)
             }
         }
 
-        private fun formatCurrency(amount: Double) =
+        private fun formatCurrency(amount: Double): String =
             NumberFormat.getCurrencyInstance(Locale("vi", "VN")).format(amount)
     }
 }
+

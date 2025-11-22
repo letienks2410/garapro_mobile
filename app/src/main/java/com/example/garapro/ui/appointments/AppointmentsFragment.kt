@@ -9,9 +9,11 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
@@ -299,15 +301,17 @@ class AppointmentsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
             try {
-                val detail = repository.getRepairRequestDetail(repairRequest.repairRequestID)
-                Log.d("Detail",detail.toString())
-                if (detail != null) {
-                    RepairRequestDetailBottomSheet.newInstance(detail)
-                        .show(parentFragmentManager, "RepairRequestDetail")
-                } else {
-                    Toast.makeText(requireContext(), "Failed to load details", Toast.LENGTH_SHORT).show()
-                }
+                // Không cần gọi API detail ở đây nữa, để Fragment detail tự load
+                val bundle = bundleOf(
+                    "repairRequestId" to repairRequest.repairRequestID
+                )
+
+                findNavController().navigate(
+                    R.id.action_global_appointmentDetailFragment,
+                    bundle
+                )
             } catch (e: Exception) {
+                Log.d("repairRequest",e.message ?:"")
                 Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 binding.progressBar.visibility = View.GONE

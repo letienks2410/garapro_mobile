@@ -88,6 +88,7 @@ class RepairRequestAdapter(
                 1 -> "ACCEPTED"
                 2 -> "ARRIVED"
                 3 -> "CANCELLED"
+                4 -> "COMPLETED"
                 else -> "UNKNOWN"
             }
 
@@ -99,6 +100,7 @@ class RepairRequestAdapter(
                 1 -> R.drawable.bg_status_accept
                 2 -> R.drawable.bg_status_arrived
                 3 -> R.drawable.bg_status_cancelled
+                4 -> R.drawable.bg_status_arrived
                 else -> R.drawable.bg_status_pending
             }
         }
