@@ -23,9 +23,7 @@ import com.example.garapro.data.repository.RepairProgress.RepairProgressReposito
 import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
 import com.example.garapro.ui.feedback.RatingActivity
 import com.google.android.material.chip.Chip
-import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
-import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
-import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
+
 import com.example.garapro.hubs.JobSignalRService
 import com.example.garapro.hubs.RepairOrderEvent
 import com.example.garapro.hubs.RepairOrderSignalRService
@@ -231,6 +229,7 @@ class RepairProgressDetailFragment : Fragment() {
                 }
             }
         }
+    }
     }
     private fun navigateToPaymentBill(repairOrderId: String) {
         val intent = Intent(requireContext(), PaymentBillActivity::class.java)

@@ -92,7 +92,7 @@ class RepairOrderAdapter(
                 // Set status color
                 val statusColor = getStatusColor(item.statusName)
                 statusText.setBackgroundColor(statusColor)
-                showPaymentButton(item)
+                //showPaymentButton(item)
                 showFeedbackButton(item)
                 updateViews(item)
                 // Setup labels

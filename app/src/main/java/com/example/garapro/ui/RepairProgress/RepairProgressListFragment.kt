@@ -86,7 +86,7 @@ class RepairProgressListFragment : Fragment() {
                 }
                 ratingLauncher.launch(intent)
 //                showPaymentDialog(repairOrder)
-                navigateToPaymentBill(repairOrder.repairOrderId)
+                navigateToPaymentBill(item.repairOrderId)
             }
         )
 

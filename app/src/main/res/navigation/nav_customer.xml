@@ -44,10 +44,7 @@
                 app:argType="string" />
         </fragment>
 
-    <fragment
-        android:id="@+id/chat"
-        android:name="com.example.garapro.ui.chat.ChatFragment"
-        android:label="Cứu hộ khẩn cấp" />
+
         <!-- Quotations -->
         <fragment
             android:id="@+id/quotationsFragment"
@@ -130,7 +127,11 @@
 
         </fragment>
     </navigation>
-
+    <fragment
+        android:id="@+id/chat"
+        android:name="com.example.garapro.ui.chat.ChatFragment"
+        android:label="Chat" >
+    </fragment>
     <!-- Profile -->
     <fragment
         android:id="@+id/profileFragment"
