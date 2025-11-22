@@ -1,18 +1,22 @@
 package com.example.garapro.ui.RepairProgress.archived
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
 import com.example.garapro.data.model.RepairProgresses.ArchivedJob
+import com.example.garapro.data.model.RepairProgresses.Feedback
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedDetail
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairOrderArchivedDetailBinding
+import com.example.garapro.ui.feedback.RatingActivity
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -21,6 +25,8 @@ class RepairOrderArchivedDetailFragment : Fragment() {
 
     private var _binding: FragmentRepairOrderArchivedDetailBinding? = null
     private val binding get() = _binding!!
+    private var currentRepairOrderId: String? = null
+
 
     private lateinit var jobsAdapter: ArchivedJobAdapter
 
@@ -89,6 +95,7 @@ class RepairOrderArchivedDetailFragment : Fragment() {
     }
 
     private fun bindDetail(detail: RepairOrderArchivedDetail) = with(binding) {
+        currentRepairOrderId  = detail.repairOrderId
         tvLicensePlate.text = detail.licensePlate
         tvBranchName.text = detail.branchName
         tvModelName.text = detail.modelName
@@ -103,7 +110,38 @@ class RepairOrderArchivedDetailFragment : Fragment() {
         tvNote.text = detail.note ?: "-"
 
         jobsAdapter.submitList(detail.jobs)
+
+        if (detail.feedBacks != null) {
+            feedbackCard.visibility = View.VISIBLE
+            btnFeedback.visibility = View.GONE
+
+            ratingBarFeedback.rating = detail.feedBacks.rating.toFloat()
+            tvFeedbackRatingValue.text = detail.feedBacks.rating.toString()
+            tvFeedbackDescription.text = detail.feedBacks.description
+        } else {
+            // CHƯA CÓ FEEDBACK -> HIỆN NÚT ĐÁNH GIÁ
+            feedbackCard.visibility = View.GONE
+            btnFeedback.visibility = View.VISIBLE
+        }
+
+        btnFeedback.setOnClickListener {
+            val intent = Intent(requireContext(), RatingActivity::class.java)
+            intent.putExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID, detail.repairOrderId)
+            ratingActivityLauncher.launch(intent)
+        }
     }
+
+    private val ratingActivityLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RatingActivity.RESULT_FEEDBACK_POSTED) {
+
+                // Refresh lại detail hoặc load lại API
+                viewModel.loadDetail(currentRepairOrderId.orEmpty());
+
+                Toast.makeText(requireContext(), "Cảm ơn bạn đã đánh giá!", Toast.LENGTH_SHORT).show()
+            }
+        }
+
 
     private fun formatDateTime(value: String?): String {
         if (value.isNullOrEmpty()) return "-"
