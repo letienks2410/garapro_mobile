@@ -142,19 +142,6 @@
             app:backgroundTint="@color/green"
             style="@style/Widget.Material3.Button" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/ratingButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Đánh giá dịch vụ"
-            android:visibility="gone"
-            app:backgroundTint="@color/primary"
-            app:icon="@drawable/ic_send"
-            app:iconTint="@color/white"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp"
-            style="@style/Widget.Material3.Button" />
 
         <TextView
             android:id="@+id/pickupMessage"

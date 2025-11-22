@@ -28,6 +28,7 @@ import com.example.garapro.data.remote.TokenExpiredListener
 import com.example.garapro.data.repository.repairRequest.BookingRepository
 import com.example.garapro.databinding.ActivityBookingBinding
 import java.util.Calendar
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.fragment.app.FragmentContainerView
 class BookingActivity : AppCompatActivity(), TokenExpiredListener {
 
@@ -78,7 +79,18 @@ class BookingActivity : AppCompatActivity(), TokenExpiredListener {
 
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true) // luôn hiện nút back
+
+        // Xử lý khi bấm nút back trên toolbar
+        binding.toolbar.setNavigationOnClickListener {
+            if (::navController.isInitialized && navController.previousBackStackEntry != null) {
+                // Nếu còn fragment trước đó trong back stack -> navigateUp
+                navController.navigateUp()
+            } else {
+                // Nếu đang ở fragment đầu tiên -> thoát Activity (quay về màn trước đó)
+                finish()
+            }
+        }
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             supportActionBar?.title = when (destination.id) {
@@ -92,6 +104,7 @@ class BookingActivity : AppCompatActivity(), TokenExpiredListener {
             }
         }
     }
+
 
     private fun initializeRetrofitAndLoadDataWithDelay() {
         binding.navHostFragment.postDelayed({

@@ -258,16 +258,17 @@
                         android:background="@drawable/bg_payment_notice"
                         android:visibility="visible" />
 
+                    <!-- Note -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/paymentButton"
+                        style="@style/Widget.Material3.Button"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="Payment"
                         android:visibility="visible"
-                        app:backgroundTint="@color/green"
-                        style="@style/Widget.Material3.Button" />
-                    <!-- Note -->
+                        app:backgroundTint="@color/green" />
+
                     <TextView
                         android:id="@+id/note"
                         android:layout_width="match_parent"
@@ -281,83 +282,7 @@
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/feedbackCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF"
-                app:strokeColor="#E0E0E0"
-                app:strokeWidth="1dp"
-                android:visibility="gone">  <!-- ẩn mặc định, hiện khi có feedback hoặc có thể nhắc đánh giá -->
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:id="@+id/feedbackTitle"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Đánh giá dịch vụ"
-                            android:textColor="#000000"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <RatingBar
-                            android:id="@+id/ratingBarFeedback"
-                            style="?android:attr/ratingBarStyleSmall"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:numStars="5"
-                            android:stepSize="0.5"
-                            android:isIndicator="true"
-                            android:layout_marginStart="8dp" />
-
-                        <TextView
-                            android:id="@+id/tvFeedbackRatingValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="4.5"
-                            android:textColor="#000000"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvFeedbackDescription"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Khách hàng hài lòng với dịch vụ..."
-                        android:textColor="#666666"
-                        android:textSize="14sp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal"
-                        android:gravity="end">
-
-
-                    </LinearLayout>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
             <!-- Progress Section -->
             <!-- Progress Section (đã gộp Jobs vào chung) -->
             <com.google.android.material.card.MaterialCardView

@@ -333,6 +333,11 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                     true
                 }
 
+                R.id.chat -> {
+                    navController.navigate(R.id.chat, null, navOptions)
+                    true
+                }
+
                 R.id.profileFragment -> {
                     navController.navigate(R.id.profileFragment, null, navOptions)
                     true
@@ -371,6 +376,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                 R.id.repairArchivedDetailFragment -> {
                     bottomNavigation.menu.findItem(R.id.repairArchivedGraph)?.isChecked = true
                 }
+
 
                 //  PROFILE
                 R.id.profileFragment -> {

@@ -78,7 +78,7 @@ class RepairProgressListFragment : Fragment() {
                 navigateToDetail(repairOrder.repairOrderId)
             },
             onPaymentClick = { repairOrder ->
-                showPaymentDialog(repairOrder)
+                navigateToPaymentBill(repairOrder.repairOrderId)
             },
             onRatingClick = { item ->
                 val intent = Intent(requireContext(), RatingActivity::class.java).apply {
@@ -86,7 +86,7 @@ class RepairProgressListFragment : Fragment() {
                 }
                 ratingLauncher.launch(intent)
 //                showPaymentDialog(repairOrder)
-                navigateToPaymentBill(item.repairOrderId)
+
             }
         )
 
@@ -445,5 +445,10 @@ class RepairProgressListFragment : Fragment() {
 
         // Nếu sau này bạn thêm nhiều hub khác,
         // thì cleanup ở đây luôn cho tiện.
+    }
+    override fun onResume() {
+        super.onResume()
+
+        viewModel.loadRepairOrders()
     }
 }

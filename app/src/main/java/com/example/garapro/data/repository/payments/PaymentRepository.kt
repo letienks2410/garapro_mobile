@@ -1,5 +1,6 @@
 package com.example.garapro.data.repository
 
+import android.util.Log
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatus
@@ -46,8 +47,11 @@ class PaymentRepository(
                 Timber.d("Creating payment link for order: ${req.orderCode ?: "new"}")
                 val response = api.createLink(req)
                 Timber.d("Payment link created successfully: ${response.orderCode}")
+                Log.d("Payment link created successfully:", response.toString())
                 Result.success(response)
             } catch (e: Exception) {
+                Log.d("Payment link created successfully:", e.message.toString())
+
                 Timber.e(e, "Failed to create payment link")
                 Result.failure(e)
             }

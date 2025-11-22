@@ -68,12 +68,6 @@ class RepairOrderAdapter(
                 }
             }
 
-            binding.ratingButton.setOnClickListener {
-                val position = bindingAdapterPosition
-                if (position != RecyclerView.NO_POSITION) {
-                    onRatingClick(getItem(position))
-                }
-            }
         }
 
 
@@ -93,7 +87,7 @@ class RepairOrderAdapter(
                 val statusColor = getStatusColor(item.statusName)
                 statusText.setBackgroundColor(statusColor)
                 //showPaymentButton(item)
-                showFeedbackButton(item)
+
                 updateViews(item)
                 // Setup labels
                 setupLabels(item.labels)
@@ -129,14 +123,7 @@ class RepairOrderAdapter(
             }
         }
 
-        private fun showFeedbackButton(item: RepairOrderListItem) {
-            val showFeedbackButton = item.statusName == "Completed" && item.paidStatus == "Paid" && item.feedBacks == null;
-            binding.ratingButton.visibility = if (showFeedbackButton) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
-        }
+
         private fun setupLabels(labels: List<Label>) {
             // Commented out label setup
         }
