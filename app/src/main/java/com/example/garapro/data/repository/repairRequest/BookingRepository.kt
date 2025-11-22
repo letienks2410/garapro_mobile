@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
 import com.example.garapro.data.local.TokenManager
+import com.example.garapro.data.model.NetworkResult
 import com.example.garapro.data.model.repairRequest.ArrivalWindow
 import com.example.garapro.data.model.repairRequest.Branch
 import com.example.garapro.data.model.repairRequest.ChildCategoriesResponse
@@ -29,6 +30,8 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody
+import org.json.JSONObject
 import java.io.File
 
 class BookingRepository(
@@ -213,26 +216,41 @@ class BookingRepository(
         }
     }
 
-    suspend fun submitRepairRequest(request: CreateRepairRequest): Boolean {
+    suspend fun submitRepairRequest(request: CreateRepairRequest): NetworkResult<Unit> {
         return try {
-            // Chuyển tất cả thông tin (trừ ảnh) thành JSON
+            // 1. Chuẩn bị dữ liệu
             val dtoJson = Gson().toJson(request.copy(images = emptyList()))
             val dtoJsonBody = dtoJson.toRequestBody("text/plain".toMediaTypeOrNull())
-
-            // Ảnh đã được xử lý sẵn trong ViewModel (List<MultipartBody.Part>)
             val imageParts = request.images
 
+            // 2. Gửi API
             val response = RetrofitInstance.bookingService.submitRepairRequest(
                 dtoJson = dtoJsonBody,
                 images = imageParts
             )
 
-            response.isSuccessful
+            // 3. Xử lý phản hồi
+            if (response.isSuccessful) {
+                NetworkResult.Success(Unit) // chỉ cần biết là OK
+            } else {
+                val errorMessage = parseApiError(response.errorBody())
+                NetworkResult.Error(errorMessage, response.code())
+            }
         } catch (e: Exception) {
-            Log.e("BookingRepository", "Error submitting request: ${e.message}", e)
-            false
+            NetworkResult.Error(e.message ?: "Đã có lỗi xảy ra.")
         }
     }
+    private fun parseApiError(errorBody: ResponseBody?): String {
+        return try {
+            val json = errorBody?.string() ?: return "Lỗi không xác định."
+            val obj = JSONObject(json)
+            obj.optString("message", "Lỗi không xác định.")
+        } catch (e: Exception) {
+            "Lỗi không xác định."
+        }
+    }
+
+
 
 
 

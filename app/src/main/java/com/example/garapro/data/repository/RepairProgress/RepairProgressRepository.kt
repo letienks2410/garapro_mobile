@@ -5,10 +5,14 @@ import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.model.RepairProgresses.PagedResult
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedDetail
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatusDto
 import com.example.garapro.data.remote.RepairProgressApiService
+import com.example.garapro.data.remote.getArchivedRepairOrders
 import com.example.garapro.data.remote.getMyRepairOrders
 
 class RepairProgressRepository(private val apiService: RepairProgressApiService) {
@@ -49,6 +53,27 @@ class RepairProgressRepository(private val apiService: RepairProgressApiService)
         }
     }
 
+    suspend fun getArchivedRepairOrders(
+        filter: RepairOrderArchivedFilter
+    ): ApiResponse<PagedResult<RepairOrderArchivedListItem>> {
+        return try {
+            val response = apiService.getArchivedRepairOrders(filter)
+            ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    suspend fun getArchivedRepairOrderDetail(
+        repairOrderId: String
+    ): ApiResponse<RepairOrderArchivedDetail> {
+        return try {
+            val response = apiService.getArchivedRepairOrderDetail(repairOrderId)
+            ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
 
 
     suspend fun getOrderStatuses(): ApiResponse<List<OrderStatus>> {

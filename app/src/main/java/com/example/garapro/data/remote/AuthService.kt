@@ -8,5 +8,5 @@ import retrofit2.http.PUT
 interface AuthService {
 
     @PUT("users/device")
-    suspend fun updateDeviceId(@Body request: UpdateDeviceIdRequest): Response<String>
+    suspend fun updateDeviceId(@Body request: UpdateDeviceIdRequest): Response<Unit>
 }

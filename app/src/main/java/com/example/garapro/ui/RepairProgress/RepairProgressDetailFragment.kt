@@ -1,8 +1,8 @@
 package com.example.garapro.ui.RepairProgress
 
-import android.content.res.ColorStateList
-import android.graphics.Color
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,15 +11,17 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
-import com.example.garapro.data.model.RepairProgresses.Label
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
-import com.google.android.material.chip.Chip
+import com.example.garapro.hubs.JobSignalRService
+import com.example.garapro.hubs.RepairOrderEvent
+import com.example.garapro.hubs.RepairOrderSignalRService
+import com.example.garapro.ui.payments.PaymentBillActivity
+import com.example.garapro.utils.Constants
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -34,6 +36,12 @@ class RepairProgressDetailFragment : Fragment() {
     private lateinit var jobAdapter: JobAdapter
 
     private var repairOrderId: String? = null
+
+    // ✅ SignalR service chỉ dùng cho màn này
+    private var signalRService: RepairOrderSignalRService? = null
+
+    private var repairHubService: RepairOrderSignalRService? = null
+    private var jobHubService: JobSignalRService? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -52,6 +60,12 @@ class RepairProgressDetailFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
         loadRepairOrderDetail()
+
+        initRepairHub()
+        observeRepairHubEvents()
+
+        initJobHub()
+        observeJobHubEvents()
     }
 
     private fun getRepairOrderIdFromArguments() {
@@ -59,6 +73,50 @@ class RepairProgressDetailFragment : Fragment() {
         if (repairOrderId.isNullOrEmpty()) {
             showError("Repair order ID not found")
             findNavController().navigateUp()
+        }
+    }
+
+    private fun initRepairHub() {
+        // ⚠️ ĐÂY PHẢI LÀ URL ĐÚNG CỦA HUB: vd: https://your-api.com/repairHub
+        val hubUrl =Constants.BASE_URL_SIGNALR +"/hubs/repair"
+
+        signalRService = RepairOrderSignalRService(hubUrl).apply {
+            setupListeners()
+        }
+
+        repairOrderId?.let { id ->
+            signalRService?.connectAndJoin(id)
+        }
+    }
+
+    private fun observeRepairHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            signalRService?.events?.collect { roId ->
+                Log.d("SignalR", "Received event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
+        }
+    }
+    private fun initJobHub() {
+        val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
+        jobHubService = JobSignalRService(jobHubUrl).apply {
+            setupListeners()
+        }
+        repairOrderId?.let { id ->
+            jobHubService?.connectAndJoinRepairOrder(id)
+        }
+    }
+
+    private fun observeJobHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "JobHub event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
         }
     }
 
@@ -107,67 +165,88 @@ class RepairProgressDetailFragment : Fragment() {
     private fun bindRepairOrderDetail(detail: RepairProgressDetail) {
         binding.apply {
             // Vehicle Info
-            vehicleInfo.text = "${detail.vehicle.licensePlate} • ${detail.vehicle.model} • ${detail.vehicle.year}"
+            vehicleInfo.text =
+                "${detail.vehicle.licensePlate} • ${detail.vehicle.model} • ${detail.vehicle.year}"
             vehicleBrand.text = detail.vehicle.brand
 
             // Order Details
             receiveDate.text = formatDate(detail.receiveDate)
             estimatedCompletionDate.text = formatDate(detail.estimatedCompletionDate)
-            roType.text = getROTypeNameVietnamese(detail.roType)
-            paidStatus.text = getPaidStatusVietnamese(detail.paidStatus)
+            roType.text = getROTypeName(detail.roType)
+            paidStatus.text = getPaidStatusName(detail.paidStatus)
+            updatePaymentAction(detail)
             note.text = detail.note ?: "No note"
 
             // Financial Info
-            estimatedAmount.text = formatCurrency(detail.estimatedAmount)
-            paidAmount.text = formatCurrency(detail.paidAmount)
+
             cost.text = formatCurrency(detail.cost)
 
             // Progress Section
             progressStatus.text = detail.progressStatus
             progressPercentage.text = "${detail.progressPercentage}%"
             progressJobBar.progress = detail.progressPercentage
-            statusName.text = getStatusNameVietnamese(detail.orderStatus.statusName)
+            statusName.text = getStatusName(detail.orderStatus.statusName)
 
             // Set status color based on status
             setStatusColor(detail.orderStatus.statusName)
 
-            // Setup labels
-//            setupLabels(detail.orderStatus.labels)
-
             // Jobs
             jobAdapter.submitList(detail.jobs)
 
-            // Show/hide completion date if available
-            detail.completionDate?.let { completionDate ->
-                // You can add completion date to the layout if needed
+            binding.paymentButton.setOnClickListener {
+                repairOrderId?.let { id ->
+                    navigateToPaymentBill(id)
+                }
+            }
+        }
+    }
+    private fun navigateToPaymentBill(repairOrderId: String) {
+        val intent = Intent(requireContext(), PaymentBillActivity::class.java)
+        intent.putExtra(PaymentBillActivity.EXTRA_REPAIR_ORDER_ID, repairOrderId)
+        startActivity(intent)
+    }
+    private fun updatePaymentAction(detail: RepairProgressDetail) {
+        val status = detail.orderStatus.statusName
+        val paid = detail.paidStatus
+
+        binding.paymentAction.apply {
+            when {
+                // Nếu Completed và Unpaid → hiện nút thanh toán
+                status == "Completed" && paid == "Unpaid" -> {
+                    visibility = View.VISIBLE
+                    text = "Your vehicle is ready for pickup. You can do payment online or cash when you show up at the garage"
+                }
+                // Nếu Completed và đã Paid → hiện thông báo khác (không cho thanh toán)
+                status == "Completed" && paid == "Paid" -> {
+                    visibility = View.VISIBLE
+                    text = "Your vehicle is ready for pickup. Thank for your payment"
+                }
+                // Các trạng thái khác → ẩn
+                else -> {
+                    visibility = View.GONE
+                }
+            }
+        }
+        binding.paymentButton.apply {
+            when {
+                // Nếu Completed và Unpaid → hiện nút thanh toán
+                status == "Completed" && paid == "Unpaid" -> {
+                    visibility = View.VISIBLE
+                    text = "Payment"
+                }
+                // Nếu Completed và đã Paid → hiện thông báo khác (không cho thanh toán)
+                status == "Completed" && paid == "Paid" -> {
+                    visibility = View.GONE
+                    text = ""
+                }
+                // Các trạng thái khác → ẩn
+                else -> {
+                    visibility = View.GONE
+                }
             }
         }
     }
 
-    private fun setupLabels(labels: List<Label>) {
-//        binding.labelsContainer.removeAllViews()
-//        labels.forEach { label ->
-//            val chip = Chip(requireContext()).apply {
-//                text = label.labelName
-//                setTextColor(Color.parseColor(label.hexCode))
-//                chipStrokeColor = ColorStateList.valueOf(Color.parseColor(label.hexCode))
-//                chipStrokeWidth = 1f
-//                setChipBackgroundColorResource(android.R.color.transparent)
-//            }
-//            binding.labelsContainer.addView(chip)
-//        }
-    }
-
-    private fun getJobStatusNameVietnamese(statusName: String): String {
-        return when (statusName) {
-            "Pending" -> "Đang chờ"
-            "New" -> "Mới"
-            "InProgress" -> "Đang sửa"
-            "Completed" -> "Hoàn tất"
-            "OnHold" -> "Tạm dừng"
-            else -> "Không xác định"
-        }
-    }
     private fun setStatusColor(statusName: String) {
         val color = when (statusName) {
             "Completed" -> ContextCompat.getColor(requireContext(), R.color.green)
@@ -179,38 +258,38 @@ class RepairProgressDetailFragment : Fragment() {
         binding.statusName.setBackgroundColor(color)
     }
 
-    private fun getStatusNameVietnamese(statusName: String): String{
+    private fun getStatusName(statusName: String): String {
         return when (statusName) {
-            "Completed" -> "Hoàn tất"
-            "In Progress" -> "Đang sửa"
-            "Pending" -> "Đang xử lý"
-            else -> "Không xác định"
-        }
-    }
-    private fun getPaidStatusVietnamese(statusName: String): String{
-        return when (statusName) {
-            "Paid" -> "Đã thanh toán"
-            "Partial" -> "Trả 1 phần"
-            "Pending" -> "chưa thanh toán"
-            else -> "Không xác định"
+            "Completed" -> "Completed"
+            "In Progress" -> "In Progress"
+            "Pending" -> "Pending"
+            else -> "Unknown"
         }
     }
 
-    private fun getROTypeNameVietnamese(statusName: String): String{
+    private fun getPaidStatusName(statusName: String): String {
         return when (statusName) {
-            "WalkIn" -> "vãng lai"
-            "Scheduled" -> "Đặt lịch"
-            "Breakdown" -> "Sự cố"
-            else -> "Không xác định"
+            "Paid" -> "Paid"
+            "Unpaid" -> "Pending Payment"
+            else -> "Unknown"
         }
     }
 
+    private fun getROTypeName(statusName: String): String {
+        return when (statusName) {
+            "WalkIn" -> "Walk-in"
+            "Scheduled" -> "Scheduled"
+            "Breakdown" -> "Breakdown"
+            else -> "Unknown"
+        }
+    }
 
     private fun formatDate(dateString: String?): String {
         if (dateString == null) return "N/A"
         return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val inputFormat =
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault())
             val date = inputFormat.parse(dateString)
             outputFormat.format(date!!)
         } catch (e: Exception) {
@@ -236,8 +315,16 @@ class RepairProgressDetailFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        signalRService?.leaveGroupAndStop()
+        signalRService = null
+
+        jobHubService?.leaveRepairOrderGroupAndStop();
+        jobHubService = null
+
         _binding = null
     }
+
 
     companion object {
         private const val ARG_REPAIR_ORDER_ID = "repairOrderId"
