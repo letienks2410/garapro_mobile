@@ -160,7 +160,7 @@
     <!-- thêm 2 cái này -->
     <action
         android:id="@+id/action_global_repairTrackingFromRequest"
-        app:destination="@id/repairTrackingGraph" />
+        app:destination="@id/repairProgressDetailFragment" />
 
     <!--  mới: đi vào graph Lịch sử sửa chữa -->
     <action

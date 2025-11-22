@@ -17,6 +17,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
@@ -64,11 +65,18 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             if (token.isNullOrEmpty()) {
                 startActivity(Intent(this@MainActivity, LoginActivity::class.java))
                 finish()
+                return@launch
+            }
+
+            val role = tokenManager.getUserRole()
+            setupNavigationByRole(role)
+
+            val hasNotification = intent?.extras?.isEmpty == false
+            if (hasNotification) {
+                handleIntent(intent)    //  đừng navigate Home trước khi xử lý noti
             } else {
-                val role = tokenManager.getUserRole() // lấy role bạn lưu khi login
-                setupNavigationByRole(role)
-                // Xử lý intent sau khi setup navigation
-                handleIntent(intent)
+                // Chỉ vào Home nếu KHÔNG có notification
+                navController.navigate(R.id.homeFragment)
             }
         }
 
@@ -143,7 +151,12 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
             // Case 2: Repair progress được cập nhật
             screen == "RepairProgressDetailFragment" && ids.containsKey("repairOrderId") ->
+            {
+                Log.d("quo","Repair")
+
                 NavigationInfo(R.id.repairProgressDetailFragment, ids, "repair_updated")
+
+            }
 
             // Case 3: Payment thông báo
 //            notificationType == "payment_completed" && ids.containsKey("paymentId") ->
@@ -177,10 +190,6 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                 navController.graph = navController.navInflater.inflate(targetGraph)
             }
 
-            val parentMenuItemId = getParentMenuItemId(navigationInfo.destinationId)
-            val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-            bottomNavigation.selectedItemId = parentMenuItemId   // sẽ vào QuotationsFragment (giả sử parent là nó)
-
             val bundle = Bundle().apply {
                 navigationInfo.ids.forEach { (key, value) ->
                     putString(key, value)
@@ -189,13 +198,35 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                 putBoolean("fromNotification", true)
             }
 
-            // ❌ Bỏ navOptions có popUpTo startDestinationId
-            // val navOptions = NavOptions.Builder()
-            //    .setPopUpTo(navController.graph.startDestinationId, false)
-            //    .build()
+            when (navigationInfo.destinationId) {
+                // 🔹 Notification QUOTATION → tab Appointments + detail
+                R.id.quotationDetailFragment -> {
+                    try {
+                        // 1. Vào graph Appointments => BottomNav tự chọn tab Appointments
+                        navController.navigate(R.id.appointmentGraph)
+                    } catch (_: Exception) {
+                        // nếu đã ở trong appointmentGraph rồi thì ignore
+                    }
 
-            // ✅ Navigate bình thường
-            navController.navigate(navigationInfo.destinationId, bundle)
+                    // 2. Mở QuotationDetail
+                    navController.navigate(R.id.quotationDetailFragment, bundle)
+                }
+
+                // 🔹 Notification REPAIR → tab Repair + detail
+                R.id.repairProgressDetailFragment -> {
+                    try {
+                        // 1. Vào graph RepairTracking
+                        navController.navigate(R.id.repairTrackingGraph)
+                    } catch (_: Exception) { }
+
+                    // 2. Mở RepairProgressDetail
+                    navController.navigate(R.id.repairProgressDetailFragment, bundle)
+                }
+
+                else -> {
+                    navController.navigate(navigationInfo.destinationId, bundle)
+                }
+            }
 
         } catch (e: Exception) {
             Log.e("Navigation", "Failed to navigate: ${e.message}")
@@ -203,12 +234,26 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         }
     }
 
+
     private fun getParentMenuItemId(destinationId: Int): Int {
-        return when (destinationId) {
-            R.id.quotationDetailFragment, R.id.quotationsFragment -> R.id.appointmentNavFragment
-            R.id.repairProgressDetailFragment -> R.id.repairTrackingFragment
-            else -> destinationId // Nếu là fragment chính thì dùng chính nó
+        val graph = navController.graph
+
+        // Tìm destination trong graph (có thể là fragment hoặc nested graph)
+        val destination = graph.findNode(destinationId) ?: return R.id.homeFragment
+
+        var current: NavDestination = destination
+        var parent = current.parent
+
+        // Đi ngược lên cho tới khi cha trực tiếp là top-level graph (nav_customer/nav_technician)
+        while (parent != null && parent.id != graph.id) {
+            current = parent
+            parent = current.parent
         }
+
+        // current.id lúc này chính là:
+        // - id của fragment top-level (homeFragment, profileFragment, ...)
+        // - hoặc id của nested graph (appointmentGraph, repairTrackingGraph, ...)
+        return current.id
     }
     private fun extractAllIds(intent: Intent): Map<String, String> {
         val idMap = mutableMapOf<String, String>()
@@ -236,7 +281,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         val navInflater = navController.navInflater
         val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
-        // Chọn graph + menu theo role
+        // 1. Chọn graph + menu theo role
         when (role) {
             "Technician" -> {
                 navController.graph = navInflater.inflate(R.navigation.nav_technician)
@@ -250,36 +295,93 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             }
         }
 
-        // Gắn BottomNavigation với NavController
-        bottomNavigation.setupWithNavController(navController)
-
-        // Remove listener cũ nếu có (tránh add nhiều lần)
+        // 2. Bỏ listener cũ nếu có
         destinationChangedListener?.let {
             navController.removeOnDestinationChangedListener(it)
         }
 
-        // Tạo listener mới
+        // 3. Tự handle click bottom nav (KHÔNG dùng setupWithNavController nữa)
+        bottomNavigation.setOnItemSelectedListener { item ->
+            val navOptions = NavOptions.Builder()
+                // pop về startDestination (homeFragment) nhưng không xoá nó
+                .setPopUpTo(navController.graph.startDestinationId, false)
+                .setLaunchSingleTop(true)
+                .build()
+
+            when (item.itemId) {
+                R.id.homeFragment -> {
+                    navController.navigate(R.id.homeFragment, null, navOptions)
+                    true
+                }
+
+                R.id.appointmentGraph -> {
+                    navController.navigate(R.id.appointmentGraph, null, navOptions)
+                    true
+                }
+
+                R.id.repairTrackingGraph -> {
+                    navController.navigate(R.id.repairTrackingGraph, null, navOptions)
+                    true
+                }
+
+                R.id.repairArchivedGraph -> {
+                    navController.navigate(R.id.repairArchivedGraph, null, navOptions)
+                    true
+                }
+
+                R.id.profileFragment -> {
+                    navController.navigate(R.id.profileFragment, null, navOptions)
+                    true
+                }
+
+                else -> false
+            }
+        }
+
+        // 4. Listener sync checked state theo destination hiện tại
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
-                // Nhóm "Repair Tracking": list + detail
+
+                //  HOME
+                R.id.homeFragment -> {
+                    bottomNavigation.menu.findItem(R.id.homeFragment)?.isChecked = true
+                }
+
+                //  APPOINTMENTS / QUOTATIONS (tab Appointment)
+                R.id.appointmentNavFragment,
+                R.id.appointmentsFragment,
+                R.id.appointmentDetailFragment,
+                R.id.quotationsFragment,
+                R.id.quotationDetailFragment -> {
+                    bottomNavigation.menu.findItem(R.id.appointmentGraph)?.isChecked = true
+                }
+
+                //  REPAIR TRACKING (list + detail)
                 R.id.repairTrackingFragment,
                 R.id.repairProgressDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.repairTrackingFragment)?.isChecked = true
+                    bottomNavigation.menu.findItem(R.id.repairTrackingGraph)?.isChecked = true
                 }
 
-                // Nhóm "Repair Archived": list + detail
+                //  REPAIR ARCHIVED (list + detail)
                 R.id.repairArchivedFragment,
                 R.id.repairArchivedDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.repairArchivedFragment)?.isChecked = true
+                    bottomNavigation.menu.findItem(R.id.repairArchivedGraph)?.isChecked = true
                 }
 
-                // Các destination khác cứ để NavigationUI xử lý (Home, Profile, ...)
+                //  PROFILE
+                R.id.profileFragment -> {
+                    bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
+                }
+
+                // nếu bạn có vehiclesFragment, notificationsFragment,… thì map thêm
             }
         }
 
         navController.addOnDestinationChangedListener(listener)
         destinationChangedListener = listener
     }
+
+
 
     private fun updateDeviceIdToServer(deviceToken: String) {
         CoroutineScope(Dispatchers.IO).launch {
