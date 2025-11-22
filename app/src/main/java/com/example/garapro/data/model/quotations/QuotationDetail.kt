@@ -13,6 +13,8 @@ data class QuotationDetail(
     val totalAmount: Double,
     val discountAmount: Double,
     val note: String?,
+    val isArchived : Boolean,
+    val archivedAt : String?,
     val customerNote: String?,
     val expiresAt: String?,
     val customerName: String,

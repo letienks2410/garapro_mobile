@@ -10,7 +10,10 @@ data class RepairRequestDetail(
     val description: String,
     val requestDate: String,
     val status: Int,
+    val isArchived : Boolean,
+    val archivedAt : String,
     val estimatedCost: Double,
+    val repairOrderId:String,
     val imageUrls: List<String>,
     val vehicle: VehicleDetail,
     val requestServices: List<RequestServiceDetail>

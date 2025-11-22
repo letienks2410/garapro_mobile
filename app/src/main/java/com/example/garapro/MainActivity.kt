@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     }
     private lateinit var tokenManager: TokenManager
     private lateinit var navController: NavController
-
+    private var destinationChangedListener: NavController.OnDestinationChangedListener? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -236,6 +236,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         val navInflater = navController.navInflater
         val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
+        // Chọn graph + menu theo role
         when (role) {
             "Technician" -> {
                 navController.graph = navInflater.inflate(R.navigation.nav_technician)
@@ -249,8 +250,35 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             }
         }
 
-        // Setup Bottom Navigation với NavController
+        // Gắn BottomNavigation với NavController
         bottomNavigation.setupWithNavController(navController)
+
+        // Remove listener cũ nếu có (tránh add nhiều lần)
+        destinationChangedListener?.let {
+            navController.removeOnDestinationChangedListener(it)
+        }
+
+        // Tạo listener mới
+        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                // Nhóm "Repair Tracking": list + detail
+                R.id.repairTrackingFragment,
+                R.id.repairProgressDetailFragment -> {
+                    bottomNavigation.menu.findItem(R.id.repairTrackingFragment)?.isChecked = true
+                }
+
+                // Nhóm "Repair Archived": list + detail
+                R.id.repairArchivedFragment,
+                R.id.repairArchivedDetailFragment -> {
+                    bottomNavigation.menu.findItem(R.id.repairArchivedFragment)?.isChecked = true
+                }
+
+                // Các destination khác cứ để NavigationUI xử lý (Home, Profile, ...)
+            }
+        }
+
+        navController.addOnDestinationChangedListener(listener)
+        destinationChangedListener = listener
     }
 
     private fun updateDeviceIdToServer(deviceToken: String) {
