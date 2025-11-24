@@ -2,6 +2,7 @@ package com.example.garapro.ui.repairRequest
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.garapro.R
 import com.example.garapro.data.model.repairRequest.Service
+import com.example.garapro.data.model.repairRequest.SubmitState
 import com.example.garapro.databinding.FragmentBookingConfirmationBinding
 import com.example.garapro.utils.MoneyUtils
 
@@ -46,19 +48,31 @@ class ConfirmationFragment : BaseBookingFragment() {
 
     private fun setupObservers() {
         bookingViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-//            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            // Nếu muốn cho nút disable khi đang call API, giữ lại:
             binding.btnSubmit.isEnabled = !isLoading
         }
 
-        bookingViewModel.submitResult.observe(viewLifecycleOwner) { result ->
-            result?.let {
-                if (it) {
-                    showSuccessDialog()
-                } else {
-                    val message = bookingViewModel.errorMessage.value
-                    showErrorDialog(message)
+        bookingViewModel.submitState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is SubmitState.Idle -> {
+                    // không làm gì
                 }
-                bookingViewModel.resetSubmitResult()
+
+                is SubmitState.Loading -> {
+
+//                    binding.progressBar.visibility = View.VISIBLE
+                }
+
+                is SubmitState.Success -> {
+                    showSuccessDialog()
+                    bookingViewModel.resetSubmitState()
+                }
+
+                is SubmitState.Error -> {
+
+                    showErrorDialog(state.message)
+                    bookingViewModel.resetSubmitState()
+                }
             }
         }
     }
@@ -173,8 +187,8 @@ class ConfirmationFragment : BaseBookingFragment() {
 
     private fun showSuccessDialog() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Thành Công")
-            .setMessage("Đặt lịch thành công! Chúng tôi sẽ liên hệ với bạn sớm.")
+            .setTitle("Success")
+            .setMessage("Booking created successfully! We will contact you soon.")
             .setPositiveButton("OK") { _, _ ->
                 requireActivity().finish()
             }
@@ -184,10 +198,10 @@ class ConfirmationFragment : BaseBookingFragment() {
 
     private fun showErrorDialog(message: String?) {
         AlertDialog.Builder(requireContext())
-            .setTitle("Lỗi")
-            .setMessage(message ?: "Đặt lịch thất bại. Vui lòng thử lại.")
-            .setPositiveButton("Thử lại", null)
-            .setNegativeButton("Hủy") { _, _ ->
+            .setTitle("Error")
+            .setMessage(message ?: "Booking failed. Please try again.")
+            .setPositiveButton("Retry", null)
+            .setNegativeButton("Cancel") { _, _ ->
                 requireActivity().finish()
             }
             .show()

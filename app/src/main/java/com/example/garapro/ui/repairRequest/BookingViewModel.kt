@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.garapro.data.model.repairRequest.Branch
 import com.example.garapro.data.model.repairRequest.Part
-import com.example.garapro.data.model.repairRequest.PartRequest
+
 import com.example.garapro.data.model.repairRequest.CreateRepairRequest
 import com.example.garapro.data.model.repairRequest.Service
 import com.example.garapro.data.model.repairRequest.ServiceCategory
@@ -30,6 +30,7 @@ import com.example.garapro.data.model.NetworkResult
 import com.example.garapro.data.model.repairRequest.ArrivalWindow
 import com.example.garapro.data.model.repairRequest.ChildCategoriesResponse
 import com.example.garapro.data.model.repairRequest.ParentServiceCategory
+import com.example.garapro.data.model.repairRequest.SubmitState
 
 class BookingViewModel(
     private val repository: BookingRepository
@@ -70,7 +71,12 @@ class BookingViewModel(
     val isLoading: LiveData<Boolean> = _isLoading
 
     private val _submitResult = MutableLiveData<Boolean?>()
+
+
     val submitResult: LiveData<Boolean?> = _submitResult
+
+    private val _submitState = MutableLiveData<SubmitState>(SubmitState.Idle)
+    val submitState: LiveData<SubmitState> = _submitState
 
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
@@ -354,16 +360,16 @@ class BookingViewModel(
 
     // Load Parent Service Categories
     fun loadParentServiceCategories() {
-        viewModelScope.launch {
-            _isLoading.value = true
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.postValue(true)
             try {
                 val categories = repository.getParentServiceCategories()
-                _parentServiceCategories.value = categories
+                _parentServiceCategories.postValue(categories)
             } catch (e: Exception) {
-                _parentServiceCategories.value = emptyList()
-                _errorMessage.value = "Không thể tải danh mục dịch vụ"
+                _parentServiceCategories.postValue(emptyList())
+                _errorMessage.postValue("Cannot load Parent Category")
             } finally {
-                _isLoading.value = false
+                _isLoading.postValue(false)
             }
         }
     }
@@ -393,7 +399,7 @@ class BookingViewModel(
                     _allChildCategories.value = response.data
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Không thể tải dịch vụ"
+                _errorMessage.value = "Cannot load Service"
             } finally {
                 _isLoading.value = false
             }
@@ -444,8 +450,9 @@ class BookingViewModel(
     // API Submission
     fun submitRepairRequest() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            _isLoading.value = true          // nếu vẫn muốn xài loading chung
+            _submitState.value = SubmitState.Loading
+
             try {
                 val context = applicationContext ?: throw IllegalStateException("Context not set")
 
@@ -460,45 +467,33 @@ class BookingViewModel(
                     services = _selectedServices.value?.map { service ->
                         ServiceRequest(
                             serviceId = service.serviceId,
-                            parts = _selectedParts.value?.values
-                                ?.filter { part ->
-                                    service.partCategories.any { category ->
-                                        category.parts.any { p -> p.partId == part.partId }
-                                    }
-                                }
-                                ?.map { PartRequest(it.partId) } ?: emptyList()
                         )
                     } ?: emptyList()
                 )
 
-                // Log cho dễ debug
                 val gson = GsonBuilder().setPrettyPrinting().create()
                 Log.d("RepairRequest", gson.toJson(request))
 
                 when (val result = repository.submitRepairRequest(request)) {
                     is NetworkResult.Success -> {
-                        _submitResult.value = true
-                        // có thể show toast "Tạo yêu cầu thành công"
+                        _submitState.value = SubmitState.Success
                     }
                     is NetworkResult.Error -> {
-                        _submitResult.value = false
-                        _errorMessage.value = result.message // ví dụ: "Bạn vừa tạo yêu cầu trước đó..."
-//                        if (result.code == 401) {
-//                            // nếu bạn có xử lý token
-//                            checkTokenExpired(UnauthorizedException(result.message))
-//                        }
+                        Log.d("message", result.message)
+                        _submitState.value = SubmitState.Error(result.message)
+
                     }
                 }
             } catch (e: Exception) {
-                _submitResult.value = false
-                _errorMessage.value = "Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại."
-                checkTokenExpired(e)
                 Log.e("RepairRequest", "submitRepairRequest error: ${e.message}", e)
+                _submitState.value = SubmitState.Error("Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại.")
+                checkTokenExpired(e)
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
 
 
     private suspend fun convertImageUrisToMultipart(context: Context): List<MultipartBody.Part> {
@@ -531,8 +526,8 @@ class BookingViewModel(
         }
     }
 
-    fun resetSubmitResult() {
-        _submitResult.value = null
+    fun resetSubmitState() {
+        _submitState.value = SubmitState.Idle
     }
 
 

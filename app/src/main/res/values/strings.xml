@@ -15,6 +15,7 @@
     <string name="goong_map_key">EULxr2WKJuCyhFyPsoUbeAzxg9j61kei4ZSE1Fb8</string>
 
     <string name="select_date_range">Select date range</string>
+    <string name="default_web_client_id">943673602575-3ci6hejtivbp0utbutduj55kk7821bm6.apps.googleusercontent.com</string>
 
     <string-array name="repair_status_array">
         <item>All Status</item>

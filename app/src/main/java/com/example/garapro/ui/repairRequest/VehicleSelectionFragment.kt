@@ -48,7 +48,13 @@ class VehicleSelectionFragment : BaseBookingFragment() {
         bookingViewModel.vehicles.observe(viewLifecycleOwner) { vehicles ->
             vehicleAdapter.updateData(vehicles)
 
-            // Khi danh sách xe thay đổi, thử highlight lại xe đã chọn (nếu có)
+            if (vehicles.isEmpty()) {
+                showEmptyState()
+            } else {
+                hideEmptyState()
+            }
+
+            // Nếu trước đó đã chọn xe → highlight lại
             bookingViewModel.selectedVehicle.value?.let { selected ->
                 val index = vehicleAdapter.getPositionOf(selected)
                 if (index != RecyclerView.NO_POSITION) {
@@ -61,10 +67,34 @@ class VehicleSelectionFragment : BaseBookingFragment() {
             vehicle?.let {
                 binding.tvSelectedVehicle.text = "${it.brandName} ${it.modelName} - ${it.licensePlate}"
                 binding.btnNext.isEnabled = true
+                binding.btnNext.setBackgroundColor(Color.BLACK)
             }
         }
     }
 
+    private fun showEmptyState() {
+        binding.emptyState.root.visibility = View.VISIBLE
+        binding.rvVehicles.visibility = View.GONE
+        binding.tvSelectedVehicle.visibility = View.GONE
+        binding.btnNext.visibility = View.GONE
+
+        binding.emptyState.tvEmptyTitle.text = "No vehicles found"
+        binding.emptyState.tvEmptyMessage.text = "Add a vehicle to continue"
+        binding.emptyState.btnEmptyAction.apply {
+            visibility = View.VISIBLE
+            text = "Add Vehicle"
+            setOnClickListener {
+                //  điều hướng tới màn thêm xe
+            }
+        }
+    }
+
+    private fun hideEmptyState() {
+        binding.emptyState.root.visibility = View.GONE
+        binding.rvVehicles.visibility = View.VISIBLE
+        binding.tvSelectedVehicle.visibility = View.VISIBLE
+        binding.btnNext.visibility = View.VISIBLE
+    }
     private fun setupListeners() {
         binding.btnNext.setOnClickListener {
             showNextFragment(R.id.action_vehicleSelection_to_branchSelection)

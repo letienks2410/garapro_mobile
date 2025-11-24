@@ -13,12 +13,34 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
 
     private val _loginState = MutableLiveData<Resource<LoginResponse>>()
     val loginState: LiveData<Resource<LoginResponse>> = _loginState
-
+    private val _googleLoginState = MutableLiveData<LoginUiState>()
+    val googleLoginState: LiveData<LoginUiState> = _googleLoginState
     fun login(email: String, password: String, rememberMe: Boolean = false) {
         viewModelScope.launch {
             repository.login(email, password, rememberMe).collect { result ->
                 _loginState.value = result
             }
+        }
+    }
+    fun loginWithGoogle(idToken: String) {
+        _googleLoginState.value = LoginUiState(isLoading = true)
+
+        viewModelScope.launch {
+            val result = repository.loginWithGoogle(idToken)
+            _googleLoginState.value = result.fold(
+                onSuccess = { response ->
+                    LoginUiState(
+                        isLoading = false,
+                        authResponse = response
+                    )
+                },
+                onFailure = { throwable ->
+                    LoginUiState(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "Google login failed"
+                    )
+                }
+            )
         }
     }
 
@@ -33,3 +55,8 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 }
+data class LoginUiState(
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val authResponse: LoginResponse? = null
+)

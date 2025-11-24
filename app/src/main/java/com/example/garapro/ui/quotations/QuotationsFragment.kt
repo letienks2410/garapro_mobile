@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
 import com.example.garapro.data.model.quotations.Quotation
 import com.example.garapro.data.model.quotations.QuotationStatus
@@ -20,17 +21,22 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
 class QuotationsFragment : Fragment() {
+
     private var _binding: FragmentQuotationsBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var viewModel: QuotationListViewModel
     private var isFilterVisible = false
 
     private var quotationHubService: QuotationSignalRService? = null
 
+    private lateinit var quotationAdapter: QuotationAdapter
+
     companion object {
         private const val PREFS_AUTH = "auth_prefs"
         private const val KEY_USER_ID = "user_id"
     }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -46,15 +52,56 @@ class QuotationsFragment : Fragment() {
         val repository = QuotationRepository(RetrofitInstance.quotationService)
         viewModel = QuotationListViewModel(repository)
 
+        setupRecyclerView()
         setupUI()
         setupObservers()
         initQuotationHub()
         observeQuotationHubEvents()
     }
 
+    private fun setupRecyclerView() {
+        quotationAdapter = QuotationAdapter { quotation ->
+            val bundle = Bundle().apply {
+                putString("quotationId", quotation.quotationId)
+            }
+            findNavController().navigate(
+                R.id.action_global_quotationDetailFragment,
+                bundle
+            )
+        }
+
+        binding.rvQuotations.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = quotationAdapter
+
+            // Phân trang khi scroll đến cuối
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+
+                    // chỉ xử lý khi scroll xuống
+                    if (dy <= 0) return
+
+                    val pagination = viewModel.paginationInfo.value
+                    val isLoading = viewModel.isLoading.value == true
+
+                    if (pagination != null &&
+                        !isLoading &&
+                        pagination.pageNumber < pagination.totalPages &&
+                        !recyclerView.canScrollVertically(1)
+                    ) {
+                        // load trang tiếp theo
+                        viewModel.loadQuotations(pagination.pageNumber + 1, pagination.pageSize)
+                    }
+                }
+            })
+        }
+    }
+
     private fun setupUI() {
         binding.swipeRefresh.setOnRefreshListener {
-            viewModel.loadQuotations()
+            // load lại từ trang 1
+            viewModel.loadQuotations(pageNumber = 1)
         }
 
         // Toggle filter visibility
@@ -74,17 +121,16 @@ class QuotationsFragment : Fragment() {
         }
 
         // Chip selection listener
-        binding.chipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
+        binding.chipGroup.setOnCheckedStateChangeListener { _, _ ->
             updateChipAppearance()
         }
     }
+
     private fun initQuotationHub() {
-        // Lấy userId đã lưu sau login
         val prefs = requireContext().getSharedPreferences(PREFS_AUTH, Context.MODE_PRIVATE)
         val userId = prefs.getString(KEY_USER_ID, null)
 
         if (userId.isNullOrEmpty()) {
-            // Chưa đăng nhập / không có userId -> không cần connect SignalR
             return
         }
 
@@ -95,11 +141,12 @@ class QuotationsFragment : Fragment() {
             startAndJoinUser(userId)
         }
     }
+
     private fun observeQuotationHubEvents() {
         viewLifecycleOwner.lifecycleScope.launch {
             quotationHubService?.events?.collect {
-                // chỉ cần reload lại
-                viewModel.loadQuotations()
+                // reload lại từ trang 1 khi có thay đổi
+                viewModel.loadQuotations(pageNumber = 1)
             }
         }
     }
@@ -108,16 +155,13 @@ class QuotationsFragment : Fragment() {
         isFilterVisible = !isFilterVisible
 
         if (isFilterVisible) {
-
             binding.cardFilter.visibility = View.VISIBLE
-            binding.btnFilter.setImageResource(R.drawable.ic_ft_expand_less) // ↑ icon thu gọn
+            binding.btnFilter.setImageResource(R.drawable.ic_ft_expand_less)
         } else {
-
             binding.cardFilter.visibility = View.GONE
-            binding.btnFilter.setImageResource(R.drawable.ic_filter) // ⊞ icon bộ lọc
+            binding.btnFilter.setImageResource(R.drawable.ic_filter)
         }
     }
-
 
     private fun applyFilter() {
         val selectedChipId = binding.chipGroup.checkedChipId
@@ -130,7 +174,7 @@ class QuotationsFragment : Fragment() {
             binding.chipExpired.id -> QuotationStatus.Expired
             else -> null
         }
-        viewModel.filterByStatus(status)
+        viewModel.filterByStatus(status)  // ViewModel sẽ tự load lại trang 1
     }
 
     private fun clearFilter() {
@@ -139,8 +183,7 @@ class QuotationsFragment : Fragment() {
     }
 
     private fun updateChipAppearance() {
-        // Tất cả các chip sẽ được tự động cập nhật màu theo Material Design 3
-        // Không cần xử lý thủ công vì đã dùng style Chip.Filter
+        // Dùng style Chip.Filter nên không cần custom thêm
     }
 
     private fun setupObservers() {
@@ -189,18 +232,7 @@ class QuotationsFragment : Fragment() {
     private fun showQuotations(quotations: List<Quotation>) {
         binding.emptyState.root.visibility = View.GONE
         binding.rvQuotations.visibility = View.VISIBLE
-
-        val adapter = QuotationAdapter(quotations) { quotation ->
-            val bundle = Bundle().apply {
-                putString("quotationId", quotation.quotationId)
-            }
-            findNavController().navigate(
-                R.id.action_global_quotationDetailFragment,
-                bundle
-            )
-        }
-        binding.rvQuotations.adapter = adapter
-        binding.rvQuotations.layoutManager = LinearLayoutManager(requireContext())
+        quotationAdapter.submitList(quotations)
     }
 
     override fun onDestroyView() {

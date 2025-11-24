@@ -4,29 +4,37 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.util.Log
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
 import com.example.garapro.data.model.repairRequest.Service
 import com.example.garapro.databinding.FragmentChildBookingCategorySelectionBinding
-import android.text.TextWatcher
-import android.util.Log
 
 class ChildCategorySelectionFragment : BaseBookingFragment() {
 
     private var _binding: FragmentChildBookingCategorySelectionBinding? = null
     private val binding get() = _binding!!
+
     private lateinit var serviceAdapter: ServiceSimpleAdapter
-    private lateinit var filterAdapter: FilterChipAdapter
 
-    // State management
-    private var isFilterExpanded = false
+    // State filter
     private var currentFilterCategoryId: String? = null
-    private var currentFilterCategoryName: String = "Tất cả"
+    private var currentFilterCategoryName: String = "All"
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    // Cờ để tránh vòng lặp spinner -> API
+    private var isUpdatingSpinner = false
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentChildBookingCategorySelectionBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -34,33 +42,29 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Khôi phục filter state từ ViewModel
         restoreFilterState()
-
         setupAdapters()
+        setupFilterSpinner()
         setupObservers()
         setupListeners()
         setupSearch()
 
-        applyFilterState()
+        applyCurrentFilter()
 
         Log.d("FilterDebug", "onViewCreated - currentFilter: $currentFilterCategoryId, name: $currentFilterCategoryName")
     }
+
     override fun onResume() {
         super.onResume()
-        // Đảm bảo filter được áp dụng khi quay lại fragment
-        applyCurrentFilter()
+
     }
 
     private fun restoreFilterState() {
         val savedFilterState = bookingViewModel.getChildFilterState()
         if (savedFilterState != null) {
             currentFilterCategoryId = savedFilterState.categoryId
-            currentFilterCategoryName = savedFilterState.categoryName
+            currentFilterCategoryName = savedFilterState.categoryName ?: "All"
 
-            Log.d("FilterDebug", "Restored filter - id: $currentFilterCategoryId, name: $currentFilterCategoryName")
-
-            // Khôi phục search term
             savedFilterState.searchTerm?.let { searchTerm ->
                 binding.etSearch.setText(searchTerm)
                 Log.d("FilterDebug", "Restored search term: $searchTerm")
@@ -69,26 +73,17 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
             Log.d("FilterDebug", "No saved filter state")
         }
     }
+
     private fun applyCurrentFilter() {
         Log.d("FilterDebug", "Applying current filter - id: $currentFilterCategoryId")
 
-        // Load data với filter hiện tại
         loadChildCategories(
             childServiceCategoryId = currentFilterCategoryId,
             searchTerm = bookingViewModel.getChildFilterState()?.searchTerm
         )
-
-        // Update UI
-        updateActiveFilterDisplay()
-        updateFilterButtonUI()
-
-        // Update filter adapter nếu có data
-        bookingViewModel.allChildCategories.value?.let { categories ->
-            filterAdapter.updateData(categories, currentFilterCategoryId)
-        }
     }
+
     private fun setupAdapters() {
-        // Service Adapter
         serviceAdapter = ServiceSimpleAdapter(
             services = emptyList(),
             onServiceSelected = { service ->
@@ -99,74 +94,122 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
             }
         )
 
-        // Filter Adapter
-        filterAdapter = FilterChipAdapter(
-            categories = emptyList(),
-            currentFilterCategoryId = currentFilterCategoryId,
-            onFilterSelected = { categoryId ->
-                onFilterCategorySelected(categoryId)
-            }
-        )
-
         binding.rvChildCategories.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = serviceAdapter
         }
+    }
 
-        binding.rvFilterChips.apply {
-            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-            adapter = filterAdapter
+    private fun setupFilterSpinner() {
+        // Tạm thời set adapter trống, sẽ update khi có categories từ ViewModel
+        val initialAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            mutableListOf("All")
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+
+        binding.spinnerFilter.adapter = initialAdapter
+
+        binding.spinnerFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                // Nếu đang update spinner bằng code -> bỏ qua
+                if (isUpdatingSpinner) {
+                    Log.d("FilterDebug", "onItemSelected ignored (isUpdatingSpinner = true)")
+                    return
+                }
+
+                val categories = bookingViewModel.allChildCategories.value ?: emptyList()
+
+                val newCategoryId: String?
+                val newCategoryName: String
+
+                if (position == 0) {
+                    newCategoryId = null
+                    newCategoryName = "All"
+                } else {
+                    val category = categories.getOrNull(position - 1)
+                    newCategoryId = category?.serviceCategoryId
+                    newCategoryName = category?.categoryName ?: "All"
+                }
+
+                // Nếu không thay đổi filter -> không call API lại
+                if (newCategoryId == currentFilterCategoryId) {
+                    Log.d("FilterDebug", "Filter not changed, skip API call")
+                    return
+                }
+
+                currentFilterCategoryId = newCategoryId
+                currentFilterCategoryName = newCategoryName
+
+                // Lưu lại filter vào ViewModel
+                saveFilterState()
+
+                // Load lại data theo filter
+                loadChildCategories(
+                    childServiceCategoryId = currentFilterCategoryId,
+                    searchTerm = bookingViewModel.getChildFilterState()?.searchTerm
+                )
+
+                Log.d("FilterDebug", "Spinner selected - id: $currentFilterCategoryId, name: $currentFilterCategoryName")
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Không làm gì
+            }
         }
     }
 
-    private fun onFilterCategorySelected(categoryId: String?) {
-        Log.d("FilterDebug", "Filter category selected: $categoryId")
+    private fun updateFilterSpinner() {
+        val categories = bookingViewModel.allChildCategories.value ?: emptyList()
 
-        currentFilterCategoryId = categoryId
-        currentFilterCategoryName = getCategoryNameById(categoryId)
+        val names = mutableListOf("All")
+        names.addAll(categories.map { it.categoryName })
 
-        // Lưu filter state vào ViewModel
-        saveFilterState()
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            names
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
 
-        updateActiveFilterDisplay()
-        updateFilterButtonUI()
-        loadChildCategories(childServiceCategoryId = categoryId)
+        // 🔒 Bật flag để onItemSelected không chạy trong lúc cập nhật
+        isUpdatingSpinner = true
 
-        // QUAN TRỌNG: Update adapter với dữ liệu mới
-        val currentCategories = bookingViewModel.allChildCategories.value ?: emptyList()
-        filterAdapter.updateData(currentCategories, currentFilterCategoryId)
-        // Update filter adapter để hiển thị chip được chọn
-//        bookingViewModel.allChildCategories.value?.let { categories ->
-//            filterAdapter.updateData(categories, currentFilterCategoryId)
-//        }
-    }
+        binding.spinnerFilter.adapter = adapter
 
-    private fun getCategoryNameById(categoryId: String?): String {
-        return if (categoryId == null) {
-            "Tất cả"
+        // Set selection theo currentFilterCategoryId
+        val index = if (currentFilterCategoryId == null) {
+            0
         } else {
-            // Lấy từ allChildCategories thay vì filterAdapter.categories
-            bookingViewModel.allChildCategories.value?.find { it.serviceCategoryId == categoryId }?.categoryName ?: "Tất cả"
+            val pos = categories.indexOfFirst { it.serviceCategoryId == currentFilterCategoryId }
+            if (pos >= 0) pos + 1 else 0
         }
+
+        binding.spinnerFilter.setSelection(index, false)
+
+        // 🔓 Mở lại flag để user chọn mới thì xử lý
+        isUpdatingSpinner = false
     }
 
     private fun setupObservers() {
-        // Sử dụng allChildCategories thay vì childServiceCategories cho filter
+        // Dùng allChildCategories để build danh sách filter cho Spinner
         bookingViewModel.allChildCategories.observe(viewLifecycleOwner) { categories ->
             Log.d("FilterDebug", "All categories updated - ${categories.size} categories")
-
-            // QUAN TRỌNG: Update filter adapter với current filter
-            filterAdapter.updateData(categories, currentFilterCategoryId)
-
-            // Nếu có filter đang active, đảm bảo nó được chọn trong UI
-            if (currentFilterCategoryId != null) {
-                updateActiveFilterDisplay()
-            }
+            updateFilterSpinner()
         }
 
         bookingViewModel.childServiceCategories.observe(viewLifecycleOwner) { response ->
-            Log.d("FilterDebug", "Filtered services updated - ${response.data.flatMap { it.services }.size} services")
-            serviceAdapter.updateData(response.data.flatMap { it.services })
+            val services = response.data.flatMap { it.services }
+            Log.d("FilterDebug", "Filtered services updated - ${services.size} services")
+            serviceAdapter.updateData(services)
         }
 
         bookingViewModel.selectedServices.observe(viewLifecycleOwner) { services ->
@@ -175,14 +218,13 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
 
         bookingViewModel.selectedParentCategory.observe(viewLifecycleOwner) { parent ->
             parent?.let {
-                binding.tvSelectedParent.text = "Danh mục: ${it.categoryName}"
+                binding.tvSelectedParent.text = "Category: ${it.categoryName}"
             }
         }
     }
 
     private fun updateSelectedServicesUI(services: List<Service>) {
         binding.tvSelectedCount.text = "Đã chọn: ${services.size} dịch vụ"
-
         updateSelectedServicesPreview(services)
     }
 
@@ -192,16 +234,12 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
 
         if (services.isNotEmpty()) {
             container.visibility = View.VISIBLE
-            // Your existing preview code here
+            // TODO: thêm UI hiển thị preview nếu cần
         } else {
             container.visibility = View.GONE
         }
     }
 
-    private fun applyFilterState() {
-        binding.cardFilter.visibility = if (isFilterExpanded) View.VISIBLE else View.GONE
-        updateFilterButtonUI()
-    }
     private fun saveFilterState(searchTerm: String? = null) {
         val currentSearchTerm = searchTerm ?: binding.etSearch.text?.toString()?.trim()
 
@@ -212,30 +250,12 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
         )
         bookingViewModel.setChildFilterState(filterState)
 
-        Log.d("FilterDebug", "Filter state saved - id: $currentFilterCategoryId, name: $currentFilterCategoryName, search: $currentSearchTerm")
+        Log.d(
+            "FilterDebug",
+            "Filter state saved - id: $currentFilterCategoryId, name: $currentFilterCategoryName, search: $currentSearchTerm"
+        )
     }
 
-    private fun clearFilter() {
-        currentFilterCategoryId = null
-        currentFilterCategoryName = "Tất cả"
-
-        // Clear search
-        binding.etSearch.setText("")
-
-        // Update filter adapter
-        bookingViewModel.allChildCategories.value?.let { categories ->
-            filterAdapter.updateData(categories, null)
-        }
-
-        // Lưu state cleared
-        saveFilterState(searchTerm = null)
-
-        updateActiveFilterDisplay()
-        updateFilterButtonUI()
-        loadChildCategories(childServiceCategoryId = null)
-
-        Log.d("FilterDebug", "Filter cleared")
-    }
     private fun setupSearch() {
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             private var searchRunnable: Runnable? = null
@@ -265,69 +285,17 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
     }
 
     private fun setupListeners() {
-        binding.btnToggleFilter.setOnClickListener {
-            toggleFilterVisibility()
-        }
-
         binding.btnPrevious.setOnClickListener {
             showPreviousFragment()
         }
 
         binding.btnNext.setOnClickListener {
             val selectedServices = bookingViewModel.selectedServices.value ?: emptyList()
-            showNextFragment(R.id.action_childCategorySelection_to_details);
-
-//            if (selectedServices.isEmpty()) {
-//                // KHÔNG chọn service nào -> đi thẳng đến details
-//                Log.d("Navigation", "No services selected, going directly to details")
-//                showNextFragment(R.id.action_childCategorySelection_to_details)
-//            } else {
-//                // CÓ chọn service -> đi đến parts selection
-//                Log.d("Navigation", "${selectedServices.size} services selected, going to parts selection")
-//                showNextFragment(R.id.action_childCategorySelection_to_servicePartsSelection)
-//            }
+            showNextFragment(R.id.action_childCategorySelection_to_details)
         }
-        // Enable nút Next ngay từ đầu
+
         binding.btnNext.isEnabled = true
     }
-
-    private fun toggleFilterVisibility() {
-        isFilterExpanded = !isFilterExpanded
-        binding.cardFilter.visibility = if (isFilterExpanded) View.VISIBLE else View.GONE
-        updateFilterButtonUI()
-    }
-
-    private fun updateFilterButtonUI() {
-        val buttonText = when {
-            isFilterExpanded -> "Đóng lọc"
-            currentFilterCategoryId != null -> "Bộ lọc •"
-            else -> "Bộ lọc"
-        }
-
-        val iconRes = if (isFilterExpanded) R.drawable.ic_ft_expand_less else R.drawable.ic_filter
-
-//        binding.btnToggleFilter.text = buttonText
-        binding.btnToggleFilter.setImageResource(iconRes)
-    }
-
-    private fun updateActiveFilterDisplay() {
-        val container = binding.containerActiveFilter
-
-        if (currentFilterCategoryId != null) {
-            binding.chipActiveFilter.text = currentFilterCategoryName
-            container.visibility = View.VISIBLE
-            Log.d("FilterDebug", "Active filter displayed: $currentFilterCategoryName")
-        } else {
-            container.visibility = View.GONE
-            Log.d("FilterDebug", "No active filter to display")
-        }
-
-        binding.chipActiveFilter.setOnCloseIconClickListener {
-            clearFilter()
-        }
-    }
-
-
 
     private fun loadChildCategories(
         childServiceCategoryId: String? = null,
@@ -341,13 +309,6 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
                 searchTerm = searchTerm
             )
         }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBoolean("FILTER_EXPANDED", isFilterExpanded)
-        outState.putString("CURRENT_FILTER_ID", currentFilterCategoryId)
-        outState.putString("CURRENT_FILTER_NAME", currentFilterCategoryName)
     }
 
     override fun onDestroyView() {

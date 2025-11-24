@@ -18,13 +18,15 @@
         android:gravity="center"
         android:layout_marginBottom="16dp" />
 
-    <!-- Search and Filter Header -->
+    <!-- Search + Filter Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
 
+        <!-- Search box -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -39,9 +41,8 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search services..."
+                android:hint="Search services…"
                 app:boxBackgroundColor="#FFFFFF"
-                app:boxStrokeColor="#000000"
                 app:hintTextColor="#666666">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -52,90 +53,18 @@
                     android:textColor="#000000" />
 
             </com.google.android.material.textfield.TextInputLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Filter Toggle Button -->
-        <ImageButton
-            android:id="@+id/btnToggleFilter"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:backgroundTint="#FFFFFF"
-            android:src="@drawable/ic_filter"
-            android:background="@drawable/ic_filter"
-            android:scaleType="centerInside"
-            app:tint="#000000" />
-
+        <!-- Filter Spinner -->
+        <Spinner
+            android:id="@+id/spinnerFilter"
+            android:layout_width="140dp"
+            android:layout_height="48dp"
+            android:background="@drawable/spinner_background_black"
+            android:padding="8dp" />
     </LinearLayout>
 
-    <!-- Active Filter Indicator -->
-    <LinearLayout
-        android:id="@+id/containerActiveFilter"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="8dp"
-        android:visibility="gone">
-
-        <com.google.android.material.textview.MaterialTextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Filter:"
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:layout_marginEnd="8dp" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipActiveFilter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="All"
-            android:textColor="#000000"
-            app:chipBackgroundColor="#F5F5F5"
-            app:closeIconVisible="true"
-            app:closeIconTint="#666666" />
-
-    </LinearLayout>
-
-    <!-- Filter Section - Collapsible -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardFilter"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FFFFFF"
-        android:layout_marginBottom="16dp"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Filter Chips -->
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Filter by service type:"
-                android:textSize="16sp"
-                android:textColor="#000000"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Using RecyclerView for filter chips -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvFilterChips"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Services List -->
+    <!-- Service List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvChildCategories"
         android:layout_width="match_parent"
@@ -169,7 +98,6 @@
                 android:textColor="#000000"
                 android:textStyle="bold" />
 
-            <!-- Selected Services Preview -->
             <LinearLayout
                 android:id="@+id/containerSelectedPreview"
                 android:layout_width="match_parent"
@@ -179,7 +107,6 @@
                 android:visibility="gone" />
 
         </LinearLayout>
-
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Navigation Buttons -->

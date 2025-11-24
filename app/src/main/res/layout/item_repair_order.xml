@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="8dp"
+    android:background="@android:color/white"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    app:cardElevation="0dp"
+    app:strokeColor="@android:color/black"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/white"
+        android:background="@android:color/white"
         android:padding="16dp">
 
         <!-- Header Row -->
@@ -33,7 +35,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="51F67890 • Civic"
-                    android:textColor="@color/black"
+                    android:textColor="@android:color/black"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -43,7 +45,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="26/10/2025 15:42"
-                    android:textColor="@color/gray"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -54,6 +56,7 @@
                 android:orientation="vertical"
                 android:gravity="end">
 
+                <!-- THẺ STATUS: giữ nguyên màu hiện tại -->
                 <TextView
                     android:id="@+id/statusText"
                     android:layout_width="wrap_content"
@@ -62,7 +65,7 @@
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="4dp"
                     android:text="Completed"
-                    android:textColor="@color/white"
+                    android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -72,7 +75,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Scheduled"
-                    android:textColor="@color/gray"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="10sp" />
 
             </LinearLayout>
@@ -97,9 +100,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Not Started"
-                    android:textColor="@color/gray"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="12sp" />
 
+                <!-- giữ nguyên màu primary -->
                 <TextView
                     android:id="@+id/progressPercentage"
                     android:layout_width="wrap_content"
@@ -118,7 +122,8 @@
                 android:layout_height="8dp"
                 android:layout_marginTop="4dp"
                 android:progress="0"
-                android:progressTint="@color/primary" />
+                android:progressTint="@color/primary"
+                android:backgroundTint="@android:color/darker_gray" />
 
         </LinearLayout>
 
@@ -131,7 +136,7 @@
             app:chipSpacingHorizontal="4dp"
             app:singleLine="true" />
 
-        <!-- Payment Button - Hiển thị khi cần thanh toán -->
+        <!-- Payment Button (giữ màu xanh nguyên vẹn) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/paymentButton"
             android:layout_width="match_parent"
@@ -139,9 +144,8 @@
             android:layout_marginTop="12dp"
             android:text="Payment"
             android:visibility="gone"
-            app:backgroundTint="@color/green"
+            app:backgroundTint="@color/black"
             style="@style/Widget.Material3.Button" />
-
 
         <TextView
             android:id="@+id/pickupMessage"
@@ -153,6 +157,7 @@
             android:textStyle="bold"
             android:textSize="12sp"
             android:visibility="gone" />
+
         <!-- Footer Info -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -170,7 +175,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Cost"
-                    android:textColor="@color/gray"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="10sp" />
 
                 <TextView
@@ -179,7 +184,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="0 VND"
-                    android:textColor="@color/black"
+                    android:textColor="@android:color/black"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -196,9 +201,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Payment Status"
-                    android:textColor="@color/gray"
+                    android:textColor="@android:color/darker_gray"
                     android:textSize="10sp" />
 
+                <!-- giữ nguyên màu tùy trạng thái -->
                 <TextView
                     android:id="@+id/paidStatusText"
                     android:layout_width="wrap_content"
@@ -221,7 +227,7 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="@color/gray" />
+                    app:tint="@android:color/darker_gray" />
 
             </LinearLayout>
 
