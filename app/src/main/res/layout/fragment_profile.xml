@@ -71,16 +71,6 @@
 
             <include
                 layout="@layout/item_profile_menu"
-                android:id="@+id/menuScanSettings" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="56dp"
-                android:background="#F0F0F0" />
-
-            <include
-                layout="@layout/item_profile_menu"
                 android:id="@+id/menuTerms" />
 
             <View
@@ -91,7 +81,7 @@
 
             <include
                 layout="@layout/item_profile_menu"
-                android:id="@+id/menuLanguage" />
+                android:id="@+id/changePass" />
         </LinearLayout>
 
         <!-- Logout Button -->
