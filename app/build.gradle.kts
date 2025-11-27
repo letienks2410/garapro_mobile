@@ -34,7 +34,10 @@ android {
         }
     }
 
-    buildFeatures.viewBinding = true
+    buildFeatures {
+        viewBinding= true      // optional nhưng tốt để bật luôn
+        dataBinding= false      // <-- bắt buộc nếu bạn dùng <layout> root
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

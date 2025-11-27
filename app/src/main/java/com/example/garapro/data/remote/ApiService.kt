@@ -5,15 +5,24 @@ import android.content.Intent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.garapro.data.local.PersistentCookieJar
 import com.example.garapro.data.local.TokenManager
+import com.example.garapro.data.model.ApiResponse
+import com.example.garapro.data.model.ChangePasswordRequest
+import com.example.garapro.data.model.GenericResponse
 import com.example.garapro.data.model.GoogleLoginRequest
 import com.example.garapro.data.model.ImageResponse
 import com.example.garapro.data.model.LoginRequest
 import com.example.garapro.data.model.LoginResponse
 import com.example.garapro.data.model.RefreshTokenResponse
+import com.example.garapro.data.model.ResetPasswordForgotRequest
+import com.example.garapro.data.model.ResetPasswordRequest
+import com.example.garapro.data.model.ResetPasswordResponse
+import com.example.garapro.data.model.SendOtpRequest
 import com.example.garapro.data.model.SignupRequest
 import com.example.garapro.data.model.SignupResponse
 import com.example.garapro.data.model.UpdateDeviceIdRequest
 import com.example.garapro.data.model.User
+import com.example.garapro.data.model.VerifyOtpRequest
+
 
 import com.example.garapro.data.model.otpRequest
 import com.example.garapro.data.model.otpResponse
@@ -24,6 +33,7 @@ import com.google.gson.GsonBuilder
 import kotlinx.coroutines.runBlocking
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import org.joda.time.DateTime
 import retrofit2.Response
@@ -65,6 +75,18 @@ interface ApiService {
 
     @PUT("users/me")
     suspend fun updateProfile(@Body request: User): Response<User>
+
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ResponseBody>
+
+    @POST("auth/forgot-password/send-otp")
+    suspend fun sendOtpForgot(@Body body: SendOtpRequest): Response<GenericResponse>
+
+    @POST("auth/forgot-password/verify-otp")
+    suspend fun verifyOtpForgot(@Body body: VerifyOtpRequest): Response<GenericResponse>
+
+    @POST("auth/forgot-password/reset")
+    suspend fun resetPasswordForgot(@Body body: ResetPasswordForgotRequest): Response<GenericResponse>
 
 
 
