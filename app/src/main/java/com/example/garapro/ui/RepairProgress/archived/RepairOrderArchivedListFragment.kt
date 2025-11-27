@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.lifecycle.Observer
 import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
 import com.example.garapro.data.model.RepairProgresses.PagedResult
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
@@ -68,8 +69,23 @@ class RepairOrderArchivedListFragment : Fragment() {
         adapter = RepairOrderArchivedAdapter { item ->
             openDetail(item)
         }
+
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
+
+
+        binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                // chỉ xử lý khi scroll xuống
+                if (dy <= 0) return
+
+                if (!recyclerView.canScrollVertically(1)) {
+                    viewModel.loadNextPage()
+                }
+            }
+        })
     }
 
     private fun setupSwipeRefresh() {
@@ -79,25 +95,20 @@ class RepairOrderArchivedListFragment : Fragment() {
     }
 
     private fun setupFilter() {
-        // Ẩn filter status vì archived luôn completed
         binding.statusFilterLayout.visibility = View.GONE
 
-        // Nút mở/đóng filter
         binding.filterButton.setOnClickListener {
             binding.filterContainer.visibility =
                 if (binding.filterContainer.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        // Clear filter
         binding.clearFilterButton.setOnClickListener {
             viewModel.clearFilter()
-            // reset UI hiển thị
             binding.roTypeFilter.setText("", false)
             binding.paidStatusFilter.setText("", false)
-            binding.dateFilter.text = getString(R.string.select_date_range) // tạo string resource nếu cần
+            binding.dateFilter.text = getString(R.string.select_date_range)
         }
 
-        // Setup các lựa chọn filter
         setupFilterOptions()
     }
     private fun setupFilterOptions() {
@@ -236,11 +247,13 @@ class RepairOrderArchivedListFragment : Fragment() {
                     binding.progressBar.visibility = View.VISIBLE
                     binding.emptyState.visibility = View.GONE
                 }
+
                 is RepairProgressRepository.ApiResponse.Success -> {
                     binding.progressBar.visibility = View.GONE
                     binding.swipeRefresh.isRefreshing = false
                     applyData(state.data)
                 }
+
                 is RepairProgressRepository.ApiResponse.Error -> {
                     binding.progressBar.visibility = View.GONE
                     binding.swipeRefresh.isRefreshing = false
@@ -269,8 +282,6 @@ class RepairOrderArchivedListFragment : Fragment() {
             R.id.repairArchivedDetailFragment,
             bundle
         )
-        // hoặc nếu dùng action:
-        // findNavController().navigate(R.id.action_repairArchivedFragment_to_repairArchivedDetailFragment, bundle)
     }
 
     override fun onDestroyView() {

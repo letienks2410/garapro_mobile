@@ -3,6 +3,7 @@ package com.example.garapro.ui.RepairProgress
 import android.R.attr.orientation
 import android.animation.ValueAnimator
 import android.content.res.ColorStateList
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -284,13 +285,32 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
             // Ẩn mặc định
             binding.timelineContainer.visibility = View.GONE
 
-
+            Log.d("status", status)
             // Map thời gian hiển thị
             startDate?.let { binding.tvReportedTime.text = formatPrettyShort(it) }
             estRestore?.let { binding.tvRestoreTime.text = formatPrettyShort(it) }
 
             // Trạng thái
             when (status) {
+
+                "New" -> {
+                    binding.timelineContainer.visibility = View.VISIBLE
+                    stopSimpleLoopAnimation()
+
+                    // Tắt tất cả node
+                    binding.node1Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+                    binding.node2Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+                    binding.node3Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+
+                    // Tắt tất cả line
+                    binding.line12.setBackgroundResource(R.drawable.timeline_line_inactive)
+                    binding.line23.setBackgroundResource(R.drawable.timeline_line_inactive)
+
+                    // Nếu có phần fill thì reset
+                    binding.line23Fill.layoutParams.width = 0
+                    binding.line23Fill.requestLayout()
+                }
+
                 "InProgress" -> {
                     binding.timelineContainer.visibility = View.VISIBLE
 

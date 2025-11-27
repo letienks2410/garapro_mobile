@@ -1,6 +1,7 @@
 package com.example.garapro.data.repository
 
 import com.example.garapro.data.local.TokenManager
+import com.example.garapro.data.model.GoogleLoginRequest
 import com.example.garapro.data.model.LoginRequest
 import com.example.garapro.data.model.LoginResponse
 import com.example.garapro.data.model.ResetPasswordRequest
@@ -60,6 +61,28 @@ class AuthRepository(
         }
     }
 
+    suspend fun loginWithGoogle(idToken: String): Result<LoginResponse> {
+        return try {
+            val response = apiService.googleLogin(GoogleLoginRequest(idToken = idToken))
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null) {
+
+                    // lưu token bằng TokenManager
+                    tokenManager.saveAccessToken(body.token ?: "")
+
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception("Empty response body"))
+                }
+            } else {
+                Result.failure(Exception("Google login failed: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     fun signup(signupRequest: SignupRequest): Flow<Resource<SignupResponse>> = flow {
         emit(Resource.Loading())
 

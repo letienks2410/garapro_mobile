@@ -23,18 +23,27 @@ class RepairProgressViewModel : ViewModel() {
 
     private val repository = RepairProgressRepository(RetrofitInstance.RepairProgressService)
 
-    private val _repairOrders = MutableStateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>>(
-        RepairProgressRepository.ApiResponse.Loading())
-    val repairOrders: StateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>> = _repairOrders
+    private val _repairOrders =
+        MutableStateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>>(
+            RepairProgressRepository.ApiResponse.Loading()
+        )
+    val repairOrders: StateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>> =
+        _repairOrders
 
-    private val _repairOrderDetail = MutableStateFlow<RepairProgressRepository.ApiResponse<RepairProgressDetail>?>(null)
-    val repairOrderDetail: StateFlow<RepairProgressRepository.ApiResponse<RepairProgressDetail>?> = _repairOrderDetail
+    private val _repairOrderDetail =
+        MutableStateFlow<RepairProgressRepository.ApiResponse<RepairProgressDetail>?>(null)
+    val repairOrderDetail: StateFlow<RepairProgressRepository.ApiResponse<RepairProgressDetail>?> =
+        _repairOrderDetail
 
-    private val _paymentStatus = MutableStateFlow<RepairProgressRepository.ApiResponse<PaymentStatusDto>?>(null)
-    val paymentStatus: StateFlow<RepairProgressRepository.ApiResponse<PaymentStatusDto>?> = _paymentStatus
+    private val _paymentStatus =
+        MutableStateFlow<RepairProgressRepository.ApiResponse<PaymentStatusDto>?>(null)
+    val paymentStatus: StateFlow<RepairProgressRepository.ApiResponse<PaymentStatusDto>?> =
+        _paymentStatus
 
-    private val _createPaymentResponse = MutableStateFlow<RepairProgressRepository.ApiResponse<CreatePaymentResponse>?>(null)
-    val createPaymentResponse: StateFlow<RepairProgressRepository.ApiResponse<CreatePaymentResponse>?> = _createPaymentResponse
+    private val _createPaymentResponse =
+        MutableStateFlow<RepairProgressRepository.ApiResponse<CreatePaymentResponse>?>(null)
+    val createPaymentResponse: StateFlow<RepairProgressRepository.ApiResponse<CreatePaymentResponse>?> =
+        _createPaymentResponse
 
     private val _orderStatuses = MutableStateFlow<List<OrderStatus>>(emptyList())
     val orderStatuses: StateFlow<List<OrderStatus>> = _orderStatuses
@@ -51,20 +60,79 @@ class RepairProgressViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    // 🔹 Biến phục vụ phân trang
+    private var currentPage = 1
+    private var totalPages = 1
+
     init {
         loadOrderStatuses()
-        loadRepairOrders()
+        loadFirstPage()
     }
 
-    fun loadRepairOrders() {
+    // 🔹 Load trang đầu tiên
+    fun loadFirstPage() {
+        currentPage = 1
+        loadRepairOrders(page = 1, isLoadMore = false)
+    }
+
+    // 🔹 Hàm load chung (hỗ trợ loadMore)
+    fun loadRepairOrders(page: Int = 1, isLoadMore: Boolean = false) {
         viewModelScope.launch {
             _isLoading.value = true
-            _repairOrders.value = RepairProgressRepository.ApiResponse.Loading()
-            val result = repository.getMyRepairOrders(_filterState.value)
-            _repairOrders.value = result
-            updateFilterChips()
+
+            // Khi loadMore thì giữ UI hiện tại, không set lại Loading() để tránh đè empty state
+            if (!isLoadMore) {
+                _repairOrders.value = RepairProgressRepository.ApiResponse.Loading()
+            }
+
+            val filterForPage = _filterState.value.copy(pageNumber = page)
+            val result = repository.getMyRepairOrders(filterForPage)
+
+            when (result) {
+                is RepairProgressRepository.ApiResponse.Success -> {
+                    val paged = result.data
+                    currentPage = paged.pageNumber
+                    totalPages = paged.totalPages
+
+                    // Lấy list cũ (nếu trước đó đã có Success)
+                    val oldItems =
+                        ( _repairOrders.value as? RepairProgressRepository.ApiResponse.Success )
+                            ?.data
+                            ?.items
+                            ?: emptyList()
+
+                    // Nếu loadMore thì cộng dồn, còn không thì thay mới
+                    val mergedItems = if (isLoadMore) {
+                        oldItems + paged.items
+                    } else {
+                        paged.items
+                    }
+
+                    val mergedPagedResult = paged.copy(items = mergedItems)
+                    _repairOrders.value = RepairProgressRepository.ApiResponse.Success(mergedPagedResult)
+
+                    updateFilterChips()
+                }
+
+                is RepairProgressRepository.ApiResponse.Error -> {
+                    _repairOrders.value = result
+                }
+
+                is RepairProgressRepository.ApiResponse.Loading -> {
+                    // không dùng nhánh này ở đây
+                }
+            }
+
             _isLoading.value = false
         }
+    }
+
+    // 🔹 Load trang tiếp theo (dùng cho scroll cuối list)
+    fun loadNextPage() {
+        if (_isLoading.value) return
+        if (currentPage >= totalPages) return
+
+        loadRepairOrders(page = currentPage + 1, isLoadMore = true)
     }
 
     suspend fun createPaymentLinkDirect(createPaymentRequest: CreatePaymentRequest): CreatePaymentResponse? {
@@ -79,7 +147,6 @@ class RepairProgressViewModel : ViewModel() {
         }
     }
 
-    // Function tiện ích để lấy checkout URL từ response
     fun getCheckoutUrl(): String? {
         return when (val response = _createPaymentResponse.value) {
             is RepairProgressRepository.ApiResponse.Success -> response.data.checkoutUrl
@@ -96,7 +163,7 @@ class RepairProgressViewModel : ViewModel() {
             _isLoading.value = false
         }
     }
-    // Clear payment response khi cần
+
     fun clearPaymentResponse() {
         _createPaymentResponse.value = null
     }
@@ -119,8 +186,8 @@ class RepairProgressViewModel : ViewModel() {
     }
 
     fun updateFilter(newFilter: RepairOrderFilter) {
-        _filterState.value = newFilter
-        loadRepairOrders()
+        _filterState.value = newFilter.copy(pageNumber = 1)
+        loadFirstPage()
     }
 
     fun toggleFilterVisibility() {
@@ -129,30 +196,31 @@ class RepairProgressViewModel : ViewModel() {
 
     fun clearFilter() {
         _filterState.value = RepairOrderFilter()
-        loadRepairOrders()
+        loadFirstPage()
     }
 
     fun updateStatusFilter(statusId: Int?) {
-        _filterState.value = _filterState.value.copy(statusId = statusId)
-        loadRepairOrders()
+        _filterState.value = _filterState.value.copy(statusId = statusId, pageNumber = 1)
+        loadFirstPage()
     }
 
     fun updateRoTypeFilter(roType: RoType?) {
-        _filterState.value = _filterState.value.copy(roType = roType)
-        loadRepairOrders()
+        _filterState.value = _filterState.value.copy(roType = roType, pageNumber = 1)
+        loadFirstPage()
     }
 
     fun updatePaidStatusFilter(paidStatus: String?) {
-        _filterState.value = _filterState.value.copy(paidStatus = paidStatus)
-        loadRepairOrders()
+        _filterState.value = _filterState.value.copy(paidStatus = paidStatus, pageNumber = 1)
+        loadFirstPage()
     }
 
     fun updateDateFilter(fromDate: String?, toDate: String?) {
         _filterState.value = _filterState.value.copy(
             fromDate = fromDate,
-            toDate = toDate
+            toDate = toDate,
+            pageNumber = 1
         )
-        loadRepairOrders()
+        loadFirstPage()
     }
 
     fun removeFilterChip(chipId: String) {
@@ -171,20 +239,43 @@ class RepairProgressViewModel : ViewModel() {
         val chips = mutableListOf<FilterChipData>()
 
         _filterState.value.statusId?.let { statusId ->
-            val statusName = _orderStatuses.value.find { it.orderStatusId == statusId }?.statusName ?: "Status"
-            chips.add(FilterChipData("status_$statusId", statusName, FilterType.STATUS, true))
+            val statusName =
+                _orderStatuses.value.find { it.orderStatusId == statusId }?.statusName ?: "Status"
+            chips.add(
+                FilterChipData(
+                    "status_$statusId",
+                    statusName,
+                    FilterType.STATUS,
+                    true
+                )
+            )
         }
 
         _filterState.value.roType?.let { roType ->
-            chips.add(FilterChipData("roType_${roType.name}", roType.name, FilterType.RO_TYPE, true))
+            chips.add(
+                FilterChipData(
+                    "roType_${roType.name}",
+                    roType.name,
+                    FilterType.RO_TYPE,
+                    true
+                )
+            )
         }
 
         _filterState.value.paidStatus?.let { paidStatus ->
-            chips.add(FilterChipData("paid_$paidStatus", paidStatus, FilterType.PAID_STATUS, true))
+            chips.add(
+                FilterChipData(
+                    "paid_$paidStatus",
+                    paidStatus,
+                    FilterType.PAID_STATUS,
+                    true
+                )
+            )
         }
 
         if (_filterState.value.fromDate != null || _filterState.value.toDate != null) {
-            val dateText = "${_filterState.value.fromDate ?: ""} - ${_filterState.value.toDate ?: ""}"
+            val dateText =
+                "${_filterState.value.fromDate ?: ""} - ${_filterState.value.toDate ?: ""}"
             chips.add(FilterChipData("date_range", dateText, FilterType.DATE, true))
         }
 

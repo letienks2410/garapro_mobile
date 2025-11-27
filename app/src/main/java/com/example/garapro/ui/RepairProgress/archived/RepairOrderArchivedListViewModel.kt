@@ -8,8 +8,6 @@ import com.example.garapro.data.model.RepairProgresses.PagedResult
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListItem
 import com.example.garapro.data.model.RepairProgresses.RoType
-import com.example.garapro.data.remote.RepairProgressApiService
-import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import kotlinx.coroutines.launch
 
@@ -28,19 +26,92 @@ class RepairOrderArchivedListViewModel(
 
     private var currentFilter = RepairOrderArchivedFilter()
 
+    // 🔹 Biến phục vụ phân trang
+    private var currentPage = 1
+    private var totalPages = 1
+    private var isLoadingPage = false
+
+    /**
+     * Hàm cũ: mặc định load lại từ trang 1 (dùng cho lần đầu / refresh / đổi filter)
+     */
     fun loadOrders(filter: RepairOrderArchivedFilter? = null) {
-        val newFilter = filter ?: currentFilter
+        loadPage(page = 1, isLoadMore = false, filterOverride = filter)
+    }
+
+    /**
+     * 🔹 Hàm dùng chung cho cả load trang đầu và loadMore
+     */
+    private fun loadPage(
+        page: Int,
+        isLoadMore: Boolean,
+        filterOverride: RepairOrderArchivedFilter? = null
+    ) {
+        if (isLoadingPage) return
+
+        val newFilter = (filterOverride ?: currentFilter).copy(pageNumber = page)
         currentFilter = newFilter
         _filterState.value = newFilter
 
         viewModelScope.launch {
-            _ordersState.value = RepairProgressRepository.ApiResponse.Loading()
+            isLoadingPage = true
+
+            // Chỉ show state Loading khi load trang đầu, tránh nháy màn hình khi loadMore
+            if (!isLoadMore) {
+                _ordersState.value = RepairProgressRepository.ApiResponse.Loading()
+            }
+
             val result = repository.getArchivedRepairOrders(newFilter)
-            _ordersState.value = result
+
+            when (result) {
+                is RepairProgressRepository.ApiResponse.Success -> {
+                    val paged = result.data
+                    currentPage = paged.pageNumber
+                    totalPages = paged.totalPages
+
+                    val newItems = paged.items ?: emptyList()
+
+                    val mergedItems =
+                        if (isLoadMore) {
+                            val oldItems =
+                                (ordersState.value as? RepairProgressRepository.ApiResponse.Success)
+                                    ?.data
+                                    ?.items
+                                    ?: emptyList()
+                            oldItems + newItems
+                        } else {
+                            newItems
+                        }
+
+                    val mergedPaged = paged.copy(items = mergedItems)
+                    _ordersState.value =
+                        RepairProgressRepository.ApiResponse.Success(mergedPaged)
+                }
+
+                is RepairProgressRepository.ApiResponse.Error -> {
+                    _ordersState.value = result
+                }
+
+                is RepairProgressRepository.ApiResponse.Loading -> {
+                    // không dùng nhánh này ở đây
+                }
+            }
+
+            isLoadingPage = false
         }
     }
 
+    /**
+     * 🔹 Gọi khi kéo xuống cuối danh sách
+     */
+    fun loadNextPage() {
+        if (isLoadingPage) return
+        if (currentPage >= totalPages) return
+
+        loadPage(page = currentPage + 1, isLoadMore = true)
+    }
+
     fun refresh() {
+        // refresh luôn từ page 1
         loadOrders(currentFilter)
     }
 
@@ -76,4 +147,3 @@ class RepairOrderArchivedListViewModel(
         loadOrders(updated)
     }
 }
-

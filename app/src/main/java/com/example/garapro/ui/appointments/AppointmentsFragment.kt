@@ -54,9 +54,25 @@ class AppointmentsFragment : Fragment() {
         setupFilterSection()
         setupSwipeRefresh()
         setupCreateBookingButton()
-        observeViewModel()
+        setupEmptyState()
 
+        observeViewModel()
         viewModel.loadInitialData()
+    }
+
+    private fun setupEmptyState() {
+        // Đổi text cho phù hợp màn Appointments
+        binding.emptyState.tvEmptyTitle.text = "No appointments"
+        binding.emptyState.tvEmptyMessage.text = "Your repair appointments will appear here."
+
+        // Show nút + action tạo booking
+        binding.emptyState.btnEmptyAction.apply {
+            visibility = View.VISIBLE
+            text = "Create appointment"
+            setOnClickListener {
+                navigateToBookingActivity()
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -232,6 +248,16 @@ class AppointmentsFragment : Fragment() {
             viewModel.repairRequests.collect { requests ->
                 adapter.submitList(requests)
                 binding.swipeRefreshLayout.isRefreshing = false
+
+                if (requests.isNullOrEmpty()) {
+                    // Hiện empty state, ẩn list
+                    binding.emptyState.root.visibility = View.VISIBLE
+                    binding.swipeRefreshLayout.visibility = View.GONE
+                } else {
+                    // Có data: hiện list, ẩn empty state
+                    binding.emptyState.root.visibility = View.GONE
+                    binding.swipeRefreshLayout.visibility = View.VISIBLE
+                }
             }
         }
 
@@ -258,6 +284,7 @@ class AppointmentsFragment : Fragment() {
             }
         }
     }
+
 
     private fun updateVehicleSpinner(vehicles: List<Vehicle>) {
         val adapter = ArrayAdapter<String>(

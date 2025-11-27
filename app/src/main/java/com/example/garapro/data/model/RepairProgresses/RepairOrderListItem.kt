@@ -15,7 +15,7 @@ data class RepairOrderListItem(
     val vehicleModel: String,
     val statusName: String,
     val labels: List<Label>,
-    val progressPercentage: Double,
+    val progressPercentage: Int,
     val progressStatus: String,
     val feedBacks: Feedback?
 )

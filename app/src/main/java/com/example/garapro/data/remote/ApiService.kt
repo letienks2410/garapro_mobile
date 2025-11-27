@@ -8,6 +8,7 @@ import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.ApiResponse
 import com.example.garapro.data.model.ChangePasswordRequest
 import com.example.garapro.data.model.GenericResponse
+import com.example.garapro.data.model.GoogleLoginRequest
 import com.example.garapro.data.model.ImageResponse
 import com.example.garapro.data.model.LoginRequest
 import com.example.garapro.data.model.LoginResponse
@@ -54,6 +55,11 @@ interface ApiService {
 
     @GET("users/me")
     suspend fun getMe(): Response<User>
+
+    @POST("auth/google-login")
+    suspend fun googleLogin(
+        @Body request: GoogleLoginRequest
+    ): Response<LoginResponse>
 
     @POST("auth/refresh-token")
     suspend fun refreshToken(): Response<RefreshTokenResponse>

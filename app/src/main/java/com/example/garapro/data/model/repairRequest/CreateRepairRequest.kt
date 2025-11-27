@@ -13,9 +13,6 @@ data class CreateRepairRequest(
 
 data class ServiceRequest(
     val serviceId: String,
-    val parts: List<PartRequest>
+
 )
 
-data class PartRequest(
-    val partId: String
-)

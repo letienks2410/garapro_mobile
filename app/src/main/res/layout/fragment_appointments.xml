@@ -125,6 +125,14 @@
                 android:padding="8dp" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+        <!-- 🔹 Empty state -->
+        <include
+            android:id="@+id/emptyState"
+            layout="@layout/layout_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
         <!-- Main Booking button (FAB) -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnCreateBooking"

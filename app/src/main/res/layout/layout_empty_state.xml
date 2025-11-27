@@ -41,7 +41,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:text="Add New Item"
+        android:textColor="@android:color/white"
+        android:backgroundTint="@color/black"
         android:visibility="gone"
         app:cornerRadius="8dp" />
+
 
 </LinearLayout>
