@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Đăng Nhập"
+        android:text="Login"
         android:textColor="#000000"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -53,12 +53,11 @@
             android:id="@+id/textPhoneLogin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Số điện thoại"
+            android:hint="Phone number"
             android:inputType="phone"
             android:maxLines="1"
             android:textColor="#000000"
             android:textColorHint="#666666" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Password Input -->
@@ -82,12 +81,11 @@
             android:id="@+id/textPasswordLogin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Mật khẩu"
+            android:hint="Password"
             android:inputType="textPassword"
             android:maxLines="1"
             android:textColor="#000000"
             android:textColorHint="#666666" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Login Button -->
@@ -97,7 +95,7 @@
         android:layout_height="50dp"
         android:layout_marginTop="28dp"
         android:backgroundTint="#000000"
-        android:text="ĐĂNG NHẬP"
+        android:text="LOGIN"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -113,7 +111,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Quên mật khẩu?"
+        android:text="Forgot password?"
         android:textColor="#000000"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -126,7 +124,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="50dp"
-        android:text="Chưa có tài khoản? Đăng ký"
+        android:text="Don't have an account? Sign up"
         android:textColor="#000000"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"

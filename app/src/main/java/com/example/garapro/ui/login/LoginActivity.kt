@@ -58,6 +58,11 @@ class LoginActivity : AppCompatActivity() {
             viewModel.login(email, password)
         }
 
+        binding.textViewForgotPassword.setOnClickListener {
+            val intent = Intent(this, ForgotPasswordActivity::class.java)
+            startActivity(intent)
+        }
+
         binding.textViewSignUp.setOnClickListener {
             val intent = Intent(this, SignUpActivity::class.java)
             startActivity(intent)

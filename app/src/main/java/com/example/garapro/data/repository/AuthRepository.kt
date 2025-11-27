@@ -3,6 +3,8 @@ package com.example.garapro.data.repository
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.LoginRequest
 import com.example.garapro.data.model.LoginResponse
+import com.example.garapro.data.model.ResetPasswordRequest
+import com.example.garapro.data.model.ResetPasswordResponse
 import com.example.garapro.data.model.SignupRequest
 import com.example.garapro.data.model.SignupResponse
 import com.example.garapro.data.model.otpRequest

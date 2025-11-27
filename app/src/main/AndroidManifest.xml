@@ -28,6 +28,13 @@
             android:name=".ui.chat.ChatActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.profile.ChangePasswordActivity"
+            android:exported="false" />
+        <activity android:name=".ui.login.ForgotPasswordActivity" />
+        <activity android:name=".ui.login.VerifyOtpActivity" />
+        <activity android:name=".ui.login.ResetPasswordActivity" />
+
+        <activity
             android:name=".ui.feedback.RatingActivity"
             android:exported="false"
             android:label="@string/title_activity_rating_activity.kt"

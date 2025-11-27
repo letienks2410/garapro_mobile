@@ -112,7 +112,8 @@ class ProfileFragment : Fragment() {
         changePassIcon.setImageResource(R.drawable.ic_lock)
 
         menuChangePass.setOnClickListener {
-            Toast.makeText(requireContext(), "Change Password clicked", Toast.LENGTH_SHORT).show()
+            val intent = Intent(requireContext(), ChangePasswordActivity::class.java)
+            startActivity(intent)
         }
 
         // TERMS
