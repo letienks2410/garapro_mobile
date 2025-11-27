@@ -71,4 +71,8 @@ interface BookingService {
         @Part("dtoJson") dtoJson: RequestBody,
         @Part images: List<MultipartBody.Part>
     ): Response<ResponseBody>
+    @POST("RepairRequest/{id}/cancel")
+    suspend fun cancelRepairRequest(
+        @Path("id") id: String
+    ): Response<ResponseBody>
 }

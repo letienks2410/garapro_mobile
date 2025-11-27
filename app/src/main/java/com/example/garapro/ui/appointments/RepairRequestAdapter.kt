@@ -27,7 +27,7 @@ import java.util.Locale
 // RepairRequestAdapter.kt
 class RepairRequestAdapter(
     private val onItemClick: (RepairRequest) -> Unit,
-    private val onUpdateClick: (RepairRequest) -> Unit
+    private val onCancelClick: (RepairRequest) -> Unit
 ) : RecyclerView.Adapter<RepairRequestAdapter.ViewHolder>() {
 
     private val items = mutableListOf<RepairRequest>()
@@ -41,7 +41,7 @@ class RepairRequestAdapter(
         private val tvStatus: TextView = itemView.findViewById(R.id.tvStatus)
         private val tvBranch: TextView = itemView.findViewById(R.id.tvBranch)
         private val tvEstimatedCost: TextView = itemView.findViewById(R.id.tvEstimatedCost)
-        private val btnUpdate: MaterialButton = itemView.findViewById(R.id.btnUpdate)
+        private val btnCancel: MaterialButton = itemView.findViewById(R.id.btnCancel)
         private val cardView: MaterialCardView = itemView.findViewById(R.id.cardView)
 
         fun bind(item: RepairRequest) {
@@ -55,20 +55,28 @@ class RepairRequestAdapter(
             tvDescription.text = item.description
             tvRequestDate.text = formatDate(item.requestDate)
             tvBranch.text = branch?.branchName ?: "Unknown Branch"
-            tvEstimatedCost.visibility = View.GONE;
-//            tvEstimatedCost.text = "Estimated: ${MoneyUtils.formatVietnameseCurrency(item.estimatedCost)}"
+            tvEstimatedCost.visibility = View.GONE
+            // tvEstimatedCost.text = "Estimated: ${MoneyUtils.formatVietnameseCurrency(item.estimatedCost)}"
 
-            // Set status với background phù hợp
             val statusText = getStatusText(item.status)
             tvStatus.text = statusText
             tvStatus.setBackgroundResource(getStatusBackground(item.status))
 
-            // Show update button chỉ cho pending status
-            btnUpdate.visibility = View.GONE;
-//            btnUpdate.visibility = if (item.status == 0) View.VISIBLE else View.GONE
-            btnUpdate.setOnClickListener { onUpdateClick(item) }
+            // 🔹 Hiện nút Cancel nếu còn được phép cancel
+            btnCancel.visibility = if (canShowCancelButton(item)) View.VISIBLE else View.GONE
+            btnCancel.setOnClickListener { onCancelClick(item) }
 
             cardView.setOnClickListener { onItemClick(item) }
+        }
+        private fun canShowCancelButton(item: RepairRequest): Boolean {
+            // Không show cho CANCELLED(3) hoặc COMPLETED(4)
+            if (item.status == 3 || item.status == 4) return false
+
+            // (Option) chỉ show cho PENDING(0) hoặc ACCEPTED(1)
+            if (item.status != 0 && item.status != 1) return false
+
+
+            return true
         }
 
         private fun formatDate(dateString: String): String {

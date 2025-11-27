@@ -162,6 +162,14 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
             }
 
+            screen == "RepairOrderArchivedDetailFragment" && ids.containsKey("repairOrderId") ->
+            {
+                Log.d("quo","ArchivedDetailFragment")
+
+                NavigationInfo(R.id.repairProgressDetailFragment, ids, "repair_updated")
+
+            }
+
             // Case 3: Payment thông báo
 //            notificationType == "payment_completed" && ids.containsKey("paymentId") ->
 //                NavigationInfo(R.id.paymentStatusFragment, ids, "payment_done")
@@ -221,6 +229,15 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                     try {
                         // 1. Vào graph RepairTracking
                         navController.navigate(R.id.repairTrackingGraph)
+                    } catch (_: Exception) { }
+
+                    // 2. Mở RepairProgressDetail
+                    navController.navigate(R.id.repairProgressDetailFragment, bundle)
+                }
+                R.id.repairArchivedDetailFragment -> {
+                    try {
+                        // 1. Vào graph repairArchivedGraph
+                        navController.navigate(R.id.repairArchivedGraph)
                     } catch (_: Exception) { }
 
                     // 2. Mở RepairProgressDetail

@@ -178,6 +178,22 @@ class BookingRepository(
         }
     }
 
+    suspend fun cancelRepairRequest(id: String): NetworkResult<Unit> {
+        return try {
+            val response = RetrofitInstance.bookingService.cancelRepairRequest(id)
+
+            if (response.isSuccessful) {
+                NetworkResult.Success(Unit)
+            } else {
+                val errorMessage = parseApiError(response.errorBody())
+                NetworkResult.Error(errorMessage, response.code())
+            }
+        } catch (e: Exception) {
+            Log.e("BookingRepository", "Error cancelRepairRequest: ${e.message}", e)
+            NetworkResult.Error(e.message ?: "Something went wrong.")
+        }
+    }
+
     // 🔹 Service Categories
     suspend fun getServiceCategories(): List<ServiceCategory> {
         return try {

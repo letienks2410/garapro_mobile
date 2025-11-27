@@ -143,8 +143,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="Payment"
-            android:visibility="gone"
+            android:visibility="visible"
             app:backgroundTint="@color/black"
+            app:cornerRadius="10dp"
             style="@style/Widget.Material3.Button" />
 
         <TextView

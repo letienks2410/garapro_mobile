@@ -107,7 +107,7 @@ class RepairProgressListFragment : Fragment() {
                 )
             )
 
-            // 🔹 Phân trang: load thêm khi cuộn tới cuối
+            //  Phân trang: load thêm khi cuộn tới cuối
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
@@ -124,7 +124,7 @@ class RepairProgressListFragment : Fragment() {
     }
 
     private fun initJobHub() {
-        // ⚠️ ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
+        // ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
         val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
 
         jobHubService = JobSignalRService(jobHubUrl).apply {
@@ -506,12 +506,7 @@ class RepairProgressListFragment : Fragment() {
 
         jobHubService = null
 
-        // Xoá binding tránh leak memory
-        // (list fragment dùng biến binding = lateinit nên KHÔNG cần set null)
-        // Nhưng nếu bạn dùng _binding kiểu nullable thì dùng _binding = null
 
-        // Nếu sau này bạn thêm nhiều hub khác,
-        // thì cleanup ở đây luôn cho tiện.
     }
     override fun onResume() {
         super.onResume()

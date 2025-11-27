@@ -112,6 +112,8 @@
         android:layout_weight="1">
 
         <!-- List -->
+
+        <!-- 🔹 Empty state -->
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
@@ -125,7 +127,6 @@
                 android:padding="8dp" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-        <!-- 🔹 Empty state -->
         <include
             android:id="@+id/emptyState"
             layout="@layout/layout_empty_state"
