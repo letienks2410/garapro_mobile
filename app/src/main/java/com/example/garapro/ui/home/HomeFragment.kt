@@ -10,6 +10,7 @@ import android.widget.Button
 import androidx.fragment.app.Fragment
 import com.example.garapro.R
 import com.example.garapro.ui.emergencies.MapActivity
+import com.example.garapro.ui.emergencies.MapDirectionDemoActivity
 import com.example.garapro.ui.repairRequest.BookingActivity
 
 class HomeFragment : Fragment() {
@@ -27,7 +28,7 @@ class HomeFragment : Fragment() {
         }
         val btnGoToMap = view.findViewById<Button>(R.id.btnGoToMap)
         btnGoToMap.setOnClickListener {
-            val intent = Intent(requireContext(), MapActivity::class.java)
+            val intent = Intent(requireContext(), MapDirectionDemoActivity::class.java)
             startActivity(intent)
         }
 

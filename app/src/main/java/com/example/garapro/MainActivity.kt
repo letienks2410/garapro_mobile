@@ -166,7 +166,14 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             {
                 Log.d("quo","ArchivedDetailFragment")
 
-                NavigationInfo(R.id.repairProgressDetailFragment, ids, "repair_updated")
+                NavigationInfo(R.id.repairArchivedDetailFragment, ids, "repair_updated")
+
+            }
+            screen == "RepairRequestDetailFragment" && ids.containsKey("repairRequestId") ->
+            {
+                Log.d("quo","ArchivedDetailFragment")
+
+                NavigationInfo(R.id.appointmentDetailFragment, ids, "repair_updated")
 
             }
 
@@ -244,6 +251,16 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                     navController.navigate(R.id.repairProgressDetailFragment, bundle)
                 }
 
+                R.id.appointmentDetailFragment -> {
+                    try {
+
+                        navController.navigate(R.id.appointmentGraph)
+                    } catch (_: Exception) { }
+
+
+                    navController.navigate(R.id.appointmentDetailFragment, bundle)
+                }
+
                 else -> {
                     navController.navigate(navigationInfo.destinationId, bundle)
                 }
@@ -256,26 +273,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     }
 
 
-    private fun getParentMenuItemId(destinationId: Int): Int {
-        val graph = navController.graph
 
-        // Tìm destination trong graph (có thể là fragment hoặc nested graph)
-        val destination = graph.findNode(destinationId) ?: return R.id.homeFragment
-
-        var current: NavDestination = destination
-        var parent = current.parent
-
-        // Đi ngược lên cho tới khi cha trực tiếp là top-level graph (nav_customer/nav_technician)
-        while (parent != null && parent.id != graph.id) {
-            current = parent
-            parent = current.parent
-        }
-
-        // current.id lúc này chính là:
-        // - id của fragment top-level (homeFragment, profileFragment, ...)
-        // - hoặc id của nested graph (appointmentGraph, repairTrackingGraph, ...)
-        return current.id
-    }
     private fun extractAllIds(intent: Intent): Map<String, String> {
         val idMap = mutableMapOf<String, String>()
 

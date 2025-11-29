@@ -109,6 +109,9 @@ class PaymentResultActivity : AppCompatActivity() {
         }
 
         btnClose.setOnClickListener {
+            val i = Intent(this@PaymentResultActivity, MainActivity::class.java)
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(i)
             finish()
         }
     }
@@ -172,7 +175,7 @@ class PaymentResultActivity : AppCompatActivity() {
 
         tvResult.text = "Payment Failed"
         tvStatus.text = "We couldn't process your payment. Please try again."
-        findViewById<MaterialButton>(R.id.btnRetry).visibility = View.VISIBLE
+        findViewById<MaterialButton>(R.id.btnRetry).visibility = View.GONE
     }
 
     private fun showCancelledState() {
@@ -182,7 +185,7 @@ class PaymentResultActivity : AppCompatActivity() {
 
         tvResult.text = "Payment Cancelled"
         tvStatus.text = "Your payment was cancelled. You can try again anytime."
-        findViewById<MaterialButton>(R.id.btnRetry).visibility = View.VISIBLE
+        findViewById<MaterialButton>(R.id.btnRetry).visibility = View.GONE
     }
 
     private fun showPendingState() {

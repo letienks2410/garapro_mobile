@@ -85,7 +85,7 @@ class RepairProgressDetailFragment : Fragment() {
 
     private fun initRepairHub() {
 
-        val hubUrl =Constants.BASE_URL_SIGNALR +"/hubs/repair"
+        val hubUrl =Constants.BASE_URL_SIGNALR +"/api/repair"
 
         signalRService = RepairOrderSignalRService(hubUrl).apply {
             setupListeners()

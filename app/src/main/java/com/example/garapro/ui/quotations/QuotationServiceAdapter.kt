@@ -163,8 +163,8 @@ class QuotationServiceAdapter(
             } else {
                 // View-only (Approved/Rejected/Expired/Pending) – use server data
                 if (hasServerPromotion) {
-                    val finalServicePrice = service.finalPrice ?: basePrice
-                    val finalTotal = finalServicePrice + partsTotal
+//                    val finalServicePrice = service.finalPrice ?: basePrice
+                    val finalTotal = service.finalPrice?: 0.0
 
                     binding.tvDiscountPromotion.visibility = View.VISIBLE
                     binding.tvDiscountPromotion.text =

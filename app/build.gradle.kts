@@ -85,6 +85,8 @@ dependencies {
 
     implementation ("com.google.dagger:hilt-android:2.51.1")
 
+// map
+    implementation("org.maplibre.gl:android-sdk:10.2.0")
 
     // Retrofit + OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
