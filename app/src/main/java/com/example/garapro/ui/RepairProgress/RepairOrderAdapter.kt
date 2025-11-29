@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -21,7 +22,8 @@ import java.util.Locale
 
 class RepairOrderAdapter(
     private val onItemClick: (RepairOrderListItem) -> Unit,
-    private val onPaymentClick: (RepairOrderListItem) -> Unit
+    private val onPaymentClick: (RepairOrderListItem) -> Unit,
+    private val onRatingClick: (RepairOrderListItem) -> Unit
 ) : ListAdapter<RepairOrderListItem, RepairOrderAdapter.ViewHolder>(DiffCallback) {
 
     companion object {
@@ -65,6 +67,7 @@ class RepairOrderAdapter(
                     onPaymentClick(getItem(position))
                 }
             }
+
         }
 
 
@@ -75,7 +78,7 @@ class RepairOrderAdapter(
                 statusText.text = getStatusNameEnglish(item.statusName)
                 progressStatus.text = item.progressStatus
                 progressPercentage.text = (item.progressPercentage?.toString() ?: "0") + "%"
-                progressBar.progress = item.progressPercentage
+                progressBar.progress = item.progressPercentage?.toInt() ?: 0
                 costText.text = formatCurrency(item.cost)
                 paidStatusText.text = getPaidStatusEnglish(item.paidStatus)
                 roTypeText.text = getROTypeNameEnglish(item.roType)
@@ -83,20 +86,44 @@ class RepairOrderAdapter(
                 // Set status color
                 val statusColor = getStatusColor(item.statusName)
                 statusText.setBackgroundColor(statusColor)
-                showPaymentButton(item)
+                //showPaymentButton(item)
+
+                updateViews(item)
                 // Setup labels
                 setupLabels(item.labels)
             }
         }
 
-        private fun showPaymentButton(item: RepairOrderListItem) {
-            val shouldShowPaymentButton = item.statusName == "Completed" && item.paidStatus == "Unpaid"
-            binding.paymentButton.visibility = if (shouldShowPaymentButton) {
-                View.VISIBLE
-            } else {
-                View.GONE
+        private fun updateViews(item: RepairOrderListItem) {
+            with(binding) {
+
+                // Nếu Completed → luôn hiện thông báo lấy xe
+                if (item.statusName == "Completed") {
+                    pickupMessage.visibility = View.VISIBLE
+
+
+                    // Nếu Completed + Unpaid → hiện nút thanh toán
+                    if (item.paidStatus == "Unpaid") {
+                        paymentButton.visibility = View.VISIBLE
+                        pickupMessage.text =
+                            "Your vehicle is ready for pickup. You can do payment online or cash when you show up at the garage."
+                    }
+                    // Nếu Completed + Paid → ẩn nút thanh toán
+                    else {
+                        paymentButton.visibility = View.GONE
+                        pickupMessage.text =
+                            "Your vehicle is ready for pickup. Thank for your payment."
+                    }
+
+                } else {
+                    // Các trạng thái khác → ẩn hết
+                    pickupMessage.visibility = View.GONE
+                    paymentButton.visibility = View.GONE
+                }
             }
         }
+
+
         private fun setupLabels(labels: List<Label>) {
             // Commented out label setup
         }

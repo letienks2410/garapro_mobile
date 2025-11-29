@@ -137,13 +137,13 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <!-- Update button (only for pending) -->
+        <!-- Update button (only for Accepted) -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUpdate"
+            android:id="@+id/btnCancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Update Request"
+            android:text="Cancel"
             android:visibility="gone"
             app:icon="@drawable/ic_settings"
             app:iconGravity="textStart"

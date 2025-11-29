@@ -4,6 +4,7 @@
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
+
     <style name="AppBottomSheetDialogTheme" parent="Theme.Material3.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/AppModalStyle</item>
     </style>
@@ -12,5 +13,37 @@
         <item name="android:maxHeight">@dimen/bottom_sheet_max_height</item>
     </style>
 
-    <style name="Theme.GaraPro" parent="Base.Theme.GaraPro" />
+
+    <style name="Theme.GaraPro" parent="Theme.Material3.DayNight.NoActionBar"/>
+    <style name="ThemeOverlay.GaraPro.DatePicker" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+
+        <!-- NỀN TRẮNG -->
+        <item name="colorSurface">@color/white</item>
+        <item name="backgroundColor">@color/white</item>
+
+        <!-- CHỮ ĐEN -->
+        <item name="colorOnSurface">@color/black</item>
+        <item name="colorOnBackground">@color/black</item>
+
+        <!-- Header -->
+        <item name="colorPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Icon, text phụ -->
+        <item name="colorControlNormal">@color/black</item>
+
+        <!-- Button OK / Cancel -->
+        <item name="materialCalendarStyle">@style/GaraPro.CalendarMainStyle</item>
+        <item name="materialCalendarTheme">@style/GaraPro.CalendarMainStyle</item>
+
+    </style>
+
+    <!-- Style chính của Calendar -->
+    <style name="GaraPro.CalendarMainStyle" parent="Widget.MaterialComponents.MaterialCalendar">
+        <item name="android:textColor">@color/black</item>
+        <item name="itemTextColor">@color/black</item>
+        <item name="itemFillColor">@color/white</item>
+    </style>
+
+
 </resources>

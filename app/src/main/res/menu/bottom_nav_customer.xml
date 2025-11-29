@@ -1,27 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+
     <item
         android:id="@+id/homeFragment"
         android:icon="@drawable/ic_home"
-        android:title="Trang chủ" />
+        android:title="Home" />
 
+    <!-- ĐỔI từ appointmentNavFragment -> appointmentGraph -->
     <item
-        android:id="@+id/appointmentNavFragment"
+        android:id="@+id/appointmentGraph"
         android:icon="@drawable/ic_calendar"
-        android:title="Đặt lịch" />
+        android:title="Appointments" />
 
     <item
-        android:id="@+id/repairTrackingFragment"
+        android:id="@+id/repairTrackingGraph"
         android:icon="@drawable/ic_repair"
-        android:title="sửa chữa" />
+        android:title="Repair" />
 
     <item
-        android:id="@+id/test"
+        android:id="@+id/repairArchivedGraph"
         android:icon="@drawable/gr_logo"
-        android:title="test" />
-
+        android:title="Repair Archived" />
+    <item
+        android:id="@+id/chat"
+        android:icon="@drawable/gr_logo"
+        android:title="Chat" />
     <item
         android:id="@+id/profileFragment"
         android:icon="@drawable/ic_user"
-        android:title="Hồ sơ" />
+        android:title="Profile" />
 </menu>

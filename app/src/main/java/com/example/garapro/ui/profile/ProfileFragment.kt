@@ -19,7 +19,10 @@ import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.remote.ApiService
-import com.example.garapro.data.repository.AuthRepository
+import android.widget.ImageView
+import android.widget.TextView
+import com.example.garapro.R
+
 import com.example.garapro.data.repository.UserRepository
 import com.example.garapro.databinding.FragmentProfileBinding
 import com.example.garapro.ui.login.LoginActivity
@@ -32,6 +35,7 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var editProfileLauncher: ActivityResultLauncher<Intent>
     private lateinit var viewModel: ProfileViewModel
+    private var tokenExpiredReceiver: BroadcastReceiver? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -57,7 +61,7 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        val receiver = object : BroadcastReceiver() {
+        tokenExpiredReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == "TOKEN_EXPIRED") {
                     // Kiểm tra fragment còn attached không
@@ -79,7 +83,7 @@ class ProfileFragment : Fragment() {
 
 
         LocalBroadcastManager.getInstance(requireContext())
-            .registerReceiver(receiver, IntentFilter("TOKEN_EXPIRED"))
+            .registerReceiver(tokenExpiredReceiver!!, IntentFilter("TOKEN_EXPIRED"))
 
         // Logout
         binding.btnLogout.setOnClickListener {
@@ -97,9 +101,41 @@ class ProfileFragment : Fragment() {
         setupProfileMenu()
 
 
+
         setupObservers()
+        setupMenuItems()
         viewModel.loadUserInfo()
     }
+
+    private fun setupMenuItems() {
+
+        // CHANGE PASSWORD
+        val menuChangePass = binding.root.findViewById<View>(R.id.changePass)
+        val changePassIcon = menuChangePass.findViewById<ImageView>(R.id.ivIcon)
+        val changePassTitle = menuChangePass.findViewById<TextView>(R.id.tvTitle)
+
+        changePassTitle.text = "Change Password"
+        changePassIcon.setImageResource(R.drawable.ic_lock)
+
+        menuChangePass.setOnClickListener {
+            val intent = Intent(requireContext(), ChangePasswordActivity::class.java)
+            startActivity(intent)
+        }
+
+        // TERMS
+        val menuTerms = binding.root.findViewById<View>(R.id.menuTerms)
+        val termsIcon = menuTerms.findViewById<ImageView>(R.id.ivIcon)
+        val termsTitle = menuTerms.findViewById<TextView>(R.id.tvTitle)
+
+        termsTitle.text = "Terms & Conditions"
+        termsIcon.setImageResource(R.drawable.ic_empty_document)
+
+        menuTerms.setOnClickListener {
+            Toast.makeText(requireContext(), "Terms clicked", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
 
     private fun setupObservers() {
         viewModel.userState.observe(viewLifecycleOwner) { result ->
@@ -153,6 +189,11 @@ class ProfileFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        tokenExpiredReceiver?.let {
+            LocalBroadcastManager.getInstance(requireContext())
+                .unregisterReceiver(it)
+        }
+        tokenExpiredReceiver = null
         _binding = null
     }
 }

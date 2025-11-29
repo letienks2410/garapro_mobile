@@ -7,7 +7,12 @@
     android:background="@android:color/white"
     android:padding="16dp">
 
-
+    <include
+        android:id="@+id/emptyState"
+        layout="@layout/layout_empty_state"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvVehicles"

@@ -26,9 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            app:strokeWidth="2dp"
-            >
+            android:gravity="center_vertical">
 
             <com.google.android.material.checkbox.MaterialCheckBox
                 android:id="@+id/cbService"
@@ -65,18 +63,66 @@
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:maxLines="2"
                     android:ellipsize="end" />
-
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvServicePrice"
+            <!-- 🔹 Cột giá: gốc + sau ưu đãi -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1.500.000 ₫"
-                android:textAppearance="@style/TextAppearance.Material3.LabelSmall.Emphasized"
-                android:textSize="7dp"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginStart="8dp" />
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <!-- Giá gốc (sẽ gạch ngang nếu có ưu đãi) -->
+                <TextView
+                    android:id="@+id/tvServicePriceBase"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Service: 500.000 ₫"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/black" />
+
+                <!-- Service + selected parts -->
+                <TextView
+                    android:id="@+id/tvServicePriceWithParts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Service + parts: 650.000 ₫"
+                    android:textSize="9sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:id="@+id/tvDiscountPromotion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Discount: 600.000 ₫"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/darker_gray"
+                    android:visibility="gone" />
+                <!-- After promotion -->
+                <com.google.android.material.divider.MaterialDivider
+                    android:id="@+id/materialDivider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="0dp"
+                    app:dividerColor="@color/black"
+                    app:dividerThickness="1dp" />
+
+                <TextView
+                    android:id="@+id/tvServicePriceAfterPromotion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="After promotion: 600.000 ₫"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- 🔸 Required chip -->
@@ -94,6 +140,18 @@
             android:textColor="?attr/colorOnErrorContainer"
             android:visibility="gone" />
 
+        <!-- 🔹 Tên ưu đãi -->
+        <TextView
+            android:id="@+id/tvPromotionName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Ưu đãi: Giảm 10%"
+            android:textSize="9dp"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone" />
+
         <!-- 🔹 Selected parts summary -->
         <LinearLayout
             android:id="@+id/selectedPartsSummary"
@@ -103,9 +161,7 @@
             android:padding="10dp"
             android:layout_marginTop="10dp"
             android:background="?attr/colorSurfaceContainerHigh"
-            app:cardCornerRadius="5dp"
-            android:visibility="gone"
-            android:dividerPadding="4dp">
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/tvSelectedPartsTitle"
@@ -127,12 +183,29 @@
                 android:textColor="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
+        <!-- 🔹 Nút chọn ưu đãi -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPromotion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Chọn ưu đãi"
+            android:textSize="9dp"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:textAllCaps="false"
+            android:paddingHorizontal="0dp"
+            app:icon="@drawable/ic_voucher"
+            app:iconGravity="textStart"
+            app:iconPadding="4dp"
+            app:iconTint="?attr/colorPrimary"
+            android:textColor="?attr/colorPrimary" />
+
         <!-- 🔸 Toggle button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnToggleParts"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:text="Show Parts"
             android:textSize="10dp"
             style="@style/Widget.Material3.Button.TextButton"

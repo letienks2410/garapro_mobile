@@ -1,7 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.GaraPro" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <style name="ThemeOverlay.CustomDatePicker" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+        <!-- Nền calendar trắng -->
+        <item name="colorSurface">@color/white</item>
+        <!-- Chữ trên nền -->
+        <item name="colorOnSurface">@color/black</item>
+        <!-- Một số text phụ / icon -->
+        <item name="colorOnBackground">@color/black</item>
     </style>
 </resources>

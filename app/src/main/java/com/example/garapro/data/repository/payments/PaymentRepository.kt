@@ -1,9 +1,11 @@
 package com.example.garapro.data.repository
 
+import android.util.Log
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatus
 import com.example.garapro.data.model.payments.PaymentStatusDto
+import com.example.garapro.data.model.payments.RepairOrderPaymentDto
 import com.example.garapro.data.remote.PaymentService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -28,14 +30,28 @@ class PaymentRepository(
         private const val DEFAULT_MAX_RETRIES = 3
     }
 
+    suspend fun getPaymentBill(repairOrderId: String): Result<RepairOrderPaymentDto> =
+        withContext(dispatcher) {
+            try {
+                Timber.d("Fetching payment bill for repairOrder: $repairOrderId")
+                val response = api.getPaymentBill(repairOrderId)
+                Result.success(response)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to fetch payment bill for repairOrder: $repairOrderId")
+                Result.failure(e)
+            }
+        }
     suspend fun createPaymentLink(req: CreatePaymentRequest): Result<CreatePaymentResponse> =
         withContext(dispatcher) {
             try {
                 Timber.d("Creating payment link for order: ${req.orderCode ?: "new"}")
                 val response = api.createLink(req)
                 Timber.d("Payment link created successfully: ${response.orderCode}")
+                Log.d("Payment link created successfully:", response.toString())
                 Result.success(response)
             } catch (e: Exception) {
+                Log.d("Payment link created successfully:", e.message.toString())
+
                 Timber.e(e, "Failed to create payment link")
                 Result.failure(e)
             }

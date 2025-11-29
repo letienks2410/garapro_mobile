@@ -3,15 +3,19 @@ package com.example.garapro.ui.quotations
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
+import com.example.garapro.data.model.quotations.CustomerPromotion
+import com.example.garapro.data.model.quotations.CustomerPromotionResponse
 import com.example.garapro.data.model.quotations.Quotation
 import com.example.garapro.data.model.quotations.QuotationDetail
 import com.example.garapro.data.model.quotations.QuotationService
@@ -20,6 +24,7 @@ import com.example.garapro.data.model.quotations.SubmitConfirmationType
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.repository.QuotationRepository
 import com.example.garapro.databinding.FragmentQuotationDetailBinding
+import com.example.garapro.ui.promotions.PromotionBottomSheetFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import java.text.NumberFormat
@@ -67,6 +72,9 @@ class QuotationDetailFragment : Fragment() {
             onCheckChanged = { id, checked -> viewModel.onServiceCheckChanged(id, checked) },
             onPartToggle = { serviceId, categoryId, partId ->
                 viewModel.togglePartSelection(serviceId, categoryId, partId)
+            },
+            onPromotionClick = { service ->
+                viewModel.onPromotionClick(service)
             }
         )
 
@@ -122,6 +130,18 @@ class QuotationDetailFragment : Fragment() {
             it?.let(::showError)
         }
 
+        viewModel.openPromotionDialog.observe(viewLifecycleOwner) { response ->
+            response?.let {
+                showPromotionBottomSheet(it)
+                viewModel.clearOpenPromotionDialog()
+            }
+        }
+
+        viewModel.servicePromotions.observe(viewLifecycleOwner) { map ->
+            adapter.updatePromotions(map)
+            calculateTotal()
+        }
+
         viewModel.pendingServiceToggle.observe(viewLifecycleOwner) {
             it?.let(::showUnselectWarning)
         }
@@ -132,7 +152,13 @@ class QuotationDetailFragment : Fragment() {
 
         viewModel.hasUnselectedServices.observe(viewLifecycleOwner) { hasUnselected ->
             // Show customer note field when services are unselected
-            binding.customerNoteSection.visibility = if (hasUnselected) View.VISIBLE else View.GONE
+            if (hasUnselected)
+            {
+                binding.titleCustomerNote.text = "Note"
+                binding.customerNoteSection.visibility = View.VISIBLE
+            }else {
+                binding.customerNoteSection.visibility = View.GONE
+            }
         }
     }
 
@@ -150,6 +176,64 @@ class QuotationDetailFragment : Fragment() {
         // Update editable status for adapter
         adapter.updateEditable(isEditable)
     }
+
+    private fun showPromotionBottomSheet(response: CustomerPromotionResponse) {
+        try {
+            val quotation = viewModel.quotation.value ?: run {
+                Toast.makeText(requireContext(), "quotation null", Toast.LENGTH_SHORT).show()
+                Log.d("PromotionSheet", "quotation null")
+                return
+            }
+
+            val service = quotation.quotationServices
+                .find { it.serviceId == response.serviceId }
+                ?: run {
+                    Toast.makeText(requireContext(), "service not found", Toast.LENGTH_SHORT).show()
+                    Log.d("PromotionSheet", "service not found for id=${response.serviceId}")
+                    return
+                }
+
+            val originalPrice = viewModel.calculateCurrentOrderValue(service)
+            val currentState = viewModel.servicePromotions.value?.get(response.serviceId)
+            val selectedPromotionId = currentState?.selectedPromotion?.id
+            val eligiblePromotions = response.promotions.filter { it.isEligible }
+
+            Log.d("PromotionSheet", "init, eligible=${eligiblePromotions.size}")
+
+            if (eligiblePromotions.isEmpty()) {
+                Toast.makeText(requireContext(), "No available promotion", Toast.LENGTH_SHORT).show()
+                Log.d("PromotionSheet", "eligiblePromotions EMPTY")
+                return
+            }
+
+            val bottomSheet = PromotionBottomSheetFragment.newInstance(
+                serviceName = service.serviceName,
+                originalPrice = originalPrice,
+                promotions = eligiblePromotions,
+                selectedPromotionId = selectedPromotionId
+            )
+
+            bottomSheet.setListener(object : PromotionBottomSheetFragment.PromotionSelectionListener {
+                override fun onPromotionSelected(promotion: CustomerPromotion?, originalPrice: Double) {
+                    viewModel.applyPromotion(response.serviceId, promotion, originalPrice)
+                }
+
+                override fun onPromotionRemoved(originalPrice: Double) {
+                    viewModel.applyPromotion(response.serviceId, null, originalPrice)
+                }
+            })
+
+            Log.d("PromotionSheet", "show() called")
+            Toast.makeText(requireContext(), "Opening bottom sheet...", Toast.LENGTH_SHORT).show()
+
+            bottomSheet.show(parentFragmentManager, "PromotionBottomSheet")
+
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Error showing promotion sheet", Toast.LENGTH_SHORT).show()
+            Log.e("PromotionSheet", "Error showing bottom sheet", e)
+        }
+    }
+
 
     private fun setupEditableMode() {
         // Allow checkbox clicks
@@ -196,7 +280,9 @@ class QuotationDetailFragment : Fragment() {
     }
 
     private fun setupRejectWithNoteMode() {
-        binding.btnReject.text = "Submit rejection reason"
+        binding.btnReject.text = "Submit rejection"
+        binding.titleCustomerNote.text = "Note(*)"
+        binding.etCustomerNote.setText(viewModel.customerNote.value ?: "")
         binding.btnReject.setOnClickListener {
             val note = viewModel.customerNote.value ?: ""
             if (note.length >= 10) {
@@ -233,7 +319,7 @@ class QuotationDetailFragment : Fragment() {
         if (hasNote) {
             // Disable edit text and show note
             binding.etCustomerNote.isEnabled = false
-            binding.etCustomerNote.setText(quotation?.note)
+            binding.etCustomerNote.setText(quotation?.customerNote)
             binding.tilCustomerNote.helperText = "Your note"
             binding.tilCustomerNote.boxBackgroundColor = ContextCompat.getColor(requireContext(), R.color.gray_light)
         } else {
@@ -258,6 +344,8 @@ class QuotationDetailFragment : Fragment() {
         }
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
+
+
 
     private fun getReadOnlyMessage(status: QuotationStatus): String {
         return when (status) {
@@ -285,15 +373,17 @@ class QuotationDetailFragment : Fragment() {
         calculateTotal()
     }
 
+
+
     private fun calculateTotal() {
-        val total = viewModel.quotation.value?.quotationServices?.sumOf { service ->
+        val quotation = viewModel.quotation.value ?: return
+        var total = 0.0
+
+        quotation.quotationServices.forEach { service ->
             if (service.isSelected) {
-                service.totalPrice + service.partCategories.flatMap { it.parts }
-                    .sumOf { part -> if (part.isSelected) part.price else 0.0 }
-            } else {
-                0.0
+                total += viewModel.getFinalPriceForService(service)
             }
-        } ?: 0.0
+        }
 
         binding.tvSelectedTotal.text = formatCurrency(total)
         updateSubmitButton(viewModel.isSubmitting.value ?: false)
@@ -385,17 +475,7 @@ class QuotationDetailFragment : Fragment() {
 
         quotation.quotationServices.forEach { service ->
             if (service.isSelected) {
-                // Add service price
-                total += service.totalPrice
-
-                // Add part prices in PartCategories
-                service.partCategories.forEach { category ->
-                    category.parts.forEach { part ->
-                        if (part.isSelected) {
-                            total += part.price
-                        }
-                    }
-                }
+                total += viewModel.getFinalPriceForService(service)
             }
         }
 

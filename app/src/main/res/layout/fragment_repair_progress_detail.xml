@@ -215,57 +215,8 @@
                         android:orientation="horizontal"
                         android:padding="12dp">
 
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Estimated"
-                                android:textColor="#666666"
-                                android:textSize="10sp" />
 
-                            <TextView
-                                android:id="@+id/estimatedAmount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="800,000 VND"
-                                android:textColor="#000000"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Paid"
-                                android:textColor="#666666"
-                                android:textSize="10sp" />
-
-                            <TextView
-                                android:id="@+id/paidAmount"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="0 VND"
-                                android:textColor="#000000"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                        </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -295,7 +246,29 @@
 
                     </LinearLayout>
 
+                    <TextView
+                        android:id="@+id/paymentAction"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Your vehicle is ready for pickup. Tap here to proceed with payment."
+                        android:textColor="@color/primary"
+                        android:textSize="14sp"
+                        android:padding="12dp"
+                        android:background="@drawable/bg_payment_notice"
+                        android:visibility="visible" />
+
                     <!-- Note -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/paymentButton"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Payment"
+                        android:visibility="visible"
+                        app:backgroundTint="@color/green" />
+
                     <TextView
                         android:id="@+id/note"
                         android:layout_width="match_parent"
@@ -310,6 +283,7 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Progress Section -->
             <!-- Progress Section (đã gộp Jobs vào chung) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -420,10 +394,10 @@
                         android:id="@+id/jobsRecyclerView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:clipToPadding="false"
-                        android:paddingHorizontal="0dp"
                         android:layout_marginHorizontal="0dp"
+                        android:clipToPadding="false"
                         android:nestedScrollingEnabled="false"
+                        android:paddingHorizontal="0dp"
                         tools:listitem="@layout/item_job" />
 
                 </LinearLayout>

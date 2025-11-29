@@ -63,7 +63,7 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
     fun logout(context: Context) {
         viewModelScope.launch {
             val tokenManager = TokenManager(context)
-            tokenManager.clearTokens()
+            tokenManager.clearAll()
 
             val intent = Intent(context, LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

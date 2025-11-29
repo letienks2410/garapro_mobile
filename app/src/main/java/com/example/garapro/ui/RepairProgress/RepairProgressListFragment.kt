@@ -2,6 +2,7 @@ package com.example.garapro.ui.RepairProgress
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -16,8 +18,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
 import com.example.garapro.data.model.RepairProgresses.FilterChipData
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
 import com.example.garapro.data.model.RepairProgresses.RoType
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
@@ -27,16 +31,24 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
+import com.example.garapro.ui.feedback.RatingActivity
 import com.example.garapro.hubs.JobSignalRService
+import com.example.garapro.ui.payments.PaymentBillActivity
 import com.example.garapro.utils.Constants
+import com.google.android.material.datepicker.MaterialDatePicker
 
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+
 
 class RepairProgressListFragment : Fragment() {
 
     private lateinit var binding: FragmentRepairProgressListBinding
     private val viewModel: RepairProgressViewModel by viewModels()
     private lateinit var adapter: RepairOrderAdapter
+
 
     private var jobHubService: JobSignalRService? = null
 
@@ -56,25 +68,63 @@ class RepairProgressListFragment : Fragment() {
         observeJobHubEvents()
     }
 
+    private val ratingLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Khi RatingActivity trả về RESULT_FEEDBACK_POSTED -> reload danh sách
+        if (result.resultCode == RatingActivity.RESULT_FEEDBACK_POSTED) {
+            // gọi lại API để refresh
+            viewModel.loadRepairOrders()
+            // hoặc nếu dùng paging/flow khác thì trigger reload tương ứng
+        }
+    }
+
     private fun setupRecyclerView() {
         adapter = RepairOrderAdapter(
             onItemClick = { repairOrder ->
                 navigateToDetail(repairOrder.repairOrderId)
             },
             onPaymentClick = { repairOrder ->
-                showPaymentDialog(repairOrder)
+                navigateToPaymentBill(repairOrder.repairOrderId)
+            },
+            onRatingClick = { item ->
+                val intent = Intent(requireContext(), RatingActivity::class.java).apply {
+                    putExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID, item.repairOrderId)
+                }
+                ratingLauncher.launch(intent)
+//                showPaymentDialog(repairOrder)
+
             }
         )
 
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@RepairProgressListFragment.adapter
-            addItemDecoration(DividerItemDecoration(requireContext(), LinearLayoutManager.VERTICAL))
+            addItemDecoration(
+                DividerItemDecoration(
+                    requireContext(),
+                    LinearLayoutManager.VERTICAL
+                )
+            )
+
+            //  Phân trang: load thêm khi cuộn tới cuối
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+
+                    // chỉ xử lý khi scroll xuống
+                    if (dy <= 0) return
+
+                    if (!recyclerView.canScrollVertically(1)) {
+                        viewModel.loadNextPage()
+                    }
+                }
+            })
         }
     }
 
     private fun initJobHub() {
-        // ⚠️ ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
+        // ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
         val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
 
         jobHubService = JobSignalRService(jobHubUrl).apply {
@@ -183,6 +233,7 @@ class RepairProgressListFragment : Fragment() {
         }
     }
 
+
     private fun showStatusFilterDialog() {
         val statuses = viewModel.orderStatuses.value
         val items = statuses.map { it.statusName }.toTypedArray()
@@ -255,8 +306,34 @@ class RepairProgressListFragment : Fragment() {
     }
 
     private fun showDateRangePicker() {
-        // Implement date range picker dialog
-        // You can use MaterialDatePicker for this
+        val picker = MaterialDatePicker.Builder.dateRangePicker()
+            .setTitleText(R.string.select_date_range)
+            .setTheme(R.style.ThemeOverlay_GaraPro_DatePicker)
+            .build()
+
+        picker.addOnPositiveButtonClickListener { selection ->
+            val start = selection.first
+            val end = selection.second
+
+            if (start != null && end != null) {
+                val apiFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val displayFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val cal = Calendar.getInstance()
+
+                cal.timeInMillis = start
+                val fromApi = apiFormat.format(cal.time)
+                val fromDisplay = displayFormat.format(cal.time)
+
+                cal.timeInMillis = end
+                val toApi = apiFormat.format(cal.time)
+                val toDisplay = displayFormat.format(cal.time)
+
+                viewModel.updateDateFilter(fromApi, toApi)
+                binding.dateFilter.text = "$fromDisplay - $toDisplay"
+            }
+        }
+
+        picker.show(parentFragmentManager, "date_range_picker")
     }
 
     private fun observeViewModel() {
@@ -269,22 +346,28 @@ class RepairProgressListFragment : Fragment() {
                         }
                         binding.emptyState.visibility = View.GONE
                     }
+
                     is RepairProgressRepository.ApiResponse.Success -> {
                         binding.progressBar.visibility = View.GONE
                         binding.swipeRefresh.isRefreshing = false
 
                         val orders = response.data.items
                         adapter.submitList(orders)
+
                         orders.forEach { order ->
                             jobHubService?.joinRepairOrderGroup(order.repairOrderId)
                         }
-                        binding.emptyState.visibility = if (orders.isEmpty()) View.VISIBLE else View.GONE
-                        binding.emptyText.text = if (viewModel.filterChips.value.isNotEmpty()) {
-                            "No orders match the current filters"
-                        } else {
-                            "No repair orders found"
-                        }
+
+                        binding.emptyState.visibility =
+                            if (orders.isEmpty()) View.VISIBLE else View.GONE
+                        binding.emptyText.text =
+                            if (viewModel.filterChips.value.isNotEmpty()) {
+                                "No orders match the current filters"
+                            } else {
+                                "No repair orders found"
+                            }
                     }
+
                     is RepairProgressRepository.ApiResponse.Error -> {
                         binding.progressBar.visibility = View.GONE
                         binding.swipeRefresh.isRefreshing = false
@@ -306,6 +389,12 @@ class RepairProgressListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.filterState.collect { filter ->
                 updateFilterInputs(filter)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.filterChips.collect { chips ->
+                updateFilterChips(chips)
             }
         }
     }
@@ -343,7 +432,7 @@ class RepairProgressListFragment : Fragment() {
             binding.paidStatusFilter.setText(
                 when (paidStatus) {
                     "Unpaid" -> "Pending Payment"
-                   
+
                     "Paid" -> "Paid"
                     else -> paidStatus
                 }
@@ -382,7 +471,7 @@ class RepairProgressListFragment : Fragment() {
 
     private fun setupSwipeRefresh() {
         binding.swipeRefresh.setOnRefreshListener {
-            viewModel.loadRepairOrders()
+            viewModel.loadFirstPage()
         }
     }
 
@@ -390,8 +479,17 @@ class RepairProgressListFragment : Fragment() {
         val bundle = Bundle().apply {
             putString("repairOrderId", repairOrderId)
         }
-        findNavController().navigate(R.id.action_repairTrackingFragment_to_repairProgressDetailFragment, bundle)
+        findNavController().navigate(
+            R.id.action_repairTrackingFragment_to_repairProgressDetailFragment,
+            bundle
+        )
     }
+    private fun navigateToPaymentBill(repairOrderId: String) {
+        val intent = Intent(requireContext(), PaymentBillActivity::class.java)
+        intent.putExtra(PaymentBillActivity.EXTRA_REPAIR_ORDER_ID, repairOrderId)
+        startActivity(intent)
+    }
+
 
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
@@ -408,11 +506,11 @@ class RepairProgressListFragment : Fragment() {
 
         jobHubService = null
 
-        // Xoá binding tránh leak memory
-        // (list fragment dùng biến binding = lateinit nên KHÔNG cần set null)
-        // Nhưng nếu bạn dùng _binding kiểu nullable thì dùng _binding = null
 
-        // Nếu sau này bạn thêm nhiều hub khác,
-        // thì cleanup ở đây luôn cho tiện.
+    }
+    override fun onResume() {
+        super.onResume()
+
+        viewModel.loadFirstPage()
     }
 }

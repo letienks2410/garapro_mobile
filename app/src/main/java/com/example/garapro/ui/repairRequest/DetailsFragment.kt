@@ -95,10 +95,17 @@ class DetailsFragment : BaseBookingFragment() {
         }
         bookingViewModel.arrivalWindows.observe(viewLifecycleOwner) { slots ->
             val showList = slots.isNotEmpty()
-            binding.tvTimeSlotsTitle.visibility = if (showList) View.VISIBLE else View.GONE
+
+            // Luôn show title nếu đã chọn ngày
+            val hasSelectedDate = selectedDateOnly != null
+            binding.tvTimeSlotsTitle.visibility = if (hasSelectedDate) View.VISIBLE else View.GONE
+
             binding.rvTimeSlots.visibility = if (showList) View.VISIBLE else View.GONE
+            binding.tvNoTimeSlotsMessage.visibility =
+                if (!showList && hasSelectedDate) View.VISIBLE else View.GONE
 
             timeSlotAdapter.submitList(slots)
+
             val current = bookingViewModel.requestDate.value
             if (!current.isNullOrBlank() && current.length >= 16) { // "yyyy-MM-dd HH:mm"
                 val date = current.substring(0, 10)
@@ -106,12 +113,9 @@ class DetailsFragment : BaseBookingFragment() {
                 timeSlotAdapter.setSelectedByDateHm(date, hm)
             }
 
-            if (!showList && selectedDateOnly != null) {
-                Toast.makeText(requireContext(), "Không còn khung giờ trống cho ngày này.", Toast.LENGTH_SHORT).show()
-            }
-
-
+            
         }
+
         bookingViewModel.requestDate.value?.let { dt ->
             if (dt.length >= 10) {
                 selectedDateOnly = dt.substring(0, 10) // yyyy-MM-dd

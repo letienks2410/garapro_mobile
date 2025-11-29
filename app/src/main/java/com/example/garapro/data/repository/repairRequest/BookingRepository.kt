@@ -1,72 +1,64 @@
 package com.example.garapro.data.repository.repairRequest
 
 import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
 import android.util.Log
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.NetworkResult
 import com.example.garapro.data.model.repairRequest.ArrivalWindow
 import com.example.garapro.data.model.repairRequest.Branch
 import com.example.garapro.data.model.repairRequest.ChildCategoriesResponse
-import com.example.garapro.data.model.repairRequest.ChildServiceCategory
 import com.example.garapro.data.model.repairRequest.CreateRepairRequest
 import com.example.garapro.data.model.repairRequest.ParentServiceCategory
-import com.example.garapro.data.model.repairRequest.Part
-import com.example.garapro.data.model.repairRequest.PartCategory
 import com.example.garapro.data.model.repairRequest.RepairRequest
 import com.example.garapro.data.model.repairRequest.RepairRequestDetail
-
-import com.example.garapro.data.model.repairRequest.Service
 import com.example.garapro.data.model.repairRequest.ServiceCategory
-import com.example.garapro.data.model.repairRequest.ServiceCategoryInfo
 import com.example.garapro.data.model.repairRequest.Vehicle
 import com.example.garapro.data.remote.RetrofitInstance
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import org.json.JSONObject
-import java.io.File
 
 class BookingRepository(
     private val context: Context,
     private val tokenManager: TokenManager
 ) {
 
-    // Parent Service Categories
+    // 🔹 Parent Service Categories
     suspend fun getParentServiceCategories(): List<ParentServiceCategory> {
         return try {
             val response = RetrofitInstance.bookingService.getParentServiceCategories()
             if (response.isSuccessful) {
                 response.body() ?: emptyList()
             } else {
-                getMockParentServiceCategories()
+                Log.w("BookingRepository", "getParentServiceCategories failed: ${response.code()}")
+                emptyList()
             }
         } catch (e: Exception) {
-            getMockParentServiceCategories()
+            Log.e("BookingRepository", "Error getParentServiceCategories: ${e.message}", e)
+            emptyList()
         }
     }
 
+    // 🔹 Arrival Availability
     suspend fun getArrivalAvailability(branchId: String, date: String): List<ArrivalWindow> {
         return try {
             val response = RetrofitInstance.bookingService.getArrivalAvailability(branchId, date)
             if (response.isSuccessful) {
                 response.body() ?: emptyList()
             } else {
-                emptyList() // Khi API trả lỗi
+                Log.w("BookingRepository", "getArrivalAvailability failed: ${response.code()}")
+                emptyList()
             }
         } catch (e: Exception) {
-            emptyList() // Khi có lỗi mạng hoặc lỗi khác
+            Log.e("BookingRepository", "Error getArrivalAvailability: ${e.message}", e)
+            emptyList()
         }
     }
 
-    // Thêm vào BookingRepository.kt
+    // 🔹 Repair Requests Paged
     suspend fun getRepairRequestsPaged(
         pageNumber: Int = 1,
         pageSize: Int = 10,
@@ -86,15 +78,16 @@ class BookingRepository(
             if (response.isSuccessful) {
                 response.body()?.data ?: emptyList()
             } else {
-                Log.w("BookingRepository", "API getRepairRequestsPaged failed: ${response.code()}")
-                getMockRepairRequests() // Fallback to mock data
+                Log.w("BookingRepository", "getRepairRequestsPaged failed: ${response.code()}")
+                emptyList()
             }
         } catch (e: Exception) {
-            Log.e("BookingRepository", "Error getting repair requests: ${e.message}")
-            getMockRepairRequests() // Fallback to mock data
+            Log.e("BookingRepository", "Error getRepairRequestsPaged: ${e.message}", e)
+            emptyList()
         }
     }
-    // Child Service Categories with filtering
+
+    // 🔹 Child Service Categories (có phân trang + filter)
     suspend fun getChildServiceCategories(
         parentId: String,
         pageNumber: Int = 1,
@@ -111,81 +104,65 @@ class BookingRepository(
                 searchTerm = searchTerm
             )
             if (response.isSuccessful) {
-                response.body() ?: getMockChildCategoriesResponse()
+                response.body() ?: ChildCategoriesResponse(
+                    totalCount = 0,
+                    pageNumber = pageNumber,
+                    pageSize = pageSize,
+                    data = emptyList()
+                )
             } else {
-                getMockChildCategoriesResponse()
+                Log.w("BookingRepository", "getChildServiceCategories failed: ${response.code()}")
+                ChildCategoriesResponse(
+                    totalCount = 0,
+                    pageNumber = pageNumber,
+                    pageSize = pageSize,
+                    data = emptyList()
+                )
             }
         } catch (e: Exception) {
-            getMockChildCategoriesResponse()
+            Log.e("BookingRepository", "Error getChildServiceCategories: ${e.message}", e)
+            ChildCategoriesResponse(
+                totalCount = 0,
+                pageNumber = pageNumber,
+                pageSize = pageSize,
+                data = emptyList()
+            )
         }
     }
 
+    // 🔹 Repair Request Detail
     suspend fun getRepairRequestDetail(id: String): RepairRequestDetail? {
         return try {
             val response = RetrofitInstance.bookingService.getRepairRequestDetail(id)
             if (response.isSuccessful) {
                 response.body()
             } else {
+                Log.w("BookingRepository", "getRepairRequestDetail failed: ${response.code()}")
                 null
             }
         } catch (e: Exception) {
+            Log.e("BookingRepository", "Error getRepairRequestDetail: ${e.message}", e)
             null
         }
     }
 
-    private fun getMockParentServiceCategories(): List<ParentServiceCategory> {
-        return listOf(
-            ParentServiceCategory(
-                serviceCategoryId = "1",
-                categoryName = "Bảo dưỡng",
-                parentServiceCategoryId = null,
-                description = "Dịch vụ bảo dưỡng",
-                isActive = true,
-                createdAt = "2024-01-01",
-                updatedAt = null,
-                services = emptyList(),
-                childCategories = listOf(
-                    ChildServiceCategory(
-                        serviceCategoryId = "1-1",
-                        categoryName = "Bảo dưỡng định kỳ",
-                        parentServiceCategoryId = "1",
-                        description = "Bảo dưỡng theo định kỳ",
-                        isActive = true,
-                        createdAt = "2024-01-01",
-                        updatedAt = null,
-                        services = null,
-                        childCategories = null
-                    )
-                )
-            )
-        )
-    }
-
-    private fun getMockChildCategoriesResponse(): ChildCategoriesResponse {
-        return ChildCategoriesResponse(
-            totalCount = 1,
-            pageNumber = 1,
-            pageSize = 10,
-            data = getMockServiceCategories() // Sử dụng mock data cũ
-        )
-    }
-
+    // 🔹 Vehicles
     suspend fun getVehicles(): List<Vehicle> {
         return try {
-            // Kiểm tra xem Retrofit đã được khởi tạo chưa
             val response = RetrofitInstance.bookingService.getVehicles()
             if (response.isSuccessful) {
                 response.body() ?: emptyList()
             } else {
-                Log.w("BookingRepository", "API getVehicles failed: ${response.code()}")
-                getMockVehicles() // Fallback to mock data
+                Log.w("BookingRepository", "getVehicles failed: ${response.code()}")
+                emptyList()
             }
         } catch (e: Exception) {
-            Log.e("BookingRepository", "Error getting vehicles: ${e.message}")
-            getMockVehicles() // Fallback to mock data
+            Log.e("BookingRepository", "Error getVehicles: ${e.message}", e)
+            emptyList()
         }
     }
 
+    // 🔹 Branches
     suspend fun getBranches(): List<Branch> {
         return try {
             val response = RetrofitInstance.bookingService.getBranches()
@@ -193,14 +170,31 @@ class BookingRepository(
                 response.body() ?: emptyList()
             } else {
                 handleApiError(response)
-                getMockBranches()
+                emptyList()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            getMockBranches()
+            Log.e("BookingRepository", "Error getBranches: ${e.message}", e)
+            emptyList()
         }
     }
 
+    suspend fun cancelRepairRequest(id: String): NetworkResult<Unit> {
+        return try {
+            val response = RetrofitInstance.bookingService.cancelRepairRequest(id)
+
+            if (response.isSuccessful) {
+                NetworkResult.Success(Unit)
+            } else {
+                val errorMessage = parseApiError(response.errorBody())
+                NetworkResult.Error(errorMessage, response.code())
+            }
+        } catch (e: Exception) {
+            Log.e("BookingRepository", "Error cancelRepairRequest: ${e.message}", e)
+            NetworkResult.Error(e.message ?: "Something went wrong.")
+        }
+    }
+
+    // 🔹 Service Categories
     suspend fun getServiceCategories(): List<ServiceCategory> {
         return try {
             val response = RetrofitInstance.bookingService.getServiceCategories()
@@ -208,179 +202,59 @@ class BookingRepository(
                 response.body() ?: emptyList()
             } else {
                 handleApiError(response)
-                getMockServiceCategories()
+                emptyList()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            getMockServiceCategories()
+            Log.e("BookingRepository", "Error getServiceCategories: ${e.message}", e)
+            emptyList()
         }
     }
 
+    // 🔹 Submit Repair Request (giữ nguyên, không dùng mock)
     suspend fun submitRepairRequest(request: CreateRepairRequest): NetworkResult<Unit> {
         return try {
-            // 1. Chuẩn bị dữ liệu
             val dtoJson = Gson().toJson(request.copy(images = emptyList()))
             val dtoJsonBody = dtoJson.toRequestBody("text/plain".toMediaTypeOrNull())
             val imageParts = request.images
 
-            // 2. Gửi API
             val response = RetrofitInstance.bookingService.submitRepairRequest(
                 dtoJson = dtoJsonBody,
                 images = imageParts
             )
 
-            // 3. Xử lý phản hồi
             if (response.isSuccessful) {
-                NetworkResult.Success(Unit) // chỉ cần biết là OK
+                NetworkResult.Success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody())
                 NetworkResult.Error(errorMessage, response.code())
             }
         } catch (e: Exception) {
-            NetworkResult.Error(e.message ?: "Đã có lỗi xảy ra.")
+            NetworkResult.Error(e.message ?: "Something wrong happen.")
         }
     }
+
     private fun parseApiError(errorBody: ResponseBody?): String {
         return try {
-            val json = errorBody?.string() ?: return "Lỗi không xác định."
+            val json = errorBody?.string() ?: return "Unknown Error"
             val obj = JSONObject(json)
-            obj.optString("message", "Lỗi không xác định.")
+            obj.optString("message", "Unknown Error.")
         } catch (e: Exception) {
-            "Lỗi không xác định."
+            "Unknown Error."
         }
     }
 
-
-
-
-
-    private fun createPartFromString(value: String): RequestBody {
-        return RequestBody.create("text/plain".toMediaTypeOrNull(), value)
-    }
     private fun handleApiError(response: retrofit2.Response<*>) {
         when (response.code()) {
             401 -> {
                 // Token expired - AuthInterceptor sẽ xử lý
-                println("Token expired - handled by interceptor")
+                Log.w("BookingRepository", "Token expired - handled by interceptor")
             }
             500 -> {
-                println("Server error: ${response.message()}")
+                Log.e("BookingRepository", "Server error: ${response.message()}")
             }
             else -> {
-                println("API error: ${response.code()} - ${response.message()}")
+                Log.w("BookingRepository", "API error: ${response.code()} - ${response.message()}")
             }
         }
-    }
-    private fun getMockRepairRequests(): List<RepairRequest> {
-        return listOf(
-            RepairRequest(
-                repairRequestID = "mock-1",
-                vehicleID = "mock-vehicle-1",
-                userID = "mock-user-1",
-                description = "Mock repair request 1",
-                branchId = "mock-branch-1",
-                requestDate = "2024-01-01T10:00:00",
-                completedDate = null,
-                status = 0,
-                createdAt = "2024-01-01T09:00:00",
-                updatedAt = null,
-                estimatedCost = 100.0
-            )
-        )
-    }
-    // Mock data fallback
-    private fun getMockVehicles(): List<Vehicle> {
-        return listOf(
-            Vehicle(
-                vehicleID = "1",
-                brandID = "1",
-                userID = "user1",
-                modelID = "1",
-                colorID = "1",
-                licensePlate = "51A-12345",
-                vin = "VIN123456789",
-                year = 2020,
-                odometer = 15000,
-                lastServiceDate = "2024-01-01",
-                nextServiceDate = "2024-07-01",
-                warrantyStatus = "Active",
-                brandName = "Toyota",
-                modelName = "Camry",
-                colorName = "Đen"
-            )
-            // ... other mock vehicles
-        )
-    }
-
-    private fun getMockBranches(): List<Branch> {
-        return listOf(
-            Branch(
-                branchId = "6e194346-9c53-45f6-8300-3fe2f7cee235",
-                branchName = "Central Branch",
-                province = "NaN",
-                commune = "NaN",
-                street = "NaN",
-                phoneNumber = "0123456789",
-                email = "central@garage.com",
-                description = "Central garage branch",
-                isActive = true
-            )
-            // ... other mock branches
-        )
-    }
-
-    private fun getMockServiceCategories(): List<ServiceCategory> {
-        return listOf(
-            ServiceCategory(
-                serviceCategoryId = "cc4013ec-5999-4b8f-a419-3be0917e2673",
-                categoryName = "Maintenance",
-                serviceTypeId = "00000000-0000-0000-0000-000000000000",
-                parentServiceCategoryId = null,
-                description = null,
-                isActive = true,
-                createdAt = "2024-01-01T00:00:00",
-                updatedAt = null,
-                services = listOf(
-                    Service(
-                        serviceId = "eee65d35-8011-4507-a334-8e213e7bed41",
-                        serviceCategoryId = "cc4013ec-5999-4b8f-a419-3be0917e2673",
-                        serviceName = "Oil Change",
-                        description = "Standard Oil Change",
-                        price = 300000.0,
-                        discountedPrice = 280000.0,
-                        estimatedDuration = 1,
-                        isActive = true,
-                        isAdvanced = false,
-                        createdAt = "2025-10-15T02:12:25.6589254",
-                        updatedAt = null,
-                        serviceCategory = ServiceCategoryInfo(
-                            serviceCategoryId = "cc4013ec-5999-4b8f-a419-3be0917e2673",
-                            categoryName = "Maintenance",
-                            serviceTypeId = "00000000-0000-0000-0000-000000000000",
-                            parentServiceCategoryId = null,
-                            description = null,
-                            isActive = true,
-                            createdAt = "2024-01-01T00:00:00",
-                            updatedAt = null
-                        ),
-                        partCategories = listOf(
-                            PartCategory(
-                                partCategoryId = "b20c60a1-3394-48c5-8dc0-b6ed1bd0f7a4",
-                                categoryName = "Engine",
-                                parts = listOf(
-                                    Part(
-                                        partId = "3896c125-752c-479c-b587-ea6b83a908e5",
-                                        name = "Air Filter",
-                                        price = 150000.0,
-                                        stock = 10
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-                childCategories = null
-            )
-        )
     }
 }

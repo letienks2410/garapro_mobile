@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_voucher_item"
+    android:paddingVertical="10dp"
+    android:paddingHorizontal="12dp"
+    android:gravity="center_vertical">
+
+    <!-- Chọn voucher -->
+    <RadioButton
+        android:id="@+id/rbSelected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- Nội dung voucher -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Tên voucher -->
+        <TextView
+            android:id="@+id/tvPromotionName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Promotion name"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@android:color/black" />
+
+        <!-- Mô tả -->
+        <TextView
+            android:id="@+id/tvPromotionDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Promotion description"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:textColor="@color/black" />
+
+        <!-- Dòng dưới: discount + eligibility -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <!-- Thông tin giảm giá (ví dụ -20% / -300k) -->
+            <TextView
+                android:id="@+id/tvPromotionDisplay"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Discount info"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@android:color/black" />
+
+            <!-- Eligibility message -->
+            <TextView
+                android:id="@+id/tvEligibilityMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Eligibility message"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif"
+                android:textColor="@color/black" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

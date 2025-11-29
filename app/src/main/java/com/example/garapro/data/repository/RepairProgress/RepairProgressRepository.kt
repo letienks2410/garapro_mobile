@@ -1,14 +1,20 @@
 package com.example.garapro.data.repository.RepairProgress
 
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
+import com.example.garapro.data.model.RepairProgresses.CreateFeedbackResponse
 import com.example.garapro.data.model.RepairProgresses.OrderStatus
 import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.model.RepairProgresses.PagedResult
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedDetail
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
+import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListItem
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatusDto
 import com.example.garapro.data.remote.RepairProgressApiService
+import com.example.garapro.data.remote.getArchivedRepairOrders
 import com.example.garapro.data.remote.getMyRepairOrders
 
 class RepairProgressRepository(private val apiService: RepairProgressApiService) {
@@ -49,6 +55,27 @@ class RepairProgressRepository(private val apiService: RepairProgressApiService)
         }
     }
 
+    suspend fun getArchivedRepairOrders(
+        filter: RepairOrderArchivedFilter
+    ): ApiResponse<PagedResult<RepairOrderArchivedListItem>> {
+        return try {
+            val response = apiService.getArchivedRepairOrders(filter)
+            ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    suspend fun getArchivedRepairOrderDetail(
+        repairOrderId: String
+    ): ApiResponse<RepairOrderArchivedDetail> {
+        return try {
+            val response = apiService.getArchivedRepairOrderDetail(repairOrderId)
+            ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
 
 
     suspend fun getOrderStatuses(): ApiResponse<List<OrderStatus>> {
@@ -59,6 +86,16 @@ class RepairProgressRepository(private val apiService: RepairProgressApiService)
             ApiResponse.Error(e.message ?: "Unknown error")
         }
     }
+
+    suspend fun createFeedback(request: CreateFeedbackRequest): ApiResponse<CreateFeedbackResponse> {
+        return try {
+            val response = apiService.createFeedback(request)
+            ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
+
     sealed class ApiResponse<T> {
         data class Success<T>(val data: T) : ApiResponse<T>()
         data class Error<T>(val message: String) : ApiResponse<T>()

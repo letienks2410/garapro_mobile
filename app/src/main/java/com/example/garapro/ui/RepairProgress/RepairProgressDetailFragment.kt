@@ -1,5 +1,8 @@
 package com.example.garapro.ui.RepairProgress
 
+import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,12 +16,18 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.garapro.R
+import com.example.garapro.data.model.RepairProgresses.Feedback
+import com.example.garapro.data.model.RepairProgresses.Label
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairProgressDetailBinding
+import com.example.garapro.ui.feedback.RatingActivity
+import com.google.android.material.chip.Chip
+
 import com.example.garapro.hubs.JobSignalRService
 import com.example.garapro.hubs.RepairOrderEvent
 import com.example.garapro.hubs.RepairOrderSignalRService
+import com.example.garapro.ui.payments.PaymentBillActivity
 import com.example.garapro.utils.Constants
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
@@ -35,10 +44,10 @@ class RepairProgressDetailFragment : Fragment() {
 
     private var repairOrderId: String? = null
 
-    // ✅ SignalR service chỉ dùng cho màn này
+
     private var signalRService: RepairOrderSignalRService? = null
 
-    private var repairHubService: RepairOrderSignalRService? = null
+
     private var jobHubService: JobSignalRService? = null
 
     override fun onCreateView(
@@ -75,7 +84,7 @@ class RepairProgressDetailFragment : Fragment() {
     }
 
     private fun initRepairHub() {
-        // ⚠️ ĐÂY PHẢI LÀ URL ĐÚNG CỦA HUB: vd: https://your-api.com/repairHub
+
         val hubUrl =Constants.BASE_URL_SIGNALR +"/hubs/repair"
 
         signalRService = RepairOrderSignalRService(hubUrl).apply {
@@ -160,6 +169,9 @@ class RepairProgressDetailFragment : Fragment() {
         } ?: showError("Repair order ID is null")
     }
 
+
+
+
     private fun bindRepairOrderDetail(detail: RepairProgressDetail) {
         binding.apply {
             // Vehicle Info
@@ -172,11 +184,11 @@ class RepairProgressDetailFragment : Fragment() {
             estimatedCompletionDate.text = formatDate(detail.estimatedCompletionDate)
             roType.text = getROTypeName(detail.roType)
             paidStatus.text = getPaidStatusName(detail.paidStatus)
+            updatePaymentAction(detail)
             note.text = detail.note ?: "No note"
 
             // Financial Info
-            estimatedAmount.text = formatCurrency(detail.estimatedAmount)
-            paidAmount.text = formatCurrency(detail.paidAmount)
+
             cost.text = formatCurrency(detail.cost)
 
             // Progress Section
@@ -190,6 +202,63 @@ class RepairProgressDetailFragment : Fragment() {
 
             // Jobs
             jobAdapter.submitList(detail.jobs)
+
+            binding.paymentButton.setOnClickListener {
+                repairOrderId?.let { id ->
+                    navigateToPaymentBill(id)
+                }
+            }
+            // Show/hide completion date if available
+            detail.completionDate?.let { completionDate ->
+                // You can add completion date to the layout if needed
+
+                }
+    }
+    }
+    private fun navigateToPaymentBill(repairOrderId: String) {
+        val intent = Intent(requireContext(), PaymentBillActivity::class.java)
+        intent.putExtra(PaymentBillActivity.EXTRA_REPAIR_ORDER_ID, repairOrderId)
+        startActivity(intent)
+    }
+    private fun updatePaymentAction(detail: RepairProgressDetail) {
+        val status = detail.orderStatus.statusName
+        val paid = detail.paidStatus
+
+        binding.paymentAction.apply {
+            when {
+
+                status == "Completed" && paid == "Unpaid" -> {
+                    visibility = View.VISIBLE
+                    text = "Your vehicle is ready for pickup. You can do payment online or cash when you show up at the garage"
+                }
+
+                status == "Completed" && paid == "Paid" -> {
+                    visibility = View.VISIBLE
+                    text = "Your vehicle is ready for pickup. Thank for your payment"
+                }
+
+                else -> {
+                    visibility = View.GONE
+                }
+            }
+        }
+        binding.paymentButton.apply {
+            when {
+                // Nếu Completed và Unpaid → hiện nút thanh toán
+                status == "Completed" && paid == "Unpaid" -> {
+                    visibility = View.VISIBLE
+                    text = "Payment"
+                }
+                // Nếu Completed và đã Paid → hiện thông báo khác (không cho thanh toán)
+                status == "Completed" && paid == "Paid" -> {
+                    visibility = View.GONE
+                    text = ""
+                }
+                // Các trạng thái khác → ẩn
+                else -> {
+                    visibility = View.GONE
+                }
+            }
         }
     }
 

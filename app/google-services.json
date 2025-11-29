@@ -12,7 +12,20 @@
           "package_name": "com.example.garapro"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "943673602575-5vo54rvi6s4nml0q3du732c6l3tnolri.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.garapro",
+            "certificate_hash": "712d3c13fed2692c975709e5de4e13e4b0e00f5d"
+          }
+        },
+        {
+          "client_id": "943673602575-3ci6hejtivbp0utbutduj55kk7821bm6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDxsBILMw2eSzVrv6eh0DfU46YAsvyl184"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "943673602575-3ci6hejtivbp0utbutduj55kk7821bm6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

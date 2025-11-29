@@ -26,7 +26,9 @@ class ParentCategorySelectionFragment : BaseBookingFragment() {
         setupObservers()
         setupListeners()
 
-        bookingViewModel.loadParentServiceCategories()
+        if (bookingViewModel.parentServiceCategories.value.isNullOrEmpty()) {
+            bookingViewModel.loadParentServiceCategories()
+        }
     }
 
     private fun setupRecyclerView() {

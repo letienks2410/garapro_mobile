@@ -3,6 +3,7 @@ package com.example.garapro.ui.RepairProgress
 import android.R.attr.orientation
 import android.animation.ValueAnimator
 import android.content.res.ColorStateList
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -40,7 +41,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
                 return oldItem == newItem
             }
         }
-        private var progressAnimator: ValueAnimator? = null
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -52,6 +53,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val job = getItem(position)
+
         holder.bind(job)
     }
 
@@ -59,7 +61,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
         RecyclerView.ViewHolder(binding.root) {
 
         private var isExpanded = false
-
+        private var progressAnimator: ValueAnimator? = null
         fun bind(job: Job) {
             binding.apply {
                 jobName.text = job.jobName
@@ -152,6 +154,8 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
                 }
             }
 
+
+
             // End
             repair.endTime?.let { e ->
                 parseTimeString(e)?.let { d ->
@@ -163,9 +167,9 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
             }
 
             // Estimated restore: dùng deadline của job nếu có; nếu không, có thể suy ra từ estimatedTime
-            val estRestore: Date? = (bindingAdapterPosition.takeIf { it != RecyclerView.NO_POSITION }?.let {
-                currentList[it]
-            })?.deadline?.let { parseTimeString(it) }
+//            val estRestore: Date? = (bindingAdapterPosition.takeIf { it != RecyclerView.NO_POSITION }?.let {
+//                currentList[it]
+//            })?.deadline?.let { parseTimeString(it) }
 
             // Actual / Duration (giữ nguyên như cũ)
             repair.actualTime?.let { actualTime ->
@@ -178,7 +182,7 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
             binding.repairTimeLogsLayout.visibility = if (hasTimeInfo || status == "InProgress") View.VISIBLE else View.GONE
 
             // Setup timeline look
-            setupTimeline(status, startDate, estRestore, endDate)
+            setupTimeline(status, startDate, endDate, endDate)
         }
 
 
@@ -281,13 +285,32 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
             // Ẩn mặc định
             binding.timelineContainer.visibility = View.GONE
 
-
+            Log.d("status", status)
             // Map thời gian hiển thị
             startDate?.let { binding.tvReportedTime.text = formatPrettyShort(it) }
             estRestore?.let { binding.tvRestoreTime.text = formatPrettyShort(it) }
 
             // Trạng thái
             when (status) {
+
+                "New" -> {
+                    binding.timelineContainer.visibility = View.VISIBLE
+                    stopSimpleLoopAnimation()
+
+                    // Tắt tất cả node
+                    binding.node1Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+                    binding.node2Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+                    binding.node3Icon.setBackgroundResource(R.drawable.timeline_node_inactive)
+
+                    // Tắt tất cả line
+                    binding.line12.setBackgroundResource(R.drawable.timeline_line_inactive)
+                    binding.line23.setBackgroundResource(R.drawable.timeline_line_inactive)
+
+                    // Nếu có phần fill thì reset
+                    binding.line23Fill.layoutParams.width = 0
+                    binding.line23Fill.requestLayout()
+                }
+
                 "InProgress" -> {
                     binding.timelineContainer.visibility = View.VISIBLE
 
@@ -297,12 +320,12 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
                     binding.line12.setBackgroundResource(R.drawable.timeline_line_active)
                     binding.line23.setBackgroundResource(R.drawable.timeline_line_inactive)
 
-//                    startSimpleLoopAnimation()
+                    startSimpleLoopAnimation()
                 }
 
                 "Completed" -> {
                     binding.timelineContainer.visibility = View.VISIBLE
-//                    stopSimpleLoopAnimation()
+                    stopSimpleLoopAnimation()
 
                     binding.node1Icon.setBackgroundResource(R.drawable.timeline_node_active)
                     binding.node2Icon.setBackgroundResource(R.drawable.timeline_node_active)
@@ -334,24 +357,25 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
         }
 
         private fun startSimpleLoopAnimation() {
-            stopSimpleLoopAnimation() // tránh chồng
+            stopSimpleLoopAnimation() // tránh trùng animation
 
             binding.line23.doOnLayout {
                 val totalWidth = binding.line23.width
-                val fillWidth = (totalWidth * 0.4f).toInt().coerceAtLeast(30)
 
                 progressAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
                     duration = 1200L
                     interpolator = LinearInterpolator()
                     repeatCount = ValueAnimator.INFINITE
-                    repeatMode = ValueAnimator.REVERSE
+                    repeatMode = ValueAnimator.RESTART   // 👉 chạy lại từ đầu, không chạy ngược
+
                     addUpdateListener { anim ->
                         val frac = anim.animatedFraction
-                        val left = ((totalWidth - fillWidth) * frac).toInt()
-                        binding.line23Fill.layoutParams.width = fillWidth
-                        binding.line23Fill.translationX = left.toFloat()
+                        val currentWidth = (totalWidth * frac).toInt()
+
+                        binding.line23Fill.layoutParams.width = currentWidth
                         binding.line23Fill.requestLayout()
                     }
+
                     start()
                 }
             }
@@ -360,8 +384,11 @@ class JobAdapter : ListAdapter<Job, JobAdapter.ViewHolder>(DiffCallback) {
         private fun stopSimpleLoopAnimation() {
             progressAnimator?.cancel()
             progressAnimator = null
-            binding.line23Fill.translationX = 0f
+
+            binding.line23Fill.layoutParams.width = 0
+            binding.line23Fill.requestLayout()
         }
+
 
         private fun toggleExpansion() {
             binding.apply {

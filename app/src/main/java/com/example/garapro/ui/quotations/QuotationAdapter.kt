@@ -13,9 +13,20 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class QuotationAdapter(
-    private val quotations: List<Quotation>,
     private val onItemClick: (Quotation) -> Unit
 ) : RecyclerView.Adapter<QuotationAdapter.ViewHolder>() {
+
+    // List dữ liệu có thể thay đổi được
+    private val items = mutableListOf<Quotation>()
+
+    /**
+     * Cập nhật toàn bộ danh sách (ViewModel đã lo vụ cộng dồn / phân trang)
+     */
+    fun submitList(newItems: List<Quotation>) {
+        items.clear()
+        items.addAll(newItems)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemQuotationBinding.inflate(
@@ -25,10 +36,10 @@ class QuotationAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(quotations[position])
+        holder.bind(items[position])
     }
 
-    override fun getItemCount() = quotations.size
+    override fun getItemCount() = items.size
 
     inner class ViewHolder(private val binding: ItemQuotationBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -52,7 +63,8 @@ class QuotationAdapter(
 
         private fun formatDate(dateString: String): String {
             return try {
-                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                val inputFormat =
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
                 val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 val date = inputFormat.parse(dateString)
                 outputFormat.format(date!!)

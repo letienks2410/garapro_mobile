@@ -11,7 +11,7 @@ data class CreatePaymentRequest(
 )
 
 data class CreatePaymentResponse(
-    val paymentId: Int,
+    val paymentId: Long,
     val orderCode: Long,
     val checkoutUrl: String
 )

@@ -1,5 +1,8 @@
 package com.example.garapro.data.model.RepairProgresses
 
+import android.R
+import androidx.annotation.Nullable
+
 data class RepairOrderListItem(
     val repairOrderId: String,
     val receiveDate: String,
@@ -13,7 +16,13 @@ data class RepairOrderListItem(
     val statusName: String,
     val labels: List<Label>,
     val progressPercentage: Int,
-    val progressStatus: String
+    val progressStatus: String,
+    val feedBacks: Feedback?
+)
+
+data class Feedback(
+    val rating: Int,
+    val description: String
 )
 
 data class Label(
