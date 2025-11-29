@@ -4,11 +4,15 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.garapro.data.model.emergencies.Emergency
+import com.example.garapro.data.model.emergencies.CreateEmergencyRequest
 import com.example.garapro.data.model.emergencies.EmergencyStatus
 import com.example.garapro.data.model.emergencies.Garage
-import kotlinx.coroutines.delay
-
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonArray
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 class EmergencyViewModel : ViewModel() {
     private val repository = EmergencyRepository.getInstance()
@@ -26,6 +30,16 @@ class EmergencyViewModel : ViewModel() {
     val assignedGarage: LiveData<Garage?> = _assignedGarage
     private var currentEmergency: Emergency? = null
 
+    private val _routeGeoJson = MutableLiveData<String?>(null)
+    val routeGeoJson: LiveData<String?> = _routeGeoJson
+    private val _etaMinutes = MutableLiveData<Int?>(null)
+    val etaMinutes: LiveData<Int?> = _etaMinutes
+    private val _distanceMeters = MutableLiveData<Double?>(null)
+    val distanceMeters: LiveData<Double?> = _distanceMeters
+    private var routePollingJob: Job? = null
+
+    
+
 
     init {
         // Setup realtime listener
@@ -38,32 +52,35 @@ class EmergencyViewModel : ViewModel() {
                 }
             }
         }
+        repository.addOnEmergencyUpdatedListener { emergency ->
+            viewModelScope.launch {
+                if (currentEmergency?.id == emergency.id && emergency.status == EmergencyStatus.ACCEPTED) {
+                    _emergencyState.value = EmergencyState.Confirmed(emergency)
+                }
+            }
+        }
     }
 
 
-    fun requestEmergency(userLat: Double, userLng: Double) {
+    fun createEmergencyRequest(vehicleId: String, branchId: String, issueDescription: String, latitude: Double, longitude: Double) {
         viewModelScope.launch {
             _emergencyState.value = EmergencyState.Loading
-
-            // Bước 1: Tạo yêu cầu cứu hộ
-            val emergency = Emergency(
-                userId = "user_123", // Mock user ID
-                latitude = userLat,
-                longitude = userLng
+            val req = CreateEmergencyRequest(
+                vehicleId = vehicleId,
+                branchId = branchId,
+                issueDescription = issueDescription,
+                latitude = latitude,
+                longitude = longitude
             )
-
-            val emergencyResult = repository.createEmergency(emergency)
-
+            val emergencyResult = repository.createEmergencyRequest(req)
             if (emergencyResult.isSuccess) {
                 currentEmergency = emergencyResult.getOrNull()
-                // Bước 2: Tìm gara gần nhất
-                val garagesResult = repository.findNearbyGarages(userLat, userLng)
-
-                if (garagesResult.isSuccess) {
-                    _nearbyGarages.value = garagesResult.getOrDefault(emptyList())
-                    _emergencyState.value = EmergencyState.Success(emergencyResult.getOrNull()!!)
+                val garage = _selectedGarage.value
+                if (garage != null) {
+                    _assignedGarage.value = garage
+                    _emergencyState.value = EmergencyState.WaitingForGarage(garage)
                 } else {
-                    _emergencyState.value = EmergencyState.Error("Không tìm thấy gara gần nhất")
+                    _emergencyState.value = EmergencyState.Success(currentEmergency!!)
                 }
             } else {
                 _emergencyState.value = EmergencyState.Error("Tạo yêu cầu cứu hộ thất bại")
@@ -71,8 +88,41 @@ class EmergencyViewModel : ViewModel() {
         }
     }
 
+    fun requestEmergency(userLat: Double, userLng: Double) {
+        viewModelScope.launch {
+            _emergencyState.value = EmergencyState.Loading
+            val garagesResult = repository.findNearbyGarages(userLat, userLng)
+            if (garagesResult.isSuccess) {
+                _nearbyGarages.value = garagesResult.getOrDefault(emptyList())
+                val temp = Emergency(id = System.currentTimeMillis().toString(), latitude = userLat, longitude = userLng)
+                currentEmergency = temp
+                _emergencyState.value = EmergencyState.Success(temp)
+            } else {
+                _emergencyState.value = EmergencyState.Error("Không tìm thấy gara gần nhất")
+            }
+        }
+    }
+
+    fun refreshNearbyGarages(userLat: Double, userLng: Double) {
+        viewModelScope.launch {
+            val garagesResult = repository.findNearbyGarages(userLat, userLng)
+            if (garagesResult.isSuccess) {
+                _nearbyGarages.value = garagesResult.getOrDefault(emptyList())
+            }
+        }
+    }
+
     fun selectGarage(garage: Garage) {
         _selectedGarage.value = garage
+    }
+
+    fun preselectGarage(garage: Garage) {
+        _selectedGarage.value = garage
+        _assignedGarage.value = garage
+    }
+
+    fun clearSelectedGarage() {
+        _selectedGarage.value = null
     }
 
     fun confirmEmergency(emergencyId: String) {
@@ -83,8 +133,141 @@ class EmergencyViewModel : ViewModel() {
                 _assignedGarage.value = garage
 
                 Log.d("EmergencyFlow", "Waiting for technician to accept...")
-                // KHÔNG delay nữa, chờ technician accept thật
-                // Technician accept sẽ trigger callback trên
+            }
+        }
+    }
+
+    fun cancelEmergencyRequest() {
+        viewModelScope.launch {
+            val id = currentEmergency?.id ?: return@launch
+            val result = repository.cancelEmergency(id)
+            if (result.isSuccess) {
+                resetState()
+            } else {
+                _emergencyState.value = EmergencyState.Error("Hủy yêu cầu cứu hộ thất bại")
+            }
+        }
+    }
+
+    fun startRoutePolling(intervalMs: Long = 10000L) {
+        val id = currentEmergency?.id?.takeIf { it.isNotBlank() } ?: return
+        routePollingJob?.cancel()
+        routePollingJob = viewModelScope.launch {
+            while (true) {
+                fetchRouteOnce(id)
+                delay(intervalMs)
+            }
+        }
+    }
+
+    fun stopRoutePolling() {
+        routePollingJob?.cancel()
+        routePollingJob = null
+    }
+
+    fun fetchRouteNow() {
+        val id = currentEmergency?.id?.takeIf { it.isNotBlank() } ?: return
+        viewModelScope.launch { fetchRouteOnce(id) }
+    }
+
+    private suspend fun fetchRouteOnce(emergencyId: String) {
+        val res = repository.fetchRoute(emergencyId)
+        if (res.isSuccess) {
+            val route = res.getOrNull()
+            val geo = route?.geometry
+            _routeGeoJson.value = geo?.let { toFeatureCollection(it) }
+            val ds = route?.durationSeconds
+            val minutes = if (ds != null) {
+                if (ds > 300) kotlin.math.round(ds / 60.0).toInt() else kotlin.math.round(ds).toInt()
+            } else null
+            _etaMinutes.value = minutes
+            _distanceMeters.value = route?.distanceMeters
+        }
+    }
+
+    private fun toFeatureCollection(geometry: JsonElement): String {
+        return try {
+            when {
+                geometry.isJsonObject -> {
+                    val obj = geometry.asJsonObject
+                    val type = obj.get("type")?.asString
+                    if (type == "FeatureCollection") {
+                        obj.toString()
+                    } else {
+                        val feature = JsonObject().apply {
+                            addProperty("type", "Feature")
+                            add("geometry", obj)
+                        }
+                        JsonObject().apply {
+                            addProperty("type", "FeatureCollection")
+                            add("features", JsonArray().apply { add(feature) })
+                        }.toString()
+                    }
+                }
+                geometry.isJsonArray -> {
+                    val coords = geometry.asJsonArray
+                    val geom = JsonObject().apply {
+                        addProperty("type", "LineString")
+                        add("coordinates", coords)
+                    }
+                    val feature = JsonObject().apply {
+                        addProperty("type", "Feature")
+                        add("geometry", geom)
+                    }
+                    JsonObject().apply {
+                        addProperty("type", "FeatureCollection")
+                        add("features", JsonArray().apply { add(feature) })
+                    }.toString()
+                }
+                geometry.isJsonPrimitive -> {
+                    // Unsupported encoded polyline; return empty FC
+                    JsonObject().apply {
+                        addProperty("type", "FeatureCollection")
+                        add("features", JsonArray())
+                    }.toString()
+                }
+                else -> JsonObject().apply {
+                    addProperty("type", "FeatureCollection")
+                    add("features", JsonArray())
+                }.toString()
+            }
+        } catch (_: Exception) {
+            JsonObject().apply {
+                addProperty("type", "FeatureCollection")
+                add("features", JsonArray())
+            }.toString()
+        }
+    }
+
+    
+
+    
+
+    
+
+    fun markApproved(emergencyId: String, branchId: String?) {
+        viewModelScope.launch {
+            val garage = _selectedGarage.value ?: _nearbyGarages.value?.firstOrNull { it.id == branchId }
+            garage?.let { _assignedGarage.value = it }
+            val idCandidate = if (emergencyId.isNotBlank()) emergencyId else (currentEmergency?.id ?: "")
+            val before = currentEmergency?.id ?: ""
+            currentEmergency = currentEmergency?.copy(id = idCandidate) ?: Emergency(id = idCandidate)
+            android.util.Log.d("EmergencyID", "markApproved before=" + before + " incoming=" + emergencyId + " after=" + currentEmergency?.id)
+            _emergencyState.value = EmergencyState.Confirmed(currentEmergency!!)
+        }
+    }
+
+    fun markCreated(emergencyId: String, branchId: String?) {
+        viewModelScope.launch {
+            val idCandidate = if (emergencyId.isNotBlank()) emergencyId else (currentEmergency?.id ?: "")
+            val before = currentEmergency?.id ?: ""
+            currentEmergency = currentEmergency?.copy(id = idCandidate) ?: Emergency(id = idCandidate)
+            android.util.Log.d("EmergencyID", "markCreated before=" + before + " incoming=" + emergencyId + " after=" + currentEmergency?.id)
+            val garage = _selectedGarage.value ?: _nearbyGarages.value?.firstOrNull { it.id == branchId }
+            garage?.let { _assignedGarage.value = it }
+            val g = _assignedGarage.value
+            if (g != null) {
+                _emergencyState.value = EmergencyState.WaitingForGarage(g)
             }
         }
     }
@@ -100,6 +283,9 @@ class EmergencyViewModel : ViewModel() {
         _selectedGarage.value = null
         _assignedGarage.value = null
         currentEmergency = null
+        stopRoutePolling()
+        _routeGeoJson.value = null
+        _etaMinutes.value = null
     }
 }
 

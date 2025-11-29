@@ -81,7 +81,7 @@
 
             <include
                 layout="@layout/item_profile_menu"
-                android:id="@+id/menuTerms" />
+                android:id="@+id/vehiclesFragment" />
 
             <View
                 android:layout_width="match_parent"

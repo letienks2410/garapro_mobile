@@ -15,6 +15,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.remote.ApiService
@@ -80,6 +81,7 @@ class ProfileFragment : Fragment() {
         LocalBroadcastManager.getInstance(requireContext())
             .registerReceiver(receiver, IntentFilter("TOKEN_EXPIRED"))
 
+        // Logout
         binding.btnLogout.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle("Đăng xuất")
@@ -90,6 +92,9 @@ class ProfileFragment : Fragment() {
                 .setNegativeButton("Hủy", null)
                 .show()
         }
+
+        // Cấu hình các item trong menu profile
+        setupProfileMenu()
 
 
         setupObservers()
@@ -128,6 +133,21 @@ class ProfileFragment : Fragment() {
         binding.btnEditProfile.setOnClickListener {
             val intent = Intent(requireContext(), EditProfileActivity::class.java)
             editProfileLauncher.launch(intent)
+        }
+    }
+
+
+    private fun setupProfileMenu() {
+        // Item 2: My Vehicles
+        // Với ViewBinding, include `@+id/vehiclesFragment` sẽ tạo ra binding con cho `item_profile_menu`
+        val vehiclesItemBinding = binding.vehiclesFragment
+
+        // Đổi title để không còn là "My addresses"
+        vehiclesItemBinding.tvTitle.text = "My Vehicles"
+
+        // Điều hướng sang vehiclesFragment trong nav_customer khi bấm vào root view của item
+        vehiclesItemBinding.root.setOnClickListener {
+            findNavController().navigate(com.example.garapro.R.id.vehiclesFragment)
         }
     }
 

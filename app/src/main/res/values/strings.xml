@@ -7,6 +7,10 @@
     <string name="login_image">Login illustration</string>
 
     <string name="request_rescue">Yêu cầu cứu hộ</string>
+    <string name="profile_my_vehicles">My Vehicles</string>
+    <string name="label_unknown_brand">Không rõ hãng</string>
+    <string name="label_unknown_model">Không rõ dòng xe</string>
+    <string name="label_unknown_color">Không rõ màu</string>
 
     <string name="goong_api_url">https://rsapi.goong.io/</string>
     <string name="goong_map_url">https://tiles.goong.io</string>

@@ -280,6 +280,20 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
         // Setup Bottom Navigation với NavController
         bottomNavigation.setupWithNavController(navController)
+
+        
+        bottomNavigation.setOnItemSelectedListener { item ->
+            val handled = NavigationUI.onNavDestinationSelected(item, navController)
+            if (handled && item.itemId == R.id.profileFragment) {
+                navController.popBackStack(R.id.profileFragment, false)
+            }
+            handled
+        }
+
+        
+        bottomNavigation.setOnItemReselectedListener { item ->
+            navController.popBackStack(item.itemId, false)
+        }
     }
 
     private fun updateDeviceIdToServer(deviceToken: String) {
