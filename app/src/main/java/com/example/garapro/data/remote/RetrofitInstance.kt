@@ -81,4 +81,7 @@ object RetrofitInstance {
     val bookingService: BookingService by lazy {
         getRetrofit().create(BookingService::class.java)
     }
+    val notificationService: NotificationApiService by lazy {
+        getRetrofit().create(NotificationApiService::class.java)
+    }
 }

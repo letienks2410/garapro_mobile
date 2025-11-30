@@ -37,6 +37,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.google.android.material.badge.BadgeDrawable
 
 class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
@@ -45,7 +46,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     }
     private lateinit var tokenManager: TokenManager
     private lateinit var navController: NavController
-
+    private var notificationBadge: BadgeDrawable? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -67,6 +68,10 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             } else {
                 val role = tokenManager.getUserRole() // lấy role bạn lưu khi login
                 setupNavigationByRole(role)
+
+                setupNotificationBadge()
+                startUnreadCountPolling()
+
                 // Xử lý intent sau khi setup navigation
                 handleIntent(intent)
             }
@@ -299,6 +304,60 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             }
         }
     }
+    private fun setupNotificationBadge() {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
+        notificationBadge = bottomNav.getOrCreateBadge(R.id.notificationsFragment)
+        notificationBadge?.apply {
+            backgroundColor = getColor(R.color.red)
+            badgeTextColor = getColor(R.color.white)
+            isVisible = false
+            maxCharacterCount = 3
+        }
+    }
+
+    private fun startUnreadCountPolling() {
+        loadUnreadCount()
+
+        lifecycleScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(5_000)
+            }
+        }
+    }
+
+    private fun loadUnreadCount() {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitInstance.notificationService.getUnreadCount()
+
+                if (response.isSuccessful) {
+                    response.body()?.let { unreadCountResponse ->
+                        updateBadge(unreadCountResponse.unreadCount)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading unread count: ${e.message}")
+            }
+        }
+    }
+
+    private fun updateBadge(count: Int) {
+        runOnUiThread {
+            notificationBadge?.apply {
+                if (count > 0) {
+                    isVisible = true
+                    number = count
+                } else {
+                    isVisible = false
+                }
+            }
+        }
+    }
+
+    fun updateNotificationBadge(count: Int) {
+        updateBadge(count)
+    }
 
     override fun onTokenExpired() {
         runOnUiThread {
@@ -306,6 +365,10 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
+    }
+    override fun onResume() {
+        super.onResume()
+        loadUnreadCount()
     }
     private fun navigateToHome() {
         try {
