@@ -56,6 +56,10 @@ class RepairProgressListFragment : Fragment() {
         binding = FragmentRepairProgressListBinding.inflate(inflater, container, false)
         return binding.root
     }
+    companion object {
+        private const val PREFS_AUTH = "auth_prefs"
+        private const val KEY_USER_ID = "user_id"
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -124,13 +128,26 @@ class RepairProgressListFragment : Fragment() {
     }
 
     private fun initJobHub() {
-        // ĐÚNG URL job hub, chỗ bạn MapHub<JobHub>("/jobHub")
-        val jobHubUrl = Constants.BASE_URL_SIGNALR +"/hubs/job"
+        val jobHubUrl = Constants.BASE_URL_SIGNALR + "/hubs/job"
 
         jobHubService = JobSignalRService(jobHubUrl).apply {
             setupListeners()
-            start()
+            start {
+                joinUserToRepairOrderGroup()
+            }
         }
+    }
+
+    private fun joinUserToRepairOrderGroup() {
+        val prefs = requireContext().getSharedPreferences(PREFS_AUTH, Context.MODE_PRIVATE)
+        val userId = prefs.getString(KEY_USER_ID, null)
+
+        if (userId.isNullOrEmpty()) {
+            Log.w("SignalR", "UserId null  không join RepairOrderUserGroup")
+            return
+        }
+
+        jobHubService?.joinRepairOrderUserGroup(userId)
     }
     private fun observeJobHubEvents() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -143,49 +160,9 @@ class RepairProgressListFragment : Fragment() {
     }
 
 
-    private fun showPaymentDialog(item: RepairOrderListItem) {
-        val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Payment")
-            .setMessage("Do you want to pay for order ${item.vehicleModel}?")
-            .setPositiveButton("Pay") { _, _ ->
-                processPayment(item)
-            }
-            .setNegativeButton("Cancel", null)
-            .create()
-        dialog.show()
-    }
 
-    private fun processPayment(item: RepairOrderListItem) {
-        val ctx = requireContext()
-        lifecycleScope.launch {
-            try {
-                val body = CreatePaymentRequest(
-                    repairOrderId = item.repairOrderId,
-                    amount = 2000,
-                    description = "Payment for ${item.vehicleModel}"
-                )
 
-                val res = viewModel.createPaymentLinkDirect(body)
 
-                if (res != null) {
-                    openInAppCheckout(ctx, res.checkoutUrl)
-                } else {
-                    Toast.makeText(ctx, "Could not create payment link", Toast.LENGTH_SHORT).show()
-                }
-
-            } catch (e: Exception) {
-                Log.e("Payment", "create-link failed", e)
-                Toast.makeText(ctx, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun openInAppCheckout(context: Context, url: String) {
-        val customTabsIntent = CustomTabsIntent.Builder()
-            .setShowTitle(true)
-            .build()
-        customTabsIntent.launchUrl(context, Uri.parse(url))
-    }
 
     private fun setupFilter() {
         // Filter button
@@ -354,9 +331,7 @@ class RepairProgressListFragment : Fragment() {
                         val orders = response.data.items
                         adapter.submitList(orders)
 
-                        orders.forEach { order ->
-                            jobHubService?.joinRepairOrderGroup(order.repairOrderId)
-                        }
+
 
                         binding.emptyState.visibility =
                             if (orders.isEmpty()) View.VISIBLE else View.GONE
@@ -366,7 +341,9 @@ class RepairProgressListFragment : Fragment() {
                             } else {
                                 "No repair orders found"
                             }
+
                     }
+
 
                     is RepairProgressRepository.ApiResponse.Error -> {
                         binding.progressBar.visibility = View.GONE
@@ -395,6 +372,12 @@ class RepairProgressListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.filterChips.collect { chips ->
                 updateFilterChips(chips)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isLoading.collect { isLoading ->
+                binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
             }
         }
     }
@@ -494,16 +477,21 @@ class RepairProgressListFragment : Fragment() {
     private fun showError(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
     }
+
+    private fun leaveRepairOrderUserGroup() {
+        val prefs = requireContext().getSharedPreferences(PREFS_AUTH, Context.MODE_PRIVATE)
+        val userId = prefs.getString(KEY_USER_ID, null)
+
+        if (!userId.isNullOrEmpty()) {
+            jobHubService?.leaveRepairOrderUserGroup(userId)
+        }
+        jobHubService?.stop()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
 
-        // Ngắt kết nối JobHub nếu đang chạy
-        try {
-            jobHubService?.leaveRepairOrderGroupAndStop()
-        } catch (e: Exception) {
-            Log.e("SignalR", "Error stopping JobHubService", e)
-        }
-
+        leaveRepairOrderUserGroup()
         jobHubService = null
 
 

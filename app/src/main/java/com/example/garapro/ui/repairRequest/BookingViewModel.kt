@@ -380,7 +380,8 @@ class BookingViewModel(
         pageNumber: Int = 1,
         pageSize: Int = 10,
         childServiceCategoryId: String? = null,
-        searchTerm: String? = null
+        searchTerm: String? = null,
+        branchId: String? = null
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -390,7 +391,9 @@ class BookingViewModel(
                     pageNumber = pageNumber,
                     pageSize = pageSize,
                     childServiceCategoryId = childServiceCategoryId,
-                    searchTerm = searchTerm
+                    searchTerm = searchTerm,
+                    branchId = branchId
+
                 )
                 _childServiceCategories.value = response
 
@@ -416,10 +419,10 @@ class BookingViewModel(
             //  ĐỔI PARENT: xoá sạch service/part đã chọn ở parent cũ
             clearSelectionsForNewParent()
 
-            // (khuyến nghị) reset filter & data con để tránh “treo” state cũ
+
             _currentChildFilter.value = null
             _allChildCategories.value = emptyList()
-            // _childServiceCategories sẽ được nạp lại khi vào màn con
+
         }
 
         _navigationState.value = NavigationState.CHILD_CATEGORY_SELECTION

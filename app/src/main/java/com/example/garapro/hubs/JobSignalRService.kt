@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
 class JobSignalRService(
-    hubUrl: String // ví dụ: https://your-api.com/jobHub
+    hubUrl: String
 ) {
 
     private val hub: HubConnection =
@@ -30,7 +30,7 @@ class JobSignalRService(
         hub.on("JobStatusUpdated", { json: JsonObject ->
             Log.d("SignalR", "JobStatusUpdated payload: $json")
 
-            // ⚠️ Key phải đúng với JSON thật gửi từ BE: repairOrderId
+
             val roId = json.get("repairOrderId")?.asString
             if (roId != null) {
                 _events.tryEmit(roId)
@@ -95,6 +95,20 @@ class JobSignalRService(
             Log.w("SignalR", "joinRepairOrderGroupInternal while not CONNECTED")
         }
     }
+    fun joinRepairOrderUserGroup(userId: String) {
+        if (hub.connectionState == HubConnectionState.CONNECTED) {
+            Log.d("SignalR", "Joining RepairOrder_$userId (User group)")
+            hub.send("JoinRepairOrderUserGroup", userId)
+        } else {
+            Log.w("SignalR", "joinRepairOrderUserGroup called while not CONNECTED")
+        }
+    }
+    fun leaveRepairOrderUserGroup(userId: String) {
+        if (hub.connectionState == HubConnectionState.CONNECTED) {
+            Log.d("SignalR", "Leaving RepairOrder_$userId (User group)")
+            hub.send("LeaveRepairOrderUserGroup", userId)
+        }
+    }
 
     fun leaveRepairOrderGroupAndStop() {
         val roId = currentRepairOrderId
@@ -105,5 +119,11 @@ class JobSignalRService(
             hub.stop()
         }
         currentRepairOrderId = null
+    }
+
+    fun stop() {
+        if (hub.connectionState == HubConnectionState.CONNECTED) {
+            hub.stop()
+        }
     }
 }

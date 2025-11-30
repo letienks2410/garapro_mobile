@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             }
             screen == "RepairRequestDetailFragment" && ids.containsKey("repairRequestId") ->
             {
-                Log.d("quo","ArchivedDetailFragment")
+
 
                 NavigationInfo(R.id.appointmentDetailFragment, ids, "repair_updated")
 
@@ -248,7 +248,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                     } catch (_: Exception) { }
 
                     // 2. Mở RepairProgressDetail
-                    navController.navigate(R.id.repairProgressDetailFragment, bundle)
+                    navController.navigate(R.id.repairArchivedDetailFragment, bundle)
                 }
 
                 R.id.appointmentDetailFragment -> {

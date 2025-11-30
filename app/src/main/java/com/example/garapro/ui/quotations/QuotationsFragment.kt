@@ -228,6 +228,7 @@ class QuotationsFragment : Fragment() {
             QuotationStatus.Approved -> binding.chipApproved.id
             QuotationStatus.Rejected -> binding.chipRejected.id
             QuotationStatus.Expired -> binding.chipExpired.id
+            QuotationStatus.Good -> binding.chipExpired.id
         }
         binding.chipGroup.check(chipId)
     }

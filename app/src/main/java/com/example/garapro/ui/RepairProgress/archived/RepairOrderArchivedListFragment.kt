@@ -45,6 +45,7 @@ class RepairOrderArchivedListFragment : Fragment() {
         RepairOrderArchivedListViewModelFactory()
     }
 
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -255,7 +256,7 @@ class RepairOrderArchivedListFragment : Fragment() {
         repairOrderHubService = RepairOrderSignalRService(hubUrl).apply {
             setupListeners()
 
-            connectAndJoin("archived-list") // nếu service bắt buộc tham số, hoặc tạo thêm hàm start()
+            connectAndJoin("archived-list")
         }
     }
 
@@ -266,6 +267,7 @@ class RepairOrderArchivedListFragment : Fragment() {
                 viewModel.refresh()
             }
         }
+
     }
 
     private fun observeViewModel() {
@@ -290,7 +292,15 @@ class RepairOrderArchivedListFragment : Fragment() {
                 }
             }
         }
+
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isLoadingPage.collect { isLoading ->
+                binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+            }
+        }
     }
+
 
     private fun applyData(paged: PagedResult<RepairOrderArchivedListItem>) {
         val items = paged.items ?: emptyList()

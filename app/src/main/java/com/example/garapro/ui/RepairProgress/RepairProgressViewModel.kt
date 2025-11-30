@@ -23,12 +23,14 @@ class RepairProgressViewModel : ViewModel() {
 
     private val repository = RepairProgressRepository(RetrofitInstance.RepairProgressService)
 
+
     private val _repairOrders =
         MutableStateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>>(
             RepairProgressRepository.ApiResponse.Loading()
         )
     val repairOrders: StateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>> =
         _repairOrders
+
 
     private val _repairOrderDetail =
         MutableStateFlow<RepairProgressRepository.ApiResponse<RepairProgressDetail>?>(null)

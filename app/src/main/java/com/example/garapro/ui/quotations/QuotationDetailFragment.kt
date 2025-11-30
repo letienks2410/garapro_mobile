@@ -163,18 +163,29 @@ class QuotationDetailFragment : Fragment() {
     }
 
     private fun setupUIBasedOnStatus(status: QuotationStatus) {
-        val isEditable = status == QuotationStatus.Sent
+        when (status) {
+            QuotationStatus.Sent -> {
+                // mode edit
+                setupEditableMode()
+                adapter.updateEditable(true)
+            }
+            QuotationStatus.Good -> {
+                // chỉ cho xem
+                setupReadOnlyMode(status)
 
-        if (isEditable) {
-            // SENT status: Allow editing
-            setupEditableMode()
-        } else {
-            // Other statuses: Read-only mode
-            setupReadOnlyMode(status)
+                // ẩn text readonly cũ, show text “car good” ở tvEditNotice
+                binding.tvReadOnlyNotice.visibility = View.GONE
+                binding.tvEditNotice.visibility = View.VISIBLE
+                binding.tvEditNotice.text = "Your car is in good condition."
+
+                adapter.updateEditable(false)
+            }
+            else -> {
+                // các trạng thái còn lại: readonly
+                setupReadOnlyMode(status)
+                adapter.updateEditable(false)
+            }
         }
-
-        // Update editable status for adapter
-        adapter.updateEditable(isEditable)
     }
 
     private fun showPromotionBottomSheet(response: CustomerPromotionResponse) {
@@ -340,6 +351,7 @@ class QuotationDetailFragment : Fragment() {
             QuotationStatus.Rejected -> "Quotation has been rejected, cannot be changed"
             QuotationStatus.Expired -> "Quotation has expired, cannot be changed"
             QuotationStatus.Pending -> "Quotation is pending, cannot respond yet"
+            QuotationStatus.Good -> "Your car is in good condition"
             else -> "Cannot change quotation in current status"
         }
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
@@ -499,6 +511,8 @@ class QuotationDetailFragment : Fragment() {
             QuotationStatus.Approved -> "Approved"
             QuotationStatus.Rejected -> "Rejected"
             QuotationStatus.Expired -> "Expired"
+            QuotationStatus.Good -> "Good Check"
+
         }
     }
 
@@ -509,6 +523,7 @@ class QuotationDetailFragment : Fragment() {
             QuotationStatus.Approved -> ContextCompat.getColor(requireContext(), R.color.green)
             QuotationStatus.Rejected -> ContextCompat.getColor(requireContext(), R.color.red)
             QuotationStatus.Expired -> ContextCompat.getColor(requireContext(), R.color.gray)
+            QuotationStatus.Good -> ContextCompat.getColor(requireContext(), R.color.green)
         }
     }
 

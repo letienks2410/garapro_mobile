@@ -62,7 +62,8 @@ interface BookingService {
         @Query("pageNumber") pageNumber: Int = 1,
         @Query("pageSize") pageSize: Int = 10,
         @Query("childServiceCategoryId") childServiceCategoryId: String? = null,
-        @Query("searchTerm") searchTerm: String? = null
+        @Query("searchTerm") searchTerm: String? = null,
+        @Query("branchId") branchId: String? = null
     ): Response<ChildCategoriesResponse>
     // Submit Repair Request
     @Multipart

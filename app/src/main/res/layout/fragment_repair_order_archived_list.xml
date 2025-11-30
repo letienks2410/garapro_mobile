@@ -225,6 +225,14 @@
                         android:padding="8dp"
                         tools:listitem="@layout/item_repair_order_archived" />
 
+                    <ProgressBar
+                        android:id="@+id/loadingSpinner"
+                        style="?android:attr/progressBarStyleLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:visibility="gone"
+                        android:padding="16dp" />
                     <LinearLayout
                         android:id="@+id/emptyState"
                         android:layout_width="match_parent"

@@ -80,6 +80,7 @@ class QuotationAdapter(
                 QuotationStatus.Approved -> "Approved"
                 QuotationStatus.Rejected -> "Rejected"
                 QuotationStatus.Expired -> "Expired"
+                QuotationStatus.Good -> "Good Check"
             }
         }
 
@@ -91,6 +92,7 @@ class QuotationAdapter(
                 QuotationStatus.Approved -> ContextCompat.getColor(context, R.color.green)
                 QuotationStatus.Rejected -> ContextCompat.getColor(context, R.color.red)
                 QuotationStatus.Expired -> ContextCompat.getColor(context, R.color.gray)
+                QuotationStatus.Good -> ContextCompat.getColor(context, R.color.green)
             }
         }
     }

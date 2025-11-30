@@ -36,19 +36,19 @@ class QuotationPartAdapter(
 
         fun bind(part: QuotationServicePart) {
             try {
-                binding.tvPartName.text = part.partName
+                binding.tvPartName.text = part.partName+"( x${part.quantity} )"
                 binding.tvPartPrice.text = MoneyUtils.formatVietnameseCurrency(part.price)
                 binding.cbPart.isChecked = part.isSelected
                 binding.cbPart.isEnabled = isEditable
 
-                // 🔥 HIỂN THỊ TRẠNG THÁI ĐÃ CHỌN
+
                 if (part.isSelected) {
                     binding.root.setBackgroundColor(ContextCompat.getColor(binding.root.context, R.color.selected_part_bg))
                 } else {
                     binding.root.setBackgroundColor(ContextCompat.getColor(binding.root.context, R.color.unselected_part_bg))
                 }
 
-                // 🔥 QUAN TRỌNG: Remove previous listener to avoid duplicate calls
+
                 binding.cbPart.setOnCheckedChangeListener(null)
 
                 binding.cbPart.setOnCheckedChangeListener { _, isChecked ->
