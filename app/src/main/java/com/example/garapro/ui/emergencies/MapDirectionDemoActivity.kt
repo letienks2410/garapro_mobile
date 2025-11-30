@@ -2,16 +2,22 @@ package com.example.garapro.ui.emergencies
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -30,6 +36,7 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -38,6 +45,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.util.Locale
+import kotlin.math.min
 
 class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -49,7 +57,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocation: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
-    // Vị trí hiện tại
+    // Vị trí hiện tại (KHÔNG hard-code nữa)
     private var currentLocation: LatLng? = null
 
     // ĐH FPT Đà Nẵng
@@ -68,6 +76,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private var lastLocationForRouting: LatLng? = null
     private var lastRerouteTime = 0L
 
+    private var lastBearing: Float = 0f
     private val MIN_DISTANCE_TO_REROUTE = 40f      // m
     private val MIN_TIME_TO_REROUTE_MS = 10_000L   // 10s
     private val SNAP_TO_ROUTE_THRESHOLD = 30f      // m
@@ -92,10 +101,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
             WellKnownTileServer.Mapbox
         )
 
-        // ⭐ Inflate layout chứa MapView sau khi init MapLibre
         setContentView(R.layout.activity_map_direction_demo)
 
-        // ⭐ findViewById
         mapView = findViewById(R.id.mapView)
         tvInstruction = findViewById(R.id.tvInstruction)
         btnToggleNav = findViewById(R.id.btnToggleNav)
@@ -137,7 +144,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 tts?.speak("Đã dừng điều hướng", TextToSpeech.QUEUE_FLUSH, null, "NAV_STOP")
             }
         }
-    }
+        }
 
     private fun setupTTS() {
         tts = TextToSpeech(this) { status ->
@@ -146,6 +153,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
+
+    /** Kiểm tra quyền + bật GPS */
     private fun checkPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
@@ -156,8 +165,32 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 PERMISSION_LOCATION
             )
         } else {
-            startLocationUpdates()
+            // Có quyền rồi → kiểm tra GPS
+            if (ensureLocationEnabled()) {
+                startLocationUpdates()
+            }
         }
+    }
+
+    /** Kiểm tra xem Location (GPS/Network) có bật chưa, nếu chưa thì hiện dialog yêu cầu bật */
+    private fun ensureLocationEnabled(): Boolean {
+        val lm = getSystemService(LOCATION_SERVICE) as LocationManager
+        val enabled =
+            lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                    lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+
+        if (!enabled) {
+            AlertDialog.Builder(this)
+                .setTitle("Bật vị trí")
+                .setMessage("Ứng dụng cần bật vị trí để dẫn đường. Vui lòng bật GPS trong cài đặt.")
+                .setPositiveButton("Mở cài đặt") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+                .setNegativeButton("Hủy", null)
+                .show()
+        }
+
+        return enabled
     }
 
     override fun onRequestPermissionsResult(
@@ -170,7 +203,9 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
             grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
-            startLocationUpdates()
+            if (ensureLocationEnabled()) {
+                startLocationUpdates()
+            }
         } else {
             Toast.makeText(this, "Cần quyền vị trí để dẫn đường", Toast.LENGTH_SHORT).show()
         }
@@ -214,12 +249,24 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
 
-        val bitmap = Bitmap.createBitmap(
-            drawable.intrinsicWidth.takeIf { it > 0 } ?: 64,
-            drawable.intrinsicHeight.takeIf { it > 0 } ?: 64,
-            Bitmap.Config.ARGB_8888
-        )
+        // Tạo bitmap to hơn để icon trông "đậm" và nổi
+        val width = (drawable.intrinsicWidth.takeIf { it > 0 } ?: 64) * 2
+        val height = (drawable.intrinsicHeight.takeIf { it > 0 } ?: 64) * 2
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+
+        // Vẽ nền tròn mờ phía sau cho nổi hơn route (tuỳ chọn, có thể bỏ)
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLUE
+            alpha = 200
+        }
+        val radius = min(width, height) / 2f
+        canvas.drawCircle(width / 2f, height / 2f, radius, paint)
+
+
+        // Vẽ icon xe phủ lên trên
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
 
@@ -236,16 +283,26 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         style.addLayer(
             SymbolLayer("car-layer", "car-source").withProperties(
                 PropertyFactory.iconImage("car-icon"),
-                PropertyFactory.iconSize(0.8f),
+                PropertyFactory.iconSize(1.0f), // 🔥 to hơn hẳn
                 PropertyFactory.iconIgnorePlacement(true),
-                PropertyFactory.iconAllowOverlap(true)
+                PropertyFactory.iconAllowOverlap(true),
+
+                // Xoay icon theo map (hướng Bắc là 0 độ)
+                PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+                // Tâm xoay ở giữa icon
+                PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
+                // Góc ban đầu
+                PropertyFactory.iconRotate(0.0f)
             )
         )
     }
 
+
     private fun getDirectionRoute(origin: LatLng) {
         val originStr = "${origin.latitude},${origin.longitude}"
         val destStr = "${fptDanang.latitude},${fptDanang.longitude}"
+
+        tvInstruction.text = "Đang tính đường đến FPT Đà Nẵng..."
 
         GoongClient.getApiService().getDirection(
             originStr, destStr, "car", getString(R.string.goong_api_key)
@@ -261,15 +318,30 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 val direction = response.body()!!
                 val route = direction.routes?.firstOrNull()
+                Log.d("direction", route.toString())
                 val poly = route?.overviewPolyline?.points ?: return
 
                 val leg = route.legs?.firstOrNull()
+
+                Log.d("Leg", leg.toString())
                 steps = leg?.steps?.filterNotNull() ?: emptyList()
+
+                Log.d("steps", steps.toString())
                 currentStepIndex = 0
                 currentRoutePointIndex = 0
 
-                updateInstruction()
+                // Đã có route
+                hasRoute = true
+
+                // Vẽ đường ngay lập tức (dù chưa bấm Start NAV)
                 drawPolyline(poly)
+
+                // Nếu đang ở chế độ NAV thì đọc hướng dẫn
+                if (isNavigating) {
+                    updateInstruction()
+                } else {
+                    tvInstruction.text = "Đường đi đã được vẽ. Nhấn Start NAV để bắt đầu chỉ đường."
+                }
             }
 
             override fun onFailure(call: retrofit2.Call<DirectionResponse?>, t: Throwable) {
@@ -290,6 +362,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateInstruction() {
+//        if (!isNavigating) return
+
         if (currentStepIndex >= steps.size) {
             tvInstruction.text = "Đã đến nơi 🎉"
             speak("Bạn đã đến nơi")
@@ -400,37 +474,40 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         return Triple(routePoints[closestIndex], minDist, closestIndex)
     }
 
-    private fun updateCarMarker(pos: LatLng) {
-        map?.getStyle()?.getSourceAs<GeoJsonSource>("car-source")
-            ?.setGeoJson(Point.fromLngLat(pos.longitude, pos.latitude))
+    private fun updateCarMarker(pos: LatLng, bearing: Float?) {
+        map?.getStyle()?.let { style ->
+            // Cập nhật vị trí
+            style.getSourceAs<GeoJsonSource>("car-source")
+                ?.setGeoJson(Point.fromLngLat(pos.longitude, pos.latitude))
+
+            // Nếu có bearing mới thì lưu lại
+            bearing?.let { lastBearing = it }
+
+            // Xoay icon theo lastBearing
+            style.getLayerAs<SymbolLayer>("car-layer")
+                ?.setProperties(
+                    PropertyFactory.iconRotate(lastBearing)
+                )
+        }
     }
 
-    private fun updateCamera(pos: LatLng, bearing: Float?) {
-        val finalBearing = bearing ?: lastGpsPos?.let { prev ->
-            val results = FloatArray(2)
-            android.location.Location.distanceBetween(
-                prev.latitude, prev.longitude,
-                pos.latitude, pos.longitude,
-                results
-            )
-            results[1]
-        } ?: 0f
-
+    /**  Không còn xoay camera theo hướng di chuyển nữa, luôn bearing = 0 */
+    private fun updateCamera(pos: LatLng) {
         val camera = CameraUpdateFactory.newCameraPosition(
             CameraPosition.Builder()
                 .target(pos)
                 .zoom(17.0)
                 .tilt(45.0)
-                .bearing(finalBearing.toDouble())
+                .bearing(0.0)   // luôn hướng Bắc
                 .build()
         )
         map?.animateCamera(camera)
     }
 
     private fun checkNextStep(pos: LatLng) {
+        if (!isNavigating) return
         if (currentStepIndex >= steps.size) return
 
-        // đơn giản: khi tới gần 1 điểm trên route tương ứng thì tăng step
         val snapInfo = closestPointOnRouteWithIndex(pos) ?: return
         val (_, distToRoute, indexOnRoute) = snapInfo
 
@@ -453,10 +530,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 val loc = result.lastLocation ?: return
                 val rawPos = LatLng(loc.latitude, loc.longitude)
                 currentLocation = rawPos
+
+
                 val bearing = if (loc.hasBearing()) loc.bearing else null
 
-                // Nếu đang NAV mà chưa có route -> gọi route
-                if (isNavigating && !hasRoute && map != null) {
+
+                // ⭐ VẼ ROUTE NGAY KHI CÓ VỊ TRÍ LẦN ĐẦU
+                if (!hasRoute && map != null) {
                     hasRoute = true
                     lastLocationForRouting = rawPos
                     lastRerouteTime = System.currentTimeMillis()
@@ -494,11 +574,12 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 // update marker
-                updateCarMarker(displayPos)
+                updateCarMarker(displayPos, bearing)
 
                 // chỉ follow camera + step nếu đang NAV
                 if (isNavigating) {
-                    updateCamera(displayPos, bearing)
+                    // KHÔNG dùng bearing nữa
+                    updateCamera(displayPos)
                     checkNextStep(displayPos)
                 }
 
@@ -520,6 +601,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onResume() {
         super.onResume()
         mapView.onResume()
+
+        // Nếu đang NAV mà user tắt GPS giữa chừng → nhắc bật lại
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            ensureLocationEnabled()
+        }
     }
 
     override fun onPause() {
