@@ -58,6 +58,7 @@ dependencies {
     implementation("com.microsoft.signalr:signalr:8.0.0")
     // AndroidX + Core libraries
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.core:core:1.12.0")
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)

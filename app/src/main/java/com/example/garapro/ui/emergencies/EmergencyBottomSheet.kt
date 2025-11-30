@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
 import com.example.garapro.data.model.emergencies.Garage
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import java.util.logging.Handler
 
 class EmergencyBottomSheet(
     private val context: android.content.Context,
@@ -27,6 +26,11 @@ class EmergencyBottomSheet(
     private lateinit var garageAdapter: GarageAdapter
     private var onConfirmClickListener: (() -> Unit)? = null
     private var onDismissClickListener: (() -> Unit)? = null
+    private var lastGarage: Garage? = null
+    private var onChooseAnotherListener: (() -> Unit)? = null
+    private var onTrackClickListener: (() -> Unit)? = null
+    private var trackingView: View? = null
+    private var suppressDismiss: Boolean = false
 
     fun show(
         garages: List<Garage>,
@@ -37,34 +41,41 @@ class EmergencyBottomSheet(
         this.onConfirmClickListener = onConfirm
         this.onDismissClickListener = onDismiss
 
+        bottomSheetDialog?.dismiss()
         bottomSheetDialog = BottomSheetDialog(context).apply {
             setContentView(createBottomSheetView(garages, selectedGarage))
             setCancelable(true)
             setOnDismissListener {
-                onDismissClickListener?.invoke()
+                if (!suppressDismiss) onDismissClickListener?.invoke()
             }
             show()
         }
     }
 
     fun showWaitingForGarage(garage: Garage) {
-        bottomSheetDialog?.dismiss()
+        dismissSilently()
         bottomSheetDialog = null
         Log.d("EmergencyState", "🟢 WaitingForGarage triggered fo")
-        android.os.Handler(Looper.getMainLooper()).post {
-            val dialog = BottomSheetDialog(context as Activity)
-            dialog.setContentView(createWaitingView(garage))
-            dialog.setCancelable(false)
-            dialog.show()
+        val dialog = BottomSheetDialog(context as Activity)
+        dialog.setContentView(createWaitingView(garage))
+        dialog.setCancelable(false)
+        dialog.show()
 
-            bottomSheetDialog = dialog
-            Log.d("EmergencyState", "✅ showWaitingForGarage displayed for ${garage.name}")
-        }
+        bottomSheetDialog = dialog
+        lastGarage = garage
+        Log.d("EmergencyState", "✅ showWaitingForGarage displayed for ${garage.name}")
     }
 
     fun dismiss() {
         bottomSheetDialog?.dismiss()
         bottomSheetDialog = null
+    }
+
+    fun dismissSilently() {
+        suppressDismiss = true
+        bottomSheetDialog?.dismiss()
+        bottomSheetDialog = null
+        suppressDismiss = false
     }
 
     fun updateGarages(garages: List<Garage>) {
@@ -76,14 +87,44 @@ class EmergencyBottomSheet(
         updateConfirmButton(garage)
     }
 
-    fun showConfirmationMode() {
-        bottomSheetDialog?.findViewById<TextView>(R.id.tvSheetTitle)?.text = "Đã xác nhận"
-        bottomSheetDialog?.findViewById<Button>(R.id.btnConfirm)?.apply {
-            text = "Đóng"
-            setOnClickListener {
-                dismiss()
+    fun showAccepted(garage: Garage, etaMinutes: Int?, arrived: Boolean = false) {
+        dismissSilently()
+        bottomSheetDialog = BottomSheetDialog(context).apply {
+            val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_accepted, null)
+            setContentView(view)
+            setCancelable(true)
+            val tvName = view.findViewById<TextView>(R.id.tvGarageNameAccepted)
+            val tvAddr = view.findViewById<TextView>(R.id.tvGarageAddressAccepted)
+            val tvDistance = view.findViewById<TextView>(R.id.tvDistanceAccepted)
+            val tvEta = view.findViewById<TextView>(R.id.tvEtaAccepted)
+            val btnTrack = view.findViewById<Button>(R.id.btnTrackTech)
+            val btnCall = view.findViewById<Button>(R.id.btnCallGarage)
+            tvName.text = garage.name
+            tvAddr.text = garage.address
+            tvDistance.text = "Cách bạn: ${garage.distance.formatDistance()} km"
+            val etaText = if (arrived) {
+                "Kỹ thuật viên đã tới nơi"
+            } else {
+                etaMinutes?.let { "ETA ~ ${it} phút" } ?: "ETA ~ ${((garage.distance ?: 0.0) / 30.0 * 60).toInt()} phút"
             }
+            tvEta.text = etaText
+            btnTrack.setOnClickListener {
+                dismiss()
+                onTrackClickListener?.invoke()
+            }
+            btnCall.setOnClickListener {
+                try {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
+                    intent.data = android.net.Uri.parse("tel:" + (garage.phone ?: ""))
+                    (context as Activity).startActivity(intent)
+                } catch (_: Exception) {}
+            }
+            show()
         }
+    }
+
+    fun setOnTrackClickListener(listener: (() -> Unit)?) {
+        onTrackClickListener = listener
     }
 
     private fun createWaitingView(garage: Garage): View {
@@ -98,10 +139,11 @@ class EmergencyBottomSheet(
         // Hiển thị thông tin gara
         tvGarageName.text = garage.name
         tvGarageInfo.text = "${garage.distance.formatDistance()} km • ${garage.rating} ⭐"
-        tvWaitingText.text = "Đang chờ ${garage.name} xác nhận..."
+        tvWaitingText.text = "Waiting for ${garage.name} to confirm..."
 
         // Setup nút hủy
         btnCancel.setOnClickListener {
+            viewModel.cancelEmergencyRequest()
             dismiss()
             onDismissClickListener?.invoke()
         }
@@ -159,19 +201,141 @@ class EmergencyBottomSheet(
 
     private fun updateTitle(garageCount: Int) {
         bottomSheetDialog?.findViewById<TextView>(R.id.tvSheetTitle)?.text =
-            if (garageCount == 0) "Không có gara nào khả dụng"
-            else "Chọn gara cứu hộ ($garageCount kết quả)"
+            if (garageCount == 0) "No available garages"
+            else "Choose a rescue garage ($garageCount results)"
     }
 
     private fun updateConfirmButton(garage: Garage?) {
         bottomSheetDialog?.findViewById<Button>(R.id.btnConfirm)?.apply {
             isEnabled = garage != null
-            text = if (garage != null) "Xác nhận - ${garage.price.formatPrice()}"
-            else "Chọn gara để xác nhận"
+            text = if (garage != null) "Confirm - ${garage.price.formatPrice()}"
+
+            else "Select a garage to confirm"
         }
     }
 
     fun isShowing(): Boolean {
         return bottomSheetDialog?.isShowing == true
+    }
+
+    fun lastSelectedGarage(): Garage? {
+        return lastGarage
+    }
+
+    fun setOnChooseAnotherListener(listener: (() -> Unit)?) {
+        onChooseAnotherListener = listener
+    }
+
+    fun showRejected(garage: Garage, reason: String?) {
+        dismissSilently()
+        bottomSheetDialog = BottomSheetDialog(context).apply {
+            val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_rejected, null)
+            setContentView(view)
+            setCancelable(true)
+            val tvName = view.findViewById<TextView>(R.id.tvGarageNameRejected)
+            val tvAddr = view.findViewById<TextView>(R.id.tvGarageAddressRejected)
+            val tvReason = view.findViewById<TextView>(R.id.tvRejectedReason)
+            val btnChoose = view.findViewById<Button>(R.id.btnChooseAnother)
+            val btnCall = view.findViewById<Button>(R.id.btnCallGarageRejected)
+            tvName.text = garage.name
+            tvAddr.text = garage.address
+            tvReason.text = reason ?: ""
+            btnChoose.setOnClickListener {
+                dismiss()
+                onChooseAnotherListener?.invoke()
+            }
+            btnCall.setOnClickListener {
+                try {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
+                    intent.data = android.net.Uri.parse("tel:" + (garage.phone ?: ""))
+                    (context as Activity).startActivity(intent)
+                } catch (_: Exception) {}
+            }
+            show()
+        }
+    }
+
+    fun showExpired(garage: Garage) {
+        dismissSilently()
+        bottomSheetDialog = BottomSheetDialog(context).apply {
+            val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_expired, null)
+            setContentView(view)
+            setCancelable(true)
+            val tvName = view.findViewById<TextView>(R.id.tvGarageNameExpired)
+            val tvAddr = view.findViewById<TextView>(R.id.tvGarageAddressExpired)
+            val btnChoose = view.findViewById<Button>(R.id.btnChooseAnotherExpired)
+            val btnCancel = view.findViewById<Button>(R.id.btnCancelExpired)
+            tvName.text = garage.name
+            tvAddr.text = garage.address
+            btnChoose.setOnClickListener {
+                dismiss()
+                onChooseAnotherListener?.invoke()
+            }
+            btnCancel.setOnClickListener {
+                viewModel.cancelEmergencyRequest()
+                dismiss()
+                onDismissClickListener?.invoke()
+            }
+            show()
+        }
+    }
+
+    fun showTracking(garage: Garage, etaMinutes: Int?) {
+        dismissSilently()
+        bottomSheetDialog = BottomSheetDialog(context).apply {
+            val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_tracking, null)
+            setContentView(view)
+            setCancelable(true)
+            trackingView = view
+            val tvTitle = view.findViewById<TextView>(R.id.tvTrackingTitle)
+            val tvSubtitle = view.findViewById<TextView>(R.id.tvTrackingSubtitle)
+            val tvTechName = view.findViewById<TextView>(R.id.tvTechNameTracking)
+            val tvTechPhone = view.findViewById<TextView>(R.id.tvTechPhoneTracking)
+            val btnCallTech = view.findViewById<Button>(R.id.btnCallTech)
+            val btnBack = view.findViewById<Button>(R.id.btnBackTracking)
+            val tvProgressLabel = view.findViewById<TextView>(R.id.tvProgressLabel)
+            val pbRoute = view.findViewById<ProgressBar>(R.id.pbRouteProgress)
+            tvTitle.text = "Đang di chuyển"
+            tvSubtitle.text = etaMinutes?.let { "Kỹ thuật viên đang tới, ETA ~ ${it} phút" } ?: "Kỹ thuật viên đang tới, vui lòng theo dõi trên bản đồ."
+            tvTechName.text = "Kỹ thuật viên"
+            tvTechPhone.text = ""
+            tvProgressLabel.text = "Tiến trình tuyến"
+            pbRoute.progress = 0
+            btnCallTech.setOnClickListener { dialNumber(tvTechPhone.text?.toString()) }
+            btnBack.setOnClickListener { showAccepted(garage, etaMinutes) }
+            tvProgressLabel.setOnClickListener {
+                dismiss()
+            }
+            show()
+        }
+    }
+
+    fun updateTrackingEta(minutes: Int) {
+        val v = trackingView ?: return
+        v.findViewById<TextView>(R.id.tvTrackingSubtitle)?.text = "Kỹ thuật viên đang tới, ETA ~ ${minutes} phút"
+    }
+
+    fun updateTrackingSkeleton(show: Boolean) {
+        val v = trackingView ?: return
+        val sc = v.findViewById<View>(R.id.skeletonContainer)
+        sc?.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    fun updateTrackingTechnician(name: String?, phone: String?) {
+        val v = trackingView ?: return
+        v.findViewById<TextView>(R.id.tvTechNameTracking)?.text = name ?: "Kỹ thuật viên"
+        v.findViewById<TextView>(R.id.tvTechPhoneTracking)?.text = phone ?: ""
+    }
+
+    private fun dialNumber(raw: String?) {
+        val number = raw?.filter { it.isDigit() || it == '+' } ?: ""
+        if (number.isBlank()) {
+            return
+        }
+        try {
+            val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
+            intent.data = android.net.Uri.parse("tel:$number")
+            (context as Activity).startActivity(intent)
+        } catch (_: Exception) {}
     }
 }
