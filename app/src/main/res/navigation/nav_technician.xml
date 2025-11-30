@@ -3,34 +3,26 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_technician"
-    app:startDestination="@id/homeFragment">
+    app:startDestination="@id/technicianFragment">
 
     <!-- Home -->
     <fragment
-        android:id="@+id/homeFragment"
-        android:name="com.example.garapro.ui.home.HomeFragment"
-        android:label="Trang chính"
-        tools:layout="@layout/fragment_home" />
-
-    <!-- Work schedule -->
-    <fragment
-        android:id="@+id/workScheduleFragment"
-        android:name="com.example.garapro.ui.technician.WorkScheduleFragment"
-        android:label="Lịch làm việc"
-        tools:layout="@layout/fragment_work_schedule" />
-
+        android:id="@+id/technicianFragment"
+        android:name="com.example.garapro.ui.technician.TechnicianFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_technician" />
     <!-- Reports -->
     <fragment
         android:id="@+id/reportsFragment"
         android:name="com.example.garapro.ui.technician.ReportsFragment"
-        android:label="Báo cáo"
+        android:label="Reports"
         tools:layout="@layout/fragment_reports" />
 
     <!-- Notifications -->
     <fragment
         android:id="@+id/notificationsFragment"
         android:name="com.example.garapro.ui.notifications.NotificationsFragment"
-        android:label="Thông báo"
+        android:label="Notifications"
         tools:layout="@layout/fragment_notifications" />
 
     <!-- Profile -->

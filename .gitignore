@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Thêm dòng này để ignore caches ở root
+caches/
