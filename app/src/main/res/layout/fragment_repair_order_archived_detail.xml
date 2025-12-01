@@ -181,23 +181,23 @@
                         android:orientation="horizontal"
                         android:layout_marginTop="8dp">
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Completed:"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
+<!--                        <TextView-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:text="Completed:"-->
+<!--                            android:textColor="@color/black"-->
+<!--                            android:textSize="14sp" />-->
 
-                        <TextView
-                            android:id="@+id/tvCompletionDate"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:gravity="end"
-                            android:textColor="@color/black"
-                            android:textSize="14sp"
-                            tools:text="02/01/2025 15:30" />
+<!--                        <TextView-->
+<!--                            android:id="@+id/tvCompletionDate"-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:gravity="end"-->
+<!--                            android:textColor="@color/black"-->
+<!--                            android:textSize="14sp"-->
+<!--                            tools:text="02/01/2025 15:30" />-->
                     </LinearLayout>
 
                     <!-- Archived At -->
@@ -274,23 +274,23 @@
                             android:orientation="horizontal"
                             android:layout_marginTop="4dp">
 
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Paid:"
-                                android:textColor="@color/black"
-                                android:textSize="14sp" />
+<!--                            <TextView-->
+<!--                                android:layout_width="0dp"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:layout_weight="1"-->
+<!--                                android:text="Paid:"-->
+<!--                                android:textColor="@color/black"-->
+<!--                                android:textSize="14sp" />-->
 
-                            <TextView
-                                android:id="@+id/tvPaidAmount"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:gravity="end"
-                                android:textColor="@color/black"
-                                android:textSize="14sp"
-                                tools:text="9.500.000 đ" />
+<!--                            <TextView-->
+<!--                                android:id="@+id/tvPaidAmount"-->
+<!--                                android:layout_width="0dp"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:layout_weight="1"-->
+<!--                                android:gravity="end"-->
+<!--                                android:textColor="@color/black"-->
+<!--                                android:textSize="14sp"-->
+<!--                                tools:text="9.500.000 đ" />-->
                         </LinearLayout>
 
                     </LinearLayout>

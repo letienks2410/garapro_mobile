@@ -88,7 +88,15 @@ object RetrofitInstance {
 
     val emergencyService: EmergencyApiService by lazy {
         getRetrofit().create(EmergencyApiService::class.java)
+
+    }
+
     val notificationService: NotificationApiService by lazy {
         getRetrofit().create(NotificationApiService::class.java)
     }
+
+    val techEmergencyService: TechEmergencyService by lazy {
+        getRetrofit().create(TechEmergencyService::class.java)
+    }
+
 }

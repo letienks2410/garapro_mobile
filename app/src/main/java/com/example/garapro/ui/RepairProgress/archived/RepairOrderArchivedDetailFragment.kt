@@ -101,12 +101,12 @@ class RepairOrderArchivedDetailFragment : Fragment() {
         tvModelName.text = detail.modelName
 
         tvReceiveDate.text = formatDateTime(detail.receiveDate)
-        tvCompletionDate.text = detail.completionDate?.let { formatDateTime(it) } ?: "-"
+//        tvCompletionDate.text = detail.completionDate?.let { formatDateTime(it) } ?: "-"
         tvArchivedAt.text = detail.archivedAt?.let { formatDateTime(it) } ?: "-"
 
 
         tvCost.text = formatCurrency(detail.cost)
-        tvPaidAmount.text = formatCurrency(detail.paidAmount)
+//        tvPaidAmount.text = formatCurrency(detail.paidAmount)
         tvNote.text = detail.note ?: "-"
 
         jobsAdapter.submitList(detail.jobs)

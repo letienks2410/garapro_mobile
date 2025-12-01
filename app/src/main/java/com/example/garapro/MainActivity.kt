@@ -330,89 +330,133 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         // 3. Tự handle click bottom nav (KHÔNG dùng setupWithNavController nữa)
         bottomNavigation.setOnItemSelectedListener { item ->
             val navOptions = NavOptions.Builder()
-                // pop về startDestination (homeFragment) nhưng không xoá nó
                 .setPopUpTo(navController.graph.startDestinationId, false)
                 .setLaunchSingleTop(true)
                 .build()
 
-            when (item.itemId) {
-                R.id.homeFragment -> {
-                    navController.navigate(R.id.homeFragment, null, navOptions)
-                    true
+            when (role) {
+                "Technician" -> {
+                    when (item.itemId) {
+                        R.id.technicianFragment -> {
+                            navController.navigate(R.id.technicianFragment, null, navOptions)
+                            true
+                        }
+                        R.id.reportsFragment -> {
+                            navController.navigate(R.id.reportsFragment, null, navOptions)
+                            true
+                        }
+                        R.id.notificationsFragment -> {
+                            navController.navigate(R.id.notificationsFragment, null, navOptions)
+                            true
+                        }
+                        R.id.profileFragment -> {
+                            navController.navigate(R.id.profileFragment, null, navOptions)
+                            true
+                        }
+                        else -> false
+                    }
                 }
 
-                R.id.appointmentGraph -> {
-                    navController.navigate(R.id.appointmentGraph, null, navOptions)
-                    true
-                }
+                else -> {
+                    // CUSTOMER ROLE
+                    when (item.itemId) {
+                        R.id.homeFragment -> {
+                            navController.navigate(R.id.homeFragment, null, navOptions)
+                            true
+                        }
 
-                R.id.repairTrackingGraph -> {
-                    navController.navigate(R.id.repairTrackingGraph, null, navOptions)
-                    true
-                }
+                        R.id.appointmentGraph -> {
+                            navController.navigate(R.id.appointmentGraph, null, navOptions)
+                            true
+                        }
 
-                R.id.repairArchivedGraph -> {
-                    navController.navigate(R.id.repairArchivedGraph, null, navOptions)
-                    true
-                }
+                        R.id.repairTrackingGraph -> {
+                            navController.navigate(R.id.repairTrackingGraph, null, navOptions)
+                            true
+                        }
 
-                R.id.chat -> {
-                    navController.navigate(R.id.chat, null, navOptions)
-                    true
-                }
+                        R.id.repairArchivedGraph -> {
+                            navController.navigate(R.id.repairArchivedGraph, null, navOptions)
+                            true
+                        }
 
-                R.id.profileFragment -> {
-                    navController.navigate(R.id.profileFragment, null, navOptions)
-                    true
-                }
+                        R.id.chat -> {
+                            navController.navigate(R.id.chat, null, navOptions)
+                            true
+                        }
 
-                else -> false
+                        R.id.profileFragment -> {
+                            navController.navigate(R.id.profileFragment, null, navOptions)
+                            true
+                        }
+
+                        else -> false
+                    }
+                }
             }
         }
 
         // 4. Listener sync checked state theo destination hiện tại
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-
-                //  HOME
-                R.id.homeFragment -> {
-                    bottomNavigation.menu.findItem(R.id.homeFragment)?.isChecked = true
+            when (role) {
+                "Technician" -> {
+                    when (destination.id) {
+                        R.id.technicianFragment -> {
+                            bottomNavigation.menu.findItem(R.id.technicianFragment)?.isChecked = true
+                        }
+                        R.id.reportsFragment -> {
+                            bottomNavigation.menu.findItem(R.id.reportsFragment)?.isChecked = true
+                        }
+                        R.id.notificationsFragment -> {
+                            bottomNavigation.menu.findItem(R.id.notificationsFragment)?.isChecked = true
+                        }
+                        R.id.profileFragment -> {
+                            bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
+                        }
+                    }
                 }
 
-                //  APPOINTMENTS / QUOTATIONS (tab Appointment)
-                R.id.appointmentNavFragment,
-                R.id.appointmentsFragment,
-                R.id.appointmentDetailFragment,
-                R.id.quotationsFragment,
-                R.id.quotationDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.appointmentGraph)?.isChecked = true
+                else -> {
+                    when (destination.id) {
+                        // HOME
+                        R.id.homeFragment -> {
+                            bottomNavigation.menu.findItem(R.id.homeFragment)?.isChecked = true
+                        }
+
+                        // APPOINTMENTS / QUOTATIONS (tab Appointment)
+                        R.id.appointmentNavFragment,
+                        R.id.appointmentsFragment,
+                        R.id.appointmentDetailFragment,
+                        R.id.quotationsFragment,
+                        R.id.quotationDetailFragment -> {
+                            bottomNavigation.menu.findItem(R.id.appointmentGraph)?.isChecked = true
+                        }
+
+                        // REPAIR TRACKING
+                        R.id.repairTrackingFragment,
+                        R.id.repairProgressDetailFragment -> {
+                            bottomNavigation.menu.findItem(R.id.repairTrackingGraph)?.isChecked = true
+                        }
+
+                        // REPAIR ARCHIVED
+                        R.id.repairArchivedFragment,
+                        R.id.repairArchivedDetailFragment -> {
+                            bottomNavigation.menu.findItem(R.id.repairArchivedGraph)?.isChecked = true
+                        }
+
+                        // PROFILE
+                        R.id.profileFragment -> {
+                            bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
+                        }
+                    }
                 }
-
-                //  REPAIR TRACKING (list + detail)
-                R.id.repairTrackingFragment,
-                R.id.repairProgressDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.repairTrackingGraph)?.isChecked = true
-                }
-
-                //  REPAIR ARCHIVED (list + detail)
-                R.id.repairArchivedFragment,
-                R.id.repairArchivedDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.repairArchivedGraph)?.isChecked = true
-                }
-
-
-                //  PROFILE
-                R.id.profileFragment -> {
-                    bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
-                }
-
-                // nếu bạn có vehiclesFragment, notificationsFragment,… thì map thêm
             }
         }
 
         navController.addOnDestinationChangedListener(listener)
         destinationChangedListener = listener
     }
+
 
 
 

@@ -14,7 +14,7 @@
     <!-- Reports -->
     <fragment
         android:id="@+id/reportsFragment"
-        android:name="com.example.garapro.ui.technician.ReportsFragment"
+        android:name="com.example.garapro.ui.TechEmergencies.ReportsFragment"
         android:label="Reports"
         tools:layout="@layout/fragment_reports" />
 
