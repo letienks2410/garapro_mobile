@@ -46,6 +46,8 @@ data class ArchivedJob(
     val jobName: String,
     val status: String,
     val deadline: String?,
+    val servicePrice: Double,
+    val discountValue: Double?,
     val totalAmount: Double,
     val repair: ArchivedRepair?,
     val technicians: List<ArchivedTechnician>,
