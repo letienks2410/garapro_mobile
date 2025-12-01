@@ -14,8 +14,8 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp"
-        android:background="@color/gray"
-        android:backgroundTint="@color/gray" />
+        android:background="@android:color/darker_gray"
+        android:backgroundTint="@android:color/darker_gray" />
 
     <!-- Title -->
     <TextView
@@ -25,7 +25,7 @@
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="16dp"
-        android:text="Chọn gara cứu hộ"
+        android:text="Choose a rescue garage"
         android:textSize="20sp"
         android:textStyle="bold" />
 
@@ -44,7 +44,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="Xác nhận - 0 đ"
+        android:text="Confirm - 0"
         android:textSize="16sp"
         android:textStyle="bold"
         app:cornerRadius="12dp"

@@ -2,6 +2,7 @@ package com.example.garapro.ui.quotations
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -143,9 +144,16 @@ class QuotationsFragment : Fragment() {
     }
 
     private fun observeQuotationHubEvents() {
+        val service = quotationHubService
+        if (service == null) {
+            Log.w("SignalR", "observeQuotationHubEvents: quotationHubService is null")
+            return
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
-            quotationHubService?.events?.collect {
-                // reload lại từ trang 1 khi có thay đổi
+            Log.d("SignalR", "Start collecting quotationHubService.events")
+            service.events.collect {
+                Log.d("R", "load from SignalR")
                 viewModel.loadQuotations(pageNumber = 1)
             }
         }
@@ -220,6 +228,7 @@ class QuotationsFragment : Fragment() {
             QuotationStatus.Approved -> binding.chipApproved.id
             QuotationStatus.Rejected -> binding.chipRejected.id
             QuotationStatus.Expired -> binding.chipExpired.id
+            QuotationStatus.Good -> binding.chipExpired.id
         }
         binding.chipGroup.check(chipId)
     }

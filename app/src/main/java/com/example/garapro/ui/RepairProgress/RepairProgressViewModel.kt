@@ -23,12 +23,14 @@ class RepairProgressViewModel : ViewModel() {
 
     private val repository = RepairProgressRepository(RetrofitInstance.RepairProgressService)
 
+
     private val _repairOrders =
         MutableStateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>>(
             RepairProgressRepository.ApiResponse.Loading()
         )
     val repairOrders: StateFlow<RepairProgressRepository.ApiResponse<PagedResult<RepairOrderListItem>>> =
         _repairOrders
+
 
     private val _repairOrderDetail =
         MutableStateFlow<RepairProgressRepository.ApiResponse<RepairProgressDetail>?>(null)
@@ -60,7 +62,7 @@ class RepairProgressViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // 🔹 Biến phục vụ phân trang
+
     private var currentPage = 1
     private var totalPages = 1
 
@@ -69,7 +71,7 @@ class RepairProgressViewModel : ViewModel() {
         loadFirstPage()
     }
 
-    // 🔹 Load trang đầu tiên
+
     fun loadFirstPage() {
         currentPage = 1
         loadRepairOrders(page = 1, isLoadMore = false)

@@ -31,7 +31,8 @@ data class QuotationServiceDetail(
     var isSelected: Boolean,
     val isAdvanced: Boolean,
 
-    val isRequired: Boolean, // 🔥 THÊM: Service bắt buộc không được bỏ
+    val isRequired: Boolean,
+    val isGood : Boolean,
     val price: Double,
     val quantity: Int,
 

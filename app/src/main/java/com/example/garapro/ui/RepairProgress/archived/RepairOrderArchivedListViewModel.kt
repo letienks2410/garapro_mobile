@@ -9,6 +9,8 @@ import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListItem
 import com.example.garapro.data.model.RepairProgresses.RoType
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class RepairOrderArchivedListViewModel(
@@ -29,7 +31,8 @@ class RepairOrderArchivedListViewModel(
     // 🔹 Biến phục vụ phân trang
     private var currentPage = 1
     private var totalPages = 1
-    private var isLoadingPage = false
+    private val _isLoadingPage = MutableStateFlow(false)
+    val isLoadingPage: StateFlow<Boolean> = _isLoadingPage
 
     /**
      * Hàm cũ: mặc định load lại từ trang 1 (dùng cho lần đầu / refresh / đổi filter)
@@ -46,16 +49,17 @@ class RepairOrderArchivedListViewModel(
         isLoadMore: Boolean,
         filterOverride: RepairOrderArchivedFilter? = null
     ) {
-        if (isLoadingPage) return
+        // chặn nếu đang load page
+        if (_isLoadingPage.value) return
 
         val newFilter = (filterOverride ?: currentFilter).copy(pageNumber = page)
         currentFilter = newFilter
         _filterState.value = newFilter
 
         viewModelScope.launch {
-            isLoadingPage = true
+            _isLoadingPage.value = true
 
-            // Chỉ show state Loading khi load trang đầu, tránh nháy màn hình khi loadMore
+            // chỉ show loading UI khi load trang đầu
             if (!isLoadMore) {
                 _ordersState.value = RepairProgressRepository.ApiResponse.Loading()
             }
@@ -70,21 +74,19 @@ class RepairOrderArchivedListViewModel(
 
                     val newItems = paged.items ?: emptyList()
 
-                    val mergedItems =
-                        if (isLoadMore) {
-                            val oldItems =
-                                (ordersState.value as? RepairProgressRepository.ApiResponse.Success)
-                                    ?.data
-                                    ?.items
-                                    ?: emptyList()
-                            oldItems + newItems
-                        } else {
-                            newItems
-                        }
+                    val mergedItems = if (isLoadMore) {
+                        val oldItems =
+                            (ordersState.value as? RepairProgressRepository.ApiResponse.Success)
+                                ?.data
+                                ?.items
+                                ?: emptyList()
+                        oldItems + newItems
+                    } else {
+                        newItems
+                    }
 
                     val mergedPaged = paged.copy(items = mergedItems)
-                    _ordersState.value =
-                        RepairProgressRepository.ApiResponse.Success(mergedPaged)
+                    _ordersState.value = RepairProgressRepository.ApiResponse.Success(mergedPaged)
                 }
 
                 is RepairProgressRepository.ApiResponse.Error -> {
@@ -96,7 +98,7 @@ class RepairOrderArchivedListViewModel(
                 }
             }
 
-            isLoadingPage = false
+            _isLoadingPage.value = false
         }
     }
 
@@ -104,7 +106,7 @@ class RepairOrderArchivedListViewModel(
      * 🔹 Gọi khi kéo xuống cuối danh sách
      */
     fun loadNextPage() {
-        if (isLoadingPage) return
+        if (_isLoadingPage.value) return
         if (currentPage >= totalPages) return
 
         loadPage(page = currentPage + 1, isLoadMore = true)

@@ -280,12 +280,12 @@ private val repository: QuotationRepository
         val selectedServices = quotation.quotationServices.filter { it.isSelected }
 
         if (selectedServices.isEmpty()) {
-            return "Vui lòng chọn ít nhất một service."
+            return "Please select at least one service."
         }
 
         val incompleteServices = selectedServices.filterNot { isServiceFullySelected(it) }
         return if (incompleteServices.isNotEmpty()) {
-            "Các dịch vụ sau cần chọn part:\n" +
+            "The following services require selecting parts:\n" +
                     incompleteServices.joinToString("\n") { it.serviceName }
         } else {
             ""
@@ -383,6 +383,9 @@ private val repository: QuotationRepository
      * Dùng hàm này ở Fragment để tính tổng đã trừ ưu đãi.
      */
     fun getFinalPriceForService(service: QuotationServiceDetail): Double {
+        // Nếu service này là “Good” thì không tính tiền luôn
+        if (service.isGood) return 0.0
+
         val partsTotal = service.partCategories
             .flatMap { it.parts }
             .filter { it.isSelected }
@@ -393,17 +396,10 @@ private val repository: QuotationRepository
         val promoState = _servicePromotions.value?.get(service.serviceId)
 
         return when {
-            // 1) Ưu đãi đang chọn ở client (trạng thái Sent, bottom sheet)
             promoState != null -> promoState.finalPrice
-
-            // 2) Ưu đãi đã lưu từ server (đã Approved/Rejected..)
             service.finalPrice != null && service.finalPrice > 0.0 -> {
-                // Giả sử finalPrice là giá service sau giảm,
-                // còn parts vẫn cộng thêm bình thường:
                 service.finalPrice + partsTotal
             }
-
-            // 3) Không có ưu đãi
             else -> priceWithParts
         }
     }

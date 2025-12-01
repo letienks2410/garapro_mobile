@@ -93,7 +93,8 @@ class BookingRepository(
         pageNumber: Int = 1,
         pageSize: Int = 10,
         childServiceCategoryId: String? = null,
-        searchTerm: String? = null
+        searchTerm: String? = null,
+        branchId: String? = null
     ): ChildCategoriesResponse {
         return try {
             val response = RetrofitInstance.bookingService.getChildServiceCategories(
@@ -101,7 +102,8 @@ class BookingRepository(
                 pageNumber = pageNumber,
                 pageSize = pageSize,
                 childServiceCategoryId = childServiceCategoryId,
-                searchTerm = searchTerm
+                searchTerm = searchTerm,
+                branchId = branchId
             )
             if (response.isSuccessful) {
                 response.body() ?: ChildCategoriesResponse(
@@ -175,6 +177,22 @@ class BookingRepository(
         } catch (e: Exception) {
             Log.e("BookingRepository", "Error getBranches: ${e.message}", e)
             emptyList()
+        }
+    }
+
+    suspend fun cancelRepairRequest(id: String): NetworkResult<Unit> {
+        return try {
+            val response = RetrofitInstance.bookingService.cancelRepairRequest(id)
+
+            if (response.isSuccessful) {
+                NetworkResult.Success(Unit)
+            } else {
+                val errorMessage = parseApiError(response.errorBody())
+                NetworkResult.Error(errorMessage, response.code())
+            }
+        } catch (e: Exception) {
+            Log.e("BookingRepository", "Error cancelRepairRequest: ${e.message}", e)
+            NetworkResult.Error(e.message ?: "Something went wrong.")
         }
     }
 

@@ -62,7 +62,8 @@ interface BookingService {
         @Query("pageNumber") pageNumber: Int = 1,
         @Query("pageSize") pageSize: Int = 10,
         @Query("childServiceCategoryId") childServiceCategoryId: String? = null,
-        @Query("searchTerm") searchTerm: String? = null
+        @Query("searchTerm") searchTerm: String? = null,
+        @Query("branchId") branchId: String? = null
     ): Response<ChildCategoriesResponse>
     // Submit Repair Request
     @Multipart
@@ -70,5 +71,9 @@ interface BookingService {
     suspend fun submitRepairRequest(
         @Part("dtoJson") dtoJson: RequestBody,
         @Part images: List<MultipartBody.Part>
+    ): Response<ResponseBody>
+    @POST("RepairRequest/{id}/cancel")
+    suspend fun cancelRepairRequest(
+        @Path("id") id: String
     ): Response<ResponseBody>
 }

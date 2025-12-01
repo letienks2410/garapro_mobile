@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+
+
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:layout_gravity="top"
+        android:background="#AA000000"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btnToggleNav"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start NAV" />
+        <TextView
+            android:id="@+id/tvInstruction"
+            android:text="Hướng dẫn sẽ hiển thị ở đây"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:padding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+</FrameLayout>
+

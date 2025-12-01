@@ -51,7 +51,7 @@ class RepairArchivedJobDetailBottomSheet : BottomSheetDialogFragment() {
 
     private fun bindJob(job: ArchivedJob) = with(binding) {
         tvJobName.text = job.jobName
-        tvJobStatus.text = job.status
+
         tvJobTotalAmount.text = "Total: ${formatCurrency(job.totalAmount)}"
 
         tvRepairTime.text = "Repair time: ${formatRepairTime(job.repair?.startTime, job.repair?.endTime)}"

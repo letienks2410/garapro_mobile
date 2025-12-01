@@ -1,12 +1,15 @@
 package com.example.garapro.ui.appointments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +20,8 @@ import com.example.garapro.data.model.repairRequest.RepairRequestDetail
 import com.example.garapro.data.model.repairRequest.RequestServiceDetail
 import com.example.garapro.data.repository.repairRequest.BookingRepository
 import com.example.garapro.databinding.BottomSheetRepairRequestDetailBinding
+import com.example.garapro.hubs.RepairRequestSignalrService
+import com.example.garapro.utils.Constants
 import com.example.garapro.utils.MoneyUtils
 import com.google.android.material.imageview.ShapeableImageView
 import kotlinx.coroutines.launch
@@ -30,6 +35,12 @@ class RepairRequestDetailFragment : Fragment() {
 
     private lateinit var tokenManager: TokenManager
     private val repository by lazy { BookingRepository(requireContext(), tokenManager) }
+
+    // --------- SIGNALR ----------
+    private lateinit var repairHub: RepairRequestSignalrService
+    private var currentRepairRequestId: String? = null
+    private var repairRequestIdArg: String? = null
+    // ----------------------------
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,8 +56,14 @@ class RepairRequestDetailFragment : Fragment() {
 
         tokenManager = TokenManager(requireContext())
 
-        val repairRequestId = arguments?.getString("repairRequestId")
-        if (repairRequestId == null) {
+        // Init SignalR hub (đúng URL của bạn)
+        val hubUrl = Constants.BASE_URL_SIGNALR + "/hubs/repairRequest"
+        repairHub = RepairRequestSignalrService(hubUrl)
+        repairHub.setupListeners()
+        observeSignalREvents()
+
+        repairRequestIdArg = arguments?.getString("repairRequestId")
+        if (repairRequestIdArg == null) {
             // Không có id -> có thể show error / back
             return
         }
@@ -54,27 +71,53 @@ class RepairRequestDetailFragment : Fragment() {
         binding.toolbarDetail.setNavigationOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
-        viewLifecycleOwner.lifecycleScope.launch {
-            // Nếu layout có progressBar riêng, bạn có thể dùng:
-            // binding.progressBar.visibility = View.VISIBLE
 
+        // Load detail lần đầu
+        loadDetail(repairRequestIdArg!!)
+    }
+
+    private fun loadDetail(repairRequestId: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val detail = repository.getRepairRequestDetail(repairRequestId)
                 if (detail != null) {
+                    // Lưu repairRequestId để dùng cho SignalR
+                    currentRepairRequestId = detail.repairRequestID
                     setupUI(detail)
+
+                    // Khi đã có repairRequestId thì join group tương ứng
+                    currentRepairRequestId?.let { rrId ->
+                        repairHub.connectAndJoinRepairRequest(rrId)
+                    }
                 } else {
                     // TODO: show error UI
                 }
             } catch (e: Exception) {
                 // TODO: show error UI
             } finally {
-                // binding.progressBar.visibility = View.GONE
+                // Nếu có progressBar riêng thì ẩn ở đây
+            }
+        }
+    }
+
+
+    private fun observeSignalREvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                repairHub.events.collect { repairRequestId ->
+                    if (repairRequestId == currentRepairRequestId && repairRequestIdArg != null) {
+                        Log.d("zo",repairRequestId)
+                        loadDetail(repairRequestIdArg!!)
+                    }
+                }
             }
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Rời group & stop hub khi fragment bị destroy
+        repairHub.leaveRepairRequestGroupAndStop()
         _binding = null
     }
 
@@ -114,14 +157,13 @@ class RepairRequestDetailFragment : Fragment() {
         binding.tvTotalCost.text = MoneyUtils.formatVietnameseCurrency(totalCost)
 
         val isCompleted = detail.status == 4  // COMPLETED
-        val repairOrderId = detail.repairOrderId   // đổi cho đúng field model của bạn
+        val repairOrderId = detail.repairOrderId   // dùng để navigate sang tracking
 
         if (isCompleted && !repairOrderId.isNullOrEmpty()) {
             binding.btnViewRepairProgress.visibility = View.VISIBLE
 
             binding.btnViewRepairProgress.setOnClickListener {
-                // Tự quyết trong code: đi graph thường hay archived
-                val isArchieved = detail.isArchived == true   // hoặc logic khác của bạn
+                val isArchieved = detail.isArchived == true
 
                 val actionId = if (isArchieved) {
                     R.id.action_global_repairArchivedFromRequest

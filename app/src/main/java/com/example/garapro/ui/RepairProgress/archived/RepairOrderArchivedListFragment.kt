@@ -19,11 +19,17 @@ import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListIt
 import com.example.garapro.data.model.RepairProgresses.RoType
 import com.example.garapro.data.repository.RepairProgress.RepairProgressRepository
 import com.example.garapro.databinding.FragmentRepairOrderArchivedListBinding
+import com.example.garapro.hubs.RepairOrderSignalRService
+import com.example.garapro.utils.Constants          // 🔹 thêm
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+
+// 🔹 thêm
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class RepairOrderArchivedListFragment : Fragment() {
 
@@ -32,9 +38,13 @@ class RepairOrderArchivedListFragment : Fragment() {
 
     private lateinit var adapter: RepairOrderArchivedAdapter
 
+    // 🔹 thêm: service cho hub archived
+    private var repairOrderHubService: RepairOrderSignalRService? = null
+
     private val viewModel: RepairOrderArchivedListViewModel by viewModels {
         RepairOrderArchivedListViewModelFactory()
     }
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,7 +64,11 @@ class RepairOrderArchivedListFragment : Fragment() {
         setupFilter()
         observeViewModel()
 
-        // Lần đầu load
+
+        initRepairOrderHub()
+        observeRepairOrderHubEvents()
+
+
         viewModel.loadOrders()
     }
 
@@ -72,7 +86,6 @@ class RepairOrderArchivedListFragment : Fragment() {
 
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
-
 
         binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -111,6 +124,7 @@ class RepairOrderArchivedListFragment : Fragment() {
 
         setupFilterOptions()
     }
+
     private fun setupFilterOptions() {
         // RO Type filter
         binding.roTypeFilterLayout.setEndIconOnClickListener {
@@ -133,6 +147,7 @@ class RepairOrderArchivedListFragment : Fragment() {
             showDateRangePicker()
         }
     }
+
     private fun showRoTypeFilterDialog() {
         val roTypes = arrayOf("Walk-in", "Scheduled", "Breakdown")
         val currentFilter = viewModel.filterState.value?.roType
@@ -167,6 +182,7 @@ class RepairOrderArchivedListFragment : Fragment() {
             .setPositiveButton("OK", null)
             .show()
     }
+
     private fun showPaidStatusFilterDialog() {
         val paidStatuses = arrayOf("Pending Payment", "Paid")
         val currentFilter = viewModel.filterState.value?.paidStatus
@@ -201,7 +217,6 @@ class RepairOrderArchivedListFragment : Fragment() {
             .show()
     }
 
-
     private fun showDateRangePicker() {
         val picker = MaterialDatePicker.Builder.dateRangePicker()
             .setTitleText(R.string.select_date_range)
@@ -234,11 +249,26 @@ class RepairOrderArchivedListFragment : Fragment() {
     }
 
 
+    private fun initRepairOrderHub() {
 
+        val hubUrl = Constants.BASE_URL_SIGNALR + "/api/repairorderhub"
 
+        repairOrderHubService = RepairOrderSignalRService(hubUrl).apply {
+            setupListeners()
 
+            connectAndJoin("archived-list")
+        }
+    }
 
+    private fun observeRepairOrderHubEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repairOrderHubService?.events?.collect { roId ->
+                // có tín hiệu từ server (Created/Updated/Archived) → reload list archived
+                viewModel.refresh()
+            }
+        }
 
+    }
 
     private fun observeViewModel() {
         viewModel.ordersState.observe(viewLifecycleOwner) { state ->
@@ -262,7 +292,15 @@ class RepairOrderArchivedListFragment : Fragment() {
                 }
             }
         }
+
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isLoadingPage.collect { isLoading ->
+                binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+            }
+        }
     }
+
 
     private fun applyData(paged: PagedResult<RepairOrderArchivedListItem>) {
         val items = paged.items ?: emptyList()
@@ -286,6 +324,13 @@ class RepairOrderArchivedListFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        try {
+            repairOrderHubService?.leaveGroupAndStop()
+        } catch (_: Exception) {
+        }
+        repairOrderHubService = null
+
         _binding = null
     }
 }

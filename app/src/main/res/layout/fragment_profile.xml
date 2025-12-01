@@ -93,6 +93,13 @@
                     android:layout_height="1dp"
                     android:layout_marginStart="56dp"
                     android:background="#F0F0F0" />
+                <include
+                    layout="@layout/item_profile_menu"
+                    android:id="@+id/vehiclesFragment" />
+                <View android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="56dp"
+                    android:background="#F0F0F0" />
                 <include layout="@layout/item_profile_menu"
                     android:id="@+id/changePass" />
             </LinearLayout>

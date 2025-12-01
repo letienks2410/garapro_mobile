@@ -64,7 +64,7 @@ class RatingActivity : AppCompatActivity() {
                     finish()
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(this@RatingActivity, "Gửi thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@RatingActivity, "Gửi thất bại: ${e}", Toast.LENGTH_LONG).show()
                 }
             }
         }

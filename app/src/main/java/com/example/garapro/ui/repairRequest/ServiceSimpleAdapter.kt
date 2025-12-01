@@ -44,7 +44,7 @@ class ServiceSimpleAdapter(
         // QUAN TRỌNG: Remove listener cũ trước khi set mới
         holder.cardService.setOnClickListener(null)
 
-        // Set click listener cho CardView
+
         holder.cardService.setOnClickListener {
             Log.d("ServiceAdapter", "Card clicked for: ${service.serviceName}")
 
@@ -76,7 +76,6 @@ class ServiceSimpleAdapter(
         // Format giá
         val servicePrice = MoneyUtils.calculateServicePrice(service)
         if (service.discountedPrice > 0 && service.discountedPrice < service.price) {
-            holder.tvServicePrice.text = "${MoneyUtils.formatVietnameseCurrency(servicePrice)} (Giảm ${MoneyUtils.formatVietnameseCurrency(service.price - service.discountedPrice)})"
             holder.tvServicePrice.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.success))
         } else {
             holder.tvServicePrice.text = MoneyUtils.formatVietnameseCurrency(servicePrice)

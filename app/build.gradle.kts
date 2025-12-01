@@ -58,6 +58,7 @@ dependencies {
     implementation("com.microsoft.signalr:signalr:8.0.0")
     // AndroidX + Core libraries
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.core:core:1.12.0")
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -85,6 +86,8 @@ dependencies {
 
     implementation ("com.google.dagger:hilt-android:2.51.1")
 
+// map
+    implementation("org.maplibre.gl:android-sdk:10.2.0")
 
     // Retrofit + OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

@@ -1,5 +1,6 @@
 package com.example.garapro.ui.appointments
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -12,43 +13,70 @@ import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
 import com.example.garapro.data.local.TokenManager
+import com.example.garapro.data.model.NetworkResult
 import com.example.garapro.data.model.repairRequest.Branch
 import com.example.garapro.data.model.repairRequest.RepairRequest
 import com.example.garapro.data.model.repairRequest.Vehicle
 import com.example.garapro.data.repository.repairRequest.BookingRepository
 import com.example.garapro.databinding.FragmentAppointmentsBinding
 import com.example.garapro.ui.repairRequest.BookingActivity
+import com.example.garapro.hubs.RepairRequestSignalrService
+import com.example.garapro.utils.Constants
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class AppointmentsFragment : Fragment() {
 
     private lateinit var binding: FragmentAppointmentsBinding
     private lateinit var tokenManager: TokenManager
-    private val repository by lazy { BookingRepository(requireContext(), tokenManager) }
-    private val viewModelFactory by lazy { BookingViewModelFactory(repository) }
-    private val viewModel: AppointmentsViewModel by viewModels { viewModelFactory }
-    private lateinit var adapter: RepairRequestAdapter
+    private lateinit var repository: BookingRepository
 
+    private lateinit var adapter: RepairRequestAdapter
     private var isFilterVisible = false
+    private val viewModel: AppointmentsViewModel by viewModels {
+        BookingViewModelFactory(repository)
+    }
+    companion object {
+        private const val PREFS_AUTH = "auth_prefs"
+        private const val KEY_USER_ID = "user_id"
+    }
+
+    // ========== SIGNALR HUB ==========
+    private lateinit var repairHub: RepairRequestSignalrService
+    private var currentUserIdForSignalR: String? = null
+
+    private val currentRepairOrderIdForSignalR: String? = null
+    // =================================
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        tokenManager = TokenManager(requireContext())
+        repository = BookingRepository(requireContext(), tokenManager)
+
+        // Khởi tạo hub
+        val hubUrl = Constants.BASE_URL_SIGNALR + "/hubs/repairRequest"
+        repairHub = RepairRequestSignalrService(hubUrl)
+        repairHub.setupListeners()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentAppointmentsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        tokenManager = TokenManager(requireContext())
 
         setupRecyclerView()
         setupFilterSection()
@@ -57,7 +85,45 @@ class AppointmentsFragment : Fragment() {
         setupEmptyState()
 
         observeViewModel()
+        observeSignalREvents()
+
         viewModel.loadInitialData()
+    }
+
+
+    // Lắng nghe event từ SignalR hub
+    private fun observeSignalREvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                repairHub.events.collect { repairRequestId ->
+                    Log.d("SignalR", "Received event for repairRequestId=$repairRequestId -> refresh list")
+                    // Bất cứ RepairRequest nào của user thay đổi -> reload list
+                    viewModel.refreshData()
+                }
+            }
+        }
+    }
+
+    // Kết nối / ngắt kết nối hub theo lifecycle
+    override fun onStart() {
+        super.onStart()
+
+        val prefs = requireContext().getSharedPreferences(PREFS_AUTH, android.content.Context.MODE_PRIVATE)
+        val userId = prefs.getString(KEY_USER_ID, null)
+        currentUserIdForSignalR = userId
+
+        if (!userId.isNullOrEmpty()) {
+            Log.d("SignalR", "onStart: connectAndJoinUser($userId)")
+            repairHub.connectAndJoinUser(userId)
+        } else {
+            Log.w("SignalR", "onStart: userId is null, not joining user group")
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.d("SignalR", "onStop: leaveGroupAndStop()")
+        repairHub.leaveUserGroupAndStop()
     }
 
     private fun setupEmptyState() {
@@ -78,7 +144,7 @@ class AppointmentsFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = RepairRequestAdapter(
             onItemClick = { showRepairRequestDetail(it) },
-            onUpdateClick = { updateRepairRequest(it) }
+            onCancelClick = { cancelRepairRequest(it) }
         )
 
         binding.recyclerView.apply {
@@ -285,7 +351,6 @@ class AppointmentsFragment : Fragment() {
         }
     }
 
-
     private fun updateVehicleSpinner(vehicles: List<Vehicle>) {
         val adapter = ArrayAdapter<String>(
             requireContext(),
@@ -338,7 +403,7 @@ class AppointmentsFragment : Fragment() {
                     bundle
                 )
             } catch (e: Exception) {
-                Log.d("repairRequest",e.message ?:"")
+                Log.d("repairRequest", e.message ?: "")
                 Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 binding.progressBar.visibility = View.GONE
@@ -346,13 +411,59 @@ class AppointmentsFragment : Fragment() {
         }
     }
 
-    private fun updateRepairRequest(repairRequest: RepairRequest) {
-        // Navigate to update screen
-        Toast.makeText(requireContext(), "Update: ${repairRequest.repairRequestID}", Toast.LENGTH_SHORT).show()
+    private fun cancelRepairRequest(repairRequest: RepairRequest) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Cancel appointment")
+            .setMessage("Are you sure you want to cancel this repair request?")
+            .setPositiveButton("Cancel request") { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        binding.progressBar.visibility = View.VISIBLE
+
+                        val result = repository.cancelRepairRequest(repairRequest.repairRequestID)
+
+                        when (result) {
+                            is NetworkResult.Success -> {
+                                showSuccessDialog()
+                                // Refresh lại danh sách
+                                viewModel.refreshData()
+                            }
+                            is NetworkResult.Error -> {
+                                showErrorDialog(result.message ?: "Failed to cancel request.")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Error: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } finally {
+                        binding.progressBar.visibility = View.GONE
+                    }
+                }
+            }
+            .setNegativeButton("Keep request", null)
+            .show()
     }
 
-    override fun onResume() {
-        super.onResume()
-        viewModel.loadInitialData()
+    private fun showSuccessDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Success")
+            .setMessage("Cancel successfully!")
+            .setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+                viewModel.refreshData()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun showErrorDialog(message: String?) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Error")
+            .setMessage(message ?: "Booking failed. Please try again.")
+            .setPositiveButton("OK", null)
+            .show()
     }
 }

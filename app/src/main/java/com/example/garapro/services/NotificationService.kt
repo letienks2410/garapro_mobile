@@ -77,7 +77,7 @@ class NotificationService : FirebaseMessagingService() {
                 // App background -> show system notification nếu có permission
                 if (canNotify) {
                     showSystemNotification(
-                        title = data["title"] ?: "Tin nhắn mới",
+                        title = data["title"] ?: "New message",
                         body = message,
                         extraIds = mapOf(
                             "conversationId" to (conversationId ?: ""),
@@ -94,7 +94,7 @@ class NotificationService : FirebaseMessagingService() {
         // =========================
         // CASE 2: Các loại notification khác
         // =========================
-        val title = data["title"] ?: "Thông báo"
+        val title = data["title"] ?: "Notification"
         val body = data["body"] ?: data["message"] ?: ""
         val screen = data["screen"]
         val notificationType = data["type"]

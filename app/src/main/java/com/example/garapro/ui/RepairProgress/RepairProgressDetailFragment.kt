@@ -44,10 +44,10 @@ class RepairProgressDetailFragment : Fragment() {
 
     private var repairOrderId: String? = null
 
-    // ✅ SignalR service chỉ dùng cho màn này
+
     private var signalRService: RepairOrderSignalRService? = null
 
-    private var repairHubService: RepairOrderSignalRService? = null
+
     private var jobHubService: JobSignalRService? = null
 
     override fun onCreateView(
@@ -84,8 +84,8 @@ class RepairProgressDetailFragment : Fragment() {
     }
 
     private fun initRepairHub() {
-        // ⚠️ ĐÂY PHẢI LÀ URL ĐÚNG CỦA HUB: vd: https://your-api.com/repairHub
-        val hubUrl =Constants.BASE_URL_SIGNALR +"/hubs/repair"
+
+        val hubUrl =Constants.BASE_URL_SIGNALR +"/api/repair"
 
         signalRService = RepairOrderSignalRService(hubUrl).apply {
             setupListeners()
@@ -226,17 +226,17 @@ class RepairProgressDetailFragment : Fragment() {
 
         binding.paymentAction.apply {
             when {
-                // Nếu Completed và Unpaid → hiện nút thanh toán
+
                 status == "Completed" && paid == "Unpaid" -> {
                     visibility = View.VISIBLE
                     text = "Your vehicle is ready for pickup. You can do payment online or cash when you show up at the garage"
                 }
-                // Nếu Completed và đã Paid → hiện thông báo khác (không cho thanh toán)
+
                 status == "Completed" && paid == "Paid" -> {
                     visibility = View.VISIBLE
                     text = "Your vehicle is ready for pickup. Thank for your payment"
                 }
-                // Các trạng thái khác → ẩn
+
                 else -> {
                     visibility = View.GONE
                 }

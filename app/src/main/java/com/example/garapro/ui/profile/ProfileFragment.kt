@@ -15,6 +15,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.remote.ApiService
@@ -34,6 +35,7 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var editProfileLauncher: ActivityResultLauncher<Intent>
     private lateinit var viewModel: ProfileViewModel
+    private var tokenExpiredReceiver: BroadcastReceiver? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -59,7 +61,7 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        val receiver = object : BroadcastReceiver() {
+        tokenExpiredReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == "TOKEN_EXPIRED") {
                     // Kiểm tra fragment còn attached không
@@ -81,8 +83,9 @@ class ProfileFragment : Fragment() {
 
 
         LocalBroadcastManager.getInstance(requireContext())
-            .registerReceiver(receiver, IntentFilter("TOKEN_EXPIRED"))
+            .registerReceiver(tokenExpiredReceiver!!, IntentFilter("TOKEN_EXPIRED"))
 
+        // Logout
         binding.btnLogout.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle("Logout")
@@ -93,6 +96,9 @@ class ProfileFragment : Fragment() {
                 .setNegativeButton("Cancel", null)
                 .show()
         }
+
+        // Cấu hình các item trong menu profile
+        setupProfileMenu()
 
 
 
@@ -166,8 +172,28 @@ class ProfileFragment : Fragment() {
         }
     }
 
+
+    private fun setupProfileMenu() {
+        // Item 2: My Vehicles
+        // Với ViewBinding, include `@+id/vehiclesFragment` sẽ tạo ra binding con cho `item_profile_menu`
+        val vehiclesItemBinding = binding.vehiclesFragment
+
+        // Đổi title để không còn là "My addresses"
+        vehiclesItemBinding.tvTitle.text = "My Vehicles"
+
+        // Điều hướng sang vehiclesFragment trong nav_customer khi bấm vào root view của item
+        vehiclesItemBinding.root.setOnClickListener {
+            findNavController().navigate(com.example.garapro.R.id.vehiclesFragment)
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        tokenExpiredReceiver?.let {
+            LocalBroadcastManager.getInstance(requireContext())
+                .unregisterReceiver(it)
+        }
+        tokenExpiredReceiver = null
         _binding = null
     }
 }

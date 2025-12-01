@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/ivCross"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:background="@drawable/rejected_cross_bg"
+        android:text="✕"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:gravity="center"
+        android:layout_gravity="center_horizontal"/>
+
+    <TextView
+        android:id="@+id/tvRejectedTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Garage rejected"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="12dp"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/tvRejectedSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sorry, the garage cannot accept your request right now. You can choose another garage or contact support."
+        android:textSize="14sp"
+        android:textColor="#6B7280"
+        android:layout_marginTop="6dp"
+        android:gravity="center"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
+        android:padding="12dp"
+        android:background="#F3F4F6">
+
+        <TextView
+            android:id="@+id/tvGarageNameRejected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@android:color/black"/>
+
+        <TextView
+            android:id="@+id/tvGarageAddressRejected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:layout_marginTop="4dp"/>
+
+        <TextView
+            android:id="@+id/tvRejectedReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#111827"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/btnChooseAnother"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Choose another garage"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:backgroundTint="#111827"/>
+
+        <Button
+            android:id="@+id/btnCallGarageRejected"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Call garage"
+            android:textAllCaps="false"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+</LinearLayout>
