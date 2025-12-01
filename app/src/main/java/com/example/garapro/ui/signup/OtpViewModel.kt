@@ -17,9 +17,9 @@ class OtpViewModel(private val repository: AuthRepository) : ViewModel() {
     private val _otpVerifyState = MutableLiveData<Resource<otpResponse>>()
     val otpVerifyState: LiveData<Resource<otpResponse>> = _otpVerifyState
 
-    fun sendOtp(phone: String) {
+    fun sendOtp(phone: String, email: String?) {
         viewModelScope.launch {
-            repository.sendOtp(phone).collect { _otpSendState.value = it }
+            repository.sendOtp(phone, email).collect { _otpSendState.value = it }
         }
     }
 

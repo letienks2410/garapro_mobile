@@ -14,13 +14,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-
-
 class RatingActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_REPAIR_ORDER_ID = "extra_repair_order_id"
-        const val RESULT_FEEDBACK_POSTED = 101   // <- thêm đây
+        const val RESULT_FEEDBACK_POSTED = 101   // <- return result here
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,10 +34,11 @@ class RatingActivity : AppCompatActivity() {
         submitBtn.setOnClickListener {
             val rating = ratingBar.rating.toInt()
             val comment = commentEdit.text.toString().trim()
-            val repairOrderId = intent.getStringExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID) ?: return@setOnClickListener
+            val repairOrderId = intent.getStringExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID)
+                ?: return@setOnClickListener
 
             if (rating <= 0) {
-                Toast.makeText(this, "Vui lòng cho điểm", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Please give a rating.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -49,22 +48,32 @@ class RatingActivity : AppCompatActivity() {
                 repairOrderId = repairOrderId
             )
 
-            // show loading UI nếu cần
+            // Show loading UI if needed
             lifecycleScope.launch {
                 try {
-                    // gọi ở IO
+                    // Call API on IO dispatcher
                     val resp = withContext(Dispatchers.IO) {
                         RetrofitInstance.RepairProgressService.createFeedback(request)
                     }
 
-                    // xử lý trên Main
-                    Toast.makeText(this@RatingActivity, "Đã gửi đánh giá. Cảm ơn!", Toast.LENGTH_LONG).show()
-                    // trả result để caller refresh list
+                    // Back to Main thread to update UI
+                    Toast.makeText(
+                        this@RatingActivity,
+                        "Feedback submitted. Thank you!",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    // Return result so the caller can refresh the list
                     setResult(RESULT_FEEDBACK_POSTED)
                     finish()
+
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(this@RatingActivity, "Gửi thất bại: ${e}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@RatingActivity,
+                        "Submission failed: $e",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }

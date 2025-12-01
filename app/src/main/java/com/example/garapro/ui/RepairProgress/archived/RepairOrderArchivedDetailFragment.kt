@@ -138,7 +138,7 @@ class RepairOrderArchivedDetailFragment : Fragment() {
                 // Refresh lại detail hoặc load lại API
                 viewModel.loadDetail(currentRepairOrderId.orEmpty());
 
-                Toast.makeText(requireContext(), "Cảm ơn bạn đã đánh giá!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Thank for rating!", Toast.LENGTH_SHORT).show()
             }
         }
 

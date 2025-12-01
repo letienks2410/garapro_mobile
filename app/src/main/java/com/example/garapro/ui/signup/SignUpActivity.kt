@@ -95,7 +95,7 @@ class SignUpActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val response = apiService.sentOtp(otpRequest(phone))
+                val response = apiService.sentOtp(otpRequest(phone, email))
                 if (response.isSuccessful) {
                     showToast(response.body()?.message ?: "OTP sent!")
                     layoutRegister.visibility = View.GONE
