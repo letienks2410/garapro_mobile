@@ -85,12 +85,12 @@ class ProfileFragment : Fragment() {
 
         binding.btnLogout.setOnClickListener {
             AlertDialog.Builder(requireContext())
-                .setTitle("Đăng xuất")
-                .setMessage("Bạn có chắc muốn đăng xuất không?")
-                .setPositiveButton("Có") { _, _ ->
+                .setTitle("Logout")
+                .setMessage("Do you want to logout?")
+                .setPositiveButton("Yes") { _, _ ->
                     viewModel.logout(requireContext())
                 }
-                .setNegativeButton("Hủy", null)
+                .setNegativeButton("Cancel", null)
                 .show()
         }
 
