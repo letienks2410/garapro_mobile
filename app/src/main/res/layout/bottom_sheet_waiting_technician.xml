@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -59,21 +60,13 @@
         android:textSize="13sp"
         android:textColor="#616161" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCloseAccepted"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Close"
-            android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            app:backgroundTint="#6200EE"
-            app:cornerRadius="12dp" />
-    </LinearLayout>
+    <ProgressBar
+        android:id="@+id/pbBottomWaiting"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="24dp"
+        android:layout_gravity="center_horizontal"
+        style="@android:style/Widget.Material.ProgressBar.Large"
+        android:indeterminate="true" />
 
 </LinearLayout>

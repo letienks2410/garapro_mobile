@@ -90,19 +90,13 @@
                     android:layout_marginTop="2dp"/>
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCallTech"
+            <Button
+                android:id="@+id/btnViewMap"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Call"
+                android:layout_height="wrap_content"
+                android:text="View map"
                 android:textAllCaps="false"
-                android:layout_marginStart="8dp"
-                android:textColor="@android:color/white"
-                app:backgroundTint="#111827"
-                app:icon="@android:drawable/ic_menu_call"
-                app:iconPadding="8dp"
-                app:iconTint="@android:color/white"
-                app:iconGravity="textStart"/>
+                android:layout_marginStart="8dp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -165,7 +159,9 @@
             android:layout_height="8dp"
             android:layout_marginTop="8dp"
             android:progress="0"
-            android:max="100"/>
+            android:max="100"
+            android:progressTint="#2E7D32"
+            android:progressBackgroundTint="#C8E6C9"/>
     </LinearLayout>
 
 </LinearLayout>

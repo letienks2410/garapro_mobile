@@ -73,26 +73,21 @@
         android:textSize="13sp"
         android:textColor="#616161" />
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/tvArrivedNote"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="16dp">
+        android:layout_marginTop="16dp"
+        android:text="Please work with the technician to begin service."
+        android:textSize="14sp"
+        android:textColor="#616161" />
 
-        <Button
-            android:id="@+id/btnViewMapArrived"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="View map" />
-
-        <Button
-            android:id="@+id/btnCloseArrived"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Close" />
-    </LinearLayout>
+    <Button
+        android:id="@+id/btnCloseArrived"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Close"
+        android:textAllCaps="false" />
 
 </LinearLayout>

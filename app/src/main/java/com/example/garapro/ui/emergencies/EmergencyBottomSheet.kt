@@ -31,6 +31,8 @@ class EmergencyBottomSheet(
     private var onTrackClickListener: (() -> Unit)? = null
     private var trackingView: View? = null
     private var suppressDismiss: Boolean = false
+    private var onViewMapClickListener: (() -> Unit)? = null
+    private var onCloseClickListener: (() -> Unit)? = null
 
     fun show(
         garages: List<Garage>,
@@ -133,15 +135,16 @@ class EmergencyBottomSheet(
             view.findViewById<TextView>(R.id.tvArrivedGarageAddress)?.text = garage.address
             view.findViewById<TextView>(R.id.tvTechNameArrived)?.text = techName ?: "Technician"
             view.findViewById<TextView>(R.id.tvTechPhoneArrived)?.text = techPhone ?: ""
-            val btnViewMap = view.findViewById<Button>(R.id.btnViewMapArrived)
-            val btnClose = view.findViewById<Button>(R.id.btnCloseArrived)
-            btnViewMap.setOnClickListener {
+            view.findViewById<Button>(R.id.btnCloseArrived)?.setOnClickListener {
                 dismiss()
-                onTrackClickListener?.invoke()
+                onCloseClickListener?.invoke()
             }
-            btnClose.setOnClickListener { dismiss() }
             show()
         }
+    }
+
+    fun setOnCloseClickListener(listener: (() -> Unit)?) {
+        onCloseClickListener = listener
     }
 
     fun showAcceptedWaitingForTechnician(garage: Garage) {
@@ -149,19 +152,17 @@ class EmergencyBottomSheet(
         bottomSheetDialog = BottomSheetDialog(context).apply {
             val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_waiting_technician, null)
             setContentView(view)
-            setCancelable(true)
+            setCancelable(false)
             val tvTitle = view.findViewById<TextView>(R.id.tvAcceptedTitle)
             val tvSubtitle = view.findViewById<TextView>(R.id.tvAcceptedSubtitle)
             val tvName = view.findViewById<TextView>(R.id.tvGarageNameWaiting)
             val tvAddr = view.findViewById<TextView>(R.id.tvGarageAddressWaiting)
             val tvDistance = view.findViewById<TextView>(R.id.tvGarageDistanceWaiting)
-            val btnClose = view.findViewById<Button>(R.id.btnCloseAccepted)
             tvTitle.text = "Garage accepted your request"
             tvSubtitle.text = "Waiting for the garage to assign a technician"
             tvName.text = garage.name
             tvAddr.text = garage.address
             tvDistance.text = "Distance: ${garage.distance.formatDistance()} km"
-            btnClose.setOnClickListener { dismiss() }
             show()
         }
     }
@@ -334,7 +335,7 @@ class EmergencyBottomSheet(
             val tvSubtitle = view.findViewById<TextView>(R.id.tvTrackingSubtitle)
             val tvTechName = view.findViewById<TextView>(R.id.tvTechNameTracking)
             val tvTechPhone = view.findViewById<TextView>(R.id.tvTechPhoneTracking)
-            val btnCallTech = view.findViewById<Button>(R.id.btnCallTech)
+            val btnViewMap = view.findViewById<Button>(R.id.btnViewMap)
             val btnBack = view.findViewById<Button>(R.id.btnBackTracking)
             val tvProgressLabel = view.findViewById<TextView>(R.id.tvProgressLabel)
             val pbRoute = view.findViewById<ProgressBar>(R.id.pbRouteProgress)
@@ -344,7 +345,7 @@ class EmergencyBottomSheet(
             tvTechPhone.text = ""
             tvProgressLabel.text = "Route progress"
             pbRoute.progress = 0
-            btnCallTech.setOnClickListener { dialNumber(tvTechPhone.text?.toString()) }
+            btnViewMap.setOnClickListener { dismiss(); onViewMapClickListener?.invoke() }
             btnBack.setOnClickListener { showAccepted(garage, etaMinutes) }
             tvProgressLabel.setOnClickListener {
                 dismiss()
@@ -366,8 +367,12 @@ class EmergencyBottomSheet(
 
     fun updateTrackingTechnician(name: String?, phone: String?) {
         val v = trackingView ?: return
-        v.findViewById<TextView>(R.id.tvTechNameTracking)?.text = name ?: "Kỹ thuật viên"
+        v.findViewById<TextView>(R.id.tvTechNameTracking)?.text = name ?: "Technician"
         v.findViewById<TextView>(R.id.tvTechPhoneTracking)?.text = phone ?: ""
+    }
+
+    fun setOnViewMapClickListener(listener: (() -> Unit)?) {
+        onViewMapClickListener = listener
     }
 
     private fun dialNumber(raw: String?) {
