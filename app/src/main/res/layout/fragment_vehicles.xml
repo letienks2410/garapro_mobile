@@ -17,7 +17,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/white"
             android:elevation="4dp"
-            app:title="Quản lý phương tiện"
+            app:title="Vehicle Management"
             app:titleTextColor="@color/black" />
 
         <androidx.recyclerview.widget.RecyclerView
@@ -42,7 +42,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="16dp"
-        android:text="Chưa có phương tiện nào"
+        android:text="No vehicles found"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
         android:visibility="gone" />
 
@@ -52,7 +52,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Thêm phương tiện"
+        android:contentDescription="Add vehicle"
         android:src="@android:drawable/ic_input_add"
         app:tint="@color/white" />
 
