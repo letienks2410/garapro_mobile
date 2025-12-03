@@ -119,7 +119,7 @@ class VehiclesFragment : Fragment() {
                     isActionLoading = false
                     updateLoadingState()
                     if (!isVehicleFormDialogVisible) {
-                        Toast.makeText(requireContext(), "Thao tác thành công", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Action succeeded", Toast.LENGTH_SHORT).show()
                     }
                     lastAction = null
                 }
@@ -128,7 +128,7 @@ class VehiclesFragment : Fragment() {
                     updateLoadingState()
                     if (!isVehicleFormDialogVisible && lastAction != null) {
                         val actionableMsg = extractActionableMessage(response.message.orEmpty())
-                        val friendly = actionableMsg ?: if (lastAction == "delete") mapDeleteErrorMessage(response.message.orEmpty()) else (response.message ?: "Thao tác thất bại")
+                        val friendly = actionableMsg ?: if (lastAction == "delete") mapDeleteErrorMessage(response.message.orEmpty()) else (response.message ?: "Action failed")
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle(if (lastAction == "delete") "Delete Failed" else "Action Failed")
                             .setMessage(friendly)
@@ -312,7 +312,7 @@ class VehiclesFragment : Fragment() {
                 }
 
                 val userId = getCurrentUserId()
-                if (userId.isNullOrBlank()) { Toast.makeText(requireContext(), "Không tìm thấy thông tin người dùng", Toast.LENGTH_LONG).show(); return@setOnClickListener }
+                if (userId.isNullOrBlank()) { Toast.makeText(requireContext(), "User info not found", Toast.LENGTH_LONG).show(); return@setOnClickListener }
 
                 if (existingVehicle == null) {
                     val request = CreateVehicles(
@@ -388,7 +388,7 @@ class VehiclesFragment : Fragment() {
                                     if (pLower.contains("exist") || pLower.contains("duplicate") || pLower.contains("tồn tại") || pLower.contains("đã tồn tại") || pLower.contains("already")) {
                                         tilLicensePlate.error = "License plate already exists"; handled = true
                                     } else {
-                                        tilLicensePlate.error = "Biển số không hợp lệ"; handled = true
+                                        tilLicensePlate.error = "Invalid license plate"; handled = true
                                     }
                                 }
                                 if (!vinErr.isNullOrBlank()) {
