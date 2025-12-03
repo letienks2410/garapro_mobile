@@ -114,6 +114,9 @@
         <activity
             android:name=".ui.emergencies.MapActivity"
             android:exported="true" />
+        <activity
+            android:name=".ui.emergencies.EmergencyListActivity"
+            android:exported="true" />
 
         <service
             android:name=".services.NotificationService"

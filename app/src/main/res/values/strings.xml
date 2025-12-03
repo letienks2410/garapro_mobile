@@ -28,4 +28,17 @@
         <item>Arrived</item>
         <item>Cancelled</item>
     </string-array>
+    <string name="title_success">Success!</string>
+    <string name="msg_vehicle_added">Vehicle added</string>
+    <string name="msg_vehicle_updated">Vehicle updated</string>
+    <string name="msg_vehicle_deleted">Vehicle deleted</string>
+    <string name="msg_action_completed">Action completed</string>
+    <string name="location_permission_title">Allow location access</string>
+    <string name="location_permission_message">We need location to find your current position, suggest nearby garages, and estimate technician arrival time.</string>
+    <string name="location_permission_allow">Allow</string>
+    <string name="location_permission_later">Later</string>
+    <string name="location_permission_denied_title">Cannot access location</string>
+    <string name="location_permission_denied_message">You denied location permission. Open Settings to grant it if you want to use location features.</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="close">Close</string>
 </resources>

@@ -1,5 +1,20 @@
 package com.example.garapro.data.model.emergencies
 
+import com.google.gson.annotations.SerializedName
+
 enum class EmergencyStatus {
-    PENDING, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED
+    @SerializedName("Pending")
+    PENDING,
+
+    @SerializedName("Accepted")
+    ACCEPTED,
+
+    @SerializedName("InProgress")
+    IN_PROGRESS,
+
+    @SerializedName("Completed")
+    COMPLETED,
+
+    @SerializedName("Cancelled")
+    CANCELLED
 }

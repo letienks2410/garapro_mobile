@@ -9,12 +9,12 @@
     <!-- Garage Logo -->
     <ImageView
         android:id="@+id/ivGarageAvatar"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="12dp"
-        android:src="@android:drawable/ic_menu_myplaces"
-        android:tint="#6E6E6E" />
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/gr_logo"
+        android:background="@drawable/spinner_background_black" />
 
 
     <TextView
