@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="16dp"
+    android:background="#F5F5F5"
+    android:orientation="vertical">
+
+    <!-- Card Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="#FFFFFF"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:elevation="4dp"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:translationZ="2dp">
+
+        <!-- Header Icons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+
+
+        </LinearLayout>
+
+        <!-- Status Icon -->
+
+        <!-- Title -->
+        <ImageView
+            android:layout_width="150dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:contentDescription="Arrived icon"
+            android:src="@drawable/ic_logo_town" />
+
+        <TextView
+            android:id="@+id/tvArrivedTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:text="Technician has arrived"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#212121" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/tvArrivedSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="6dp"
+            android:text="Please work with the technician to begin service."
+            android:textColor="#616161"
+            android:textSize="14sp" />
+
+        <!-- Garage Info -->
+        <TextView
+            android:id="@+id/tvArrivedGarageName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Garage ABC"
+            android:textColor="#424242"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvArrivedGarageAddress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="123 Nguyễn Văn Linh, Đà Nẵng"
+            android:textColor="#616161"
+            android:textSize="13sp" />
+
+        <!-- Technician Info -->
+        <TextView
+            android:id="@+id/tvTechNameArrived"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Technician: Nguyễn Văn A"
+            android:textColor="#424242"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvTechPhoneArrived"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Phone: 0905xxxxxx"
+            android:textColor="#616161"
+            android:textSize="13sp" />
+
+        <!-- Note -->
+
+        <!-- Button -->
+        <Button
+            android:id="@+id/btnCloseArrived"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:backgroundTint="@color/red"
+            android:text="Close"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+
+</LinearLayout>

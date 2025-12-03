@@ -19,6 +19,7 @@ import com.example.garapro.data.model.Vehicles.*
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.repository.ApiResponse
 import com.example.garapro.data.repository.VehicleRepository
+import com.example.garapro.ui.common.SuccessDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
@@ -119,7 +120,13 @@ class VehiclesFragment : Fragment() {
                     isActionLoading = false
                     updateLoadingState()
                     if (!isVehicleFormDialogVisible) {
-                        Toast.makeText(requireContext(), "Thao tác thành công", Toast.LENGTH_SHORT).show()
+                        val msg = when (lastAction) {
+                            "delete" -> getString(R.string.msg_vehicle_deleted)
+                            "create" -> getString(R.string.msg_vehicle_added)
+                            "update" -> getString(R.string.msg_vehicle_updated)
+                            else -> getString(R.string.msg_action_completed)
+                        }
+                        SuccessDialog.show(requireContext(), getString(R.string.title_success), msg)
                     }
                     lastAction = null
                 }
@@ -128,7 +135,7 @@ class VehiclesFragment : Fragment() {
                     updateLoadingState()
                     if (!isVehicleFormDialogVisible && lastAction != null) {
                         val actionableMsg = extractActionableMessage(response.message.orEmpty())
-                        val friendly = actionableMsg ?: if (lastAction == "delete") mapDeleteErrorMessage(response.message.orEmpty()) else (response.message ?: "Thao tác thất bại")
+                        val friendly = actionableMsg ?: if (lastAction == "delete") mapDeleteErrorMessage(response.message.orEmpty()) else (response.message ?: "Action failed")
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle(if (lastAction == "delete") "Delete Failed" else "Action Failed")
                             .setMessage(friendly)
@@ -312,7 +319,7 @@ class VehiclesFragment : Fragment() {
                 }
 
                 val userId = getCurrentUserId()
-                if (userId.isNullOrBlank()) { Toast.makeText(requireContext(), "Không tìm thấy thông tin người dùng", Toast.LENGTH_LONG).show(); return@setOnClickListener }
+                if (userId.isNullOrBlank()) { Toast.makeText(requireContext(), "User info not found", Toast.LENGTH_LONG).show(); return@setOnClickListener }
 
                 if (existingVehicle == null) {
                     val request = CreateVehicles(
@@ -326,6 +333,7 @@ class VehiclesFragment : Fragment() {
                         odometer = null
                     )
                     waitingForAction = true
+                    lastAction = "create"
                     viewModel.createVehicle(request)
                 } else {
                     val request = UpdateVehicles(
@@ -338,6 +346,7 @@ class VehiclesFragment : Fragment() {
                         odometer = existingVehicle.odometer
                     )
                     waitingForAction = true
+                    lastAction = "update"
                     viewModel.updateVehicle(existingVehicle.vehicleID, request)
                 }
                 positive.isEnabled = false
@@ -347,7 +356,7 @@ class VehiclesFragment : Fragment() {
                 if (!waitingForAction) return@Observer
                 when (resp) {
                     is ApiResponse.Loading -> { positive.isEnabled = false }
-                    is ApiResponse.Success -> { waitingForAction = false; positive.isEnabled = true; dialog.dismiss() }
+                    is ApiResponse.Success -> { waitingForAction = false; positive.isEnabled = true; dialog.dismiss(); SuccessDialog.show(requireContext(), getString(R.string.title_success), if (existingVehicle == null) getString(R.string.msg_vehicle_added) else getString(R.string.msg_vehicle_updated)) }
                     is ApiResponse.Error -> {
                         waitingForAction = false
                         positive.isEnabled = true
@@ -388,7 +397,7 @@ class VehiclesFragment : Fragment() {
                                     if (pLower.contains("exist") || pLower.contains("duplicate") || pLower.contains("tồn tại") || pLower.contains("đã tồn tại") || pLower.contains("already")) {
                                         tilLicensePlate.error = "License plate already exists"; handled = true
                                     } else {
-                                        tilLicensePlate.error = "Biển số không hợp lệ"; handled = true
+                                        tilLicensePlate.error = "Invalid license plate"; handled = true
                                     }
                                 }
                                 if (!vinErr.isNullOrBlank()) {

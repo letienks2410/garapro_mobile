@@ -51,4 +51,9 @@ interface EmergencyApiService {
     suspend fun getEmergencyById(
         @Path("id") emergencyId: String
     ): Response<Emergency>
+
+    @GET("EmergencyRequest/customer/{customerId}")
+    suspend fun getEmergenciesByCustomer(
+        @Path("customerId") customerId: String
+    ): Response<List<com.example.garapro.data.model.emergencies.EmergencyRequestSummary>>
 }

@@ -214,13 +214,23 @@ class EmergencyRepository {
 
     suspend fun fetchRoute(emergencyId: String): Result<RouteResponse> {
         return try {
+            Log.d("EmergencyAPI", "GET route id=" + emergencyId)
             val response = api.getRoute(emergencyId)
+            Log.d("EmergencyAPI", "Route resp code=" + response.code())
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val body = response.body()!!
+                try {
+                    val geom = body.geometry
+                    val type = if (geom.isJsonObject) "Object" else if (geom.isJsonArray) "Array" else if (geom.isJsonPrimitive) "Primitive" else "Unknown"
+                    Log.d("EmergencyAPI", "Route body: geometryType=" + type + ", dist=" + (body.distanceMeters ?: -1.0) + ", dur=" + (body.durationSeconds ?: -1.0))
+                } catch (_: Exception) {}
+                Result.success(body)
             } else {
+                Log.w("EmergencyAPI", "Route failed: code=" + response.code() + ", body=" + (response.errorBody()?.string() ?: ""))
                 Result.failure(Exception(response.errorBody()?.string() ?: "Fetch route failed"))
             }
         } catch (e: Exception) {
+            Log.e("EmergencyAPI", "Route error: ${e.message}")
             Result.failure(e)
         }
     }

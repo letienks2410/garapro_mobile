@@ -1,3 +1,5 @@
+package com.example.garapro.ui.emergencies
+
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -37,6 +39,7 @@ class EmergencyViewModel : ViewModel() {
     private val _distanceMeters = MutableLiveData<Double?>(null)
     val distanceMeters: LiveData<Double?> = _distanceMeters
     private var routePollingJob: Job? = null
+    private var lastCreatedId: String? = null
 
     
 
@@ -169,19 +172,42 @@ class EmergencyViewModel : ViewModel() {
         val id = currentEmergency?.id?.takeIf { it.isNotBlank() } ?: return
         viewModelScope.launch { fetchRouteOnce(id) }
     }
+    fun fetchRouteNowFor(emergencyId: String) {
+        if (emergencyId.isBlank()) return
+        viewModelScope.launch { fetchRouteOnce(emergencyId) }
+    }
+    fun startRoutePollingFor(emergencyId: String, intervalMs: Long = 10000L) {
+        if (emergencyId.isBlank()) return
+        routePollingJob?.cancel()
+        routePollingJob = viewModelScope.launch {
+            while (true) {
+                fetchRouteOnce(emergencyId)
+                delay(intervalMs)
+            }
+        }
+    }
 
     private suspend fun fetchRouteOnce(emergencyId: String) {
         val res = repository.fetchRoute(emergencyId)
         if (res.isSuccess) {
             val route = res.getOrNull()
             val geo = route?.geometry
-            _routeGeoJson.value = geo?.let { toFeatureCollection(it) }
+            try {
+                val fc = geo?.let { toFeatureCollection(it) }
+                _routeGeoJson.value = fc
+                android.util.Log.d("Route", "route fetched: geometryType=" + (geo?.let { if (it.isJsonObject) "Object" else if (it.isJsonArray) "Array" else if (it.isJsonPrimitive) "Primitive" else "Unknown" } ?: "null") +", fcNull=" + (fc == null))
+            } catch (e: Exception) {
+                android.util.Log.w("Route", "failed to convert geometry: " + e.message)
+                _routeGeoJson.value = null
+            }
             val ds = route?.durationSeconds
             val minutes = if (ds != null) {
                 if (ds > 300) kotlin.math.round(ds / 60.0).toInt() else kotlin.math.round(ds).toInt()
             } else null
             _etaMinutes.value = minutes
             _distanceMeters.value = route?.distanceMeters
+        } else {
+            android.util.Log.w("Route", "fetch failed: " + (res.exceptionOrNull()?.message ?: "unknown"))
         }
     }
 
@@ -220,11 +246,35 @@ class EmergencyViewModel : ViewModel() {
                     }.toString()
                 }
                 geometry.isJsonPrimitive -> {
-                    // Unsupported encoded polyline; return empty FC
-                    JsonObject().apply {
-                        addProperty("type", "FeatureCollection")
-                        add("features", JsonArray())
-                    }.toString()
+                    val prim = geometry.asJsonPrimitive
+                    if (prim.isString) {
+                        val decoded = decodePolyline(prim.asString)
+                        val coords = JsonArray().apply {
+                            decoded.forEach { pair ->
+                                add(JsonArray().apply {
+                                    add(pair[0]) // lng
+                                    add(pair[1]) // lat
+                                })
+                            }
+                        }
+                        val geom = JsonObject().apply {
+                            addProperty("type", "LineString")
+                            add("coordinates", coords)
+                        }
+                        val feature = JsonObject().apply {
+                            addProperty("type", "Feature")
+                            add("geometry", geom)
+                        }
+                        JsonObject().apply {
+                            addProperty("type", "FeatureCollection")
+                            add("features", JsonArray().apply { add(feature) })
+                        }.toString()
+                    } else {
+                        JsonObject().apply {
+                            addProperty("type", "FeatureCollection")
+                            add("features", JsonArray())
+                        }.toString()
+                    }
                 }
                 else -> JsonObject().apply {
                     addProperty("type", "FeatureCollection")
@@ -237,6 +287,41 @@ class EmergencyViewModel : ViewModel() {
                 add("features", JsonArray())
             }.toString()
         }
+    }
+
+    private fun decodePolyline(encoded: String): MutableList<List<Double>> {
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+        val path: MutableList<List<Double>> = mutableListOf()
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20 && index < len)
+            val dlat = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
+            lat += dlat
+
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20 && index < len)
+            val dlng = if ((result and 1) != 0) (result shr 1).inv() else (result shr 1)
+            lng += dlng
+
+            val latD = lat / 1E5
+            val lngD = lng / 1E5
+            path.add(listOf(lngD, latD))
+        }
+        return path
     }
 
     
@@ -263,12 +348,23 @@ class EmergencyViewModel : ViewModel() {
             val before = currentEmergency?.id ?: ""
             currentEmergency = currentEmergency?.copy(id = idCandidate) ?: Emergency(id = idCandidate)
             android.util.Log.d("EmergencyID", "markCreated before=" + before + " incoming=" + emergencyId + " after=" + currentEmergency?.id)
-            val garage = _selectedGarage.value ?: _nearbyGarages.value?.firstOrNull { it.id == branchId }
-            garage?.let { _assignedGarage.value = it }
-            val g = _assignedGarage.value
-            if (g != null) {
-                _emergencyState.value = EmergencyState.WaitingForGarage(g)
+
+            val branchGarage = _nearbyGarages.value?.firstOrNull { it.id == branchId }
+            val currentAssigned = _assignedGarage.value ?: _selectedGarage.value
+            val chosenGarage = currentAssigned ?: branchGarage
+            chosenGarage?.let { _assignedGarage.value = it }
+
+            val state = _emergencyState.value
+            val isSameId = lastCreatedId == idCandidate
+            val waitingSameGarage = state is EmergencyState.WaitingForGarage && chosenGarage != null && state.garage.id == chosenGarage.id
+
+            if (!(isSameId && waitingSameGarage)) {
+                val g = _assignedGarage.value
+                if (g != null) {
+                    _emergencyState.value = EmergencyState.WaitingForGarage(g)
+                }
             }
+            lastCreatedId = idCandidate
         }
     }
 
@@ -286,6 +382,27 @@ class EmergencyViewModel : ViewModel() {
         stopRoutePolling()
         _routeGeoJson.value = null
         _etaMinutes.value = null
+    }
+
+    fun rehydrateEmergency(emergency: Emergency) {
+        currentEmergency = emergency
+        when (emergency.status) {
+            EmergencyStatus.PENDING -> {
+                _emergencyState.value = EmergencyState.Success(emergency)
+            }
+            EmergencyStatus.ACCEPTED -> {
+                _emergencyState.value = EmergencyState.Confirmed(emergency)
+            }
+            EmergencyStatus.IN_PROGRESS -> {
+                _emergencyState.value = EmergencyState.Confirmed(emergency)
+            }
+            EmergencyStatus.COMPLETED -> {
+                _emergencyState.value = EmergencyState.Success(emergency)
+            }
+            EmergencyStatus.CANCELLED -> {
+                _emergencyState.value = EmergencyState.Error("Emergency canceled")
+            }
+        }
     }
 }
 

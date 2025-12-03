@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Gara Ô Tô Số 1"
+        android:text="Gara Car Number 1"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
@@ -34,7 +34,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="1.2 km • 4.5 ⭐"
+        android:text="1.2 km"
         android:textColor="@color/gray"
         android:textSize="14sp"
         android:layout_marginBottom="24dp" />
@@ -54,7 +54,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Đang chờ gara xác nhận..."
+        android:text="Waiting for garage respone..."
         android:textSize="16sp"
         android:layout_marginBottom="8dp" />
 
@@ -64,7 +64,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Thời gian ước tính: 2-5 phút"
+        android:text="Estimates times : 2-5 minutes"
         android:textColor="@color/gray"
         android:textSize="14sp" />
 
@@ -74,7 +74,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Hủy yêu cầu"
+        android:text="Cancel Request"
         android:backgroundTint="@color/gray"
         app:cornerRadius="12dp" />
 

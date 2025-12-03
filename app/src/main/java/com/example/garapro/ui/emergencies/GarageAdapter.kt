@@ -55,14 +55,14 @@ class GarageAdapter(
         private val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
         private val tvDistance: TextView = itemView.findViewById(R.id.tvDistance)
         private val tvPrice: TextView = itemView.findViewById(R.id.tvPrice)
-        private val tvRating: TextView = itemView.findViewById(R.id.tvRating)
+      //  private val tvRating: TextView = itemView.findViewById(R.id.tvRating)
 
         fun bind(garage: Garage, isSelected: Boolean) {
             tvGarageName.text = garage.name
             tvAddress.text = garage.address
             tvDistance.text = "${garage.distance.formatDistance()} km"
             tvPrice.text = garage.price.formatPrice()
-            tvRating.text = garage.rating.toString()
+           // tvRating.text = garage.rating.toString()
 
             // Update selection state
             if (isSelected) {
