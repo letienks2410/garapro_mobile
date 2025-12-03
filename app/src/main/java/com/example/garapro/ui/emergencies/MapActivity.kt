@@ -101,6 +101,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private var destinationLatLng: LatLng? = null
     private var waitingForGarageActive: Boolean = false
     private var routeFetchPending: Boolean = false
+    private val mainHandler: Handler = Handler(Looper.getMainLooper())
+    private var fallbackStyleRunnable: Runnable? = null
     
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -727,7 +729,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                                 technicianName = name
                                 technicianPhone = phone
                                 if (!technicianArrived) emergencyBottomSheet.updateTrackingTechnician(name, phone)
-                                if (trackingActive) moveCameraToLocation(point)
+                                if (!trackingActive) enableTrackingUI() 
                             } else {
                                 android.util.Log.w("TechRT", "update received but UI not ready; active=" + activityActive + ", styleLoaded=" + styleLoaded)
                             }
@@ -1189,6 +1191,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         try { activityActive = false } catch (_: Exception) {}
         try { viewModel.stopRoutePolling() } catch (_: Exception) {}
         try { emergencyHub?.stop() } catch (_: Exception) {}
+        try { fallbackStyleRunnable?.let { mainHandler.removeCallbacks(it) } } catch (_: Exception) {}
+        fallbackStyleRunnable = null
+        try { mapView?.onPause() } catch (_: Exception) {}
+        try { mapView?.onStop() } catch (_: Exception) {}
         finish()
     }
 
@@ -1224,6 +1230,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             override fun onStyleLoaded(@NonNull style: Style) {
                 if (isFinishing) return
                 styleLoaded = true
+                try { fallbackStyleRunnable?.let { mainHandler.removeCallbacks(it) } } catch (_: Exception) {}
+                fallbackStyleRunnable = null
                 setupMap()
                 addSampleMarkers(style)
                 addRouteLayer(style)
@@ -1242,7 +1250,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         })
 
-        Handler(Looper.getMainLooper()).postDelayed({
+        fallbackStyleRunnable = Runnable {
             if (!styleLoaded && mapView != null && !isFinishing) {
                 val fallback = "https://demotiles.maplibre.org/style.json"
                 maplibreMap?.setStyle(Style.Builder().fromUri(fallback), object : Style.OnStyleLoaded {
@@ -1262,11 +1270,11 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                                 routeFetchPending = false
                             }
                         }
-
                     }
                 })
             }
-        }, 4000)
+        }
+        try { fallbackStyleRunnable?.let { mainHandler.postDelayed(it, 4000) } } catch (_: Exception) {}
     }
 
     private fun setupMap() {
