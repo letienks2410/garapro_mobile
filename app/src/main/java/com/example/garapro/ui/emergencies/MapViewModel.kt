@@ -1,3 +1,5 @@
+package com.example.garapro.ui.emergencies
+
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -286,6 +288,27 @@ class EmergencyViewModel : ViewModel() {
         stopRoutePolling()
         _routeGeoJson.value = null
         _etaMinutes.value = null
+    }
+
+    fun rehydrateEmergency(emergency: Emergency) {
+        currentEmergency = emergency
+        when (emergency.status) {
+            EmergencyStatus.PENDING -> {
+                _emergencyState.value = EmergencyState.Success(emergency)
+            }
+            EmergencyStatus.ACCEPTED -> {
+                _emergencyState.value = EmergencyState.Confirmed(emergency)
+            }
+            EmergencyStatus.IN_PROGRESS -> {
+                _emergencyState.value = EmergencyState.Confirmed(emergency)
+            }
+            EmergencyStatus.COMPLETED -> {
+                _emergencyState.value = EmergencyState.Success(emergency)
+            }
+            EmergencyStatus.CANCELLED -> {
+                _emergencyState.value = EmergencyState.Error("Emergency canceled")
+            }
+        }
     }
 }
 

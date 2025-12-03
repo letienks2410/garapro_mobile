@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Garage Logo -->
+    <ImageView
+        android:id="@+id/ivGarageAvatar"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:src="@android:drawable/ic_menu_myplaces"
+        android:tint="#6E6E6E" />
+
+
+    <TextView
+        android:id="@+id/tvAcceptedTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Garage accepted your request"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/tvAcceptedSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Waiting for the garage to assign a technician"
+        android:textSize="14sp"
+        android:textColor="#616161" />
+
+    <TextView
+        android:id="@+id/tvGarageNameWaiting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Garage name"
+        android:textStyle="bold"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/tvGarageAddressWaiting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Garage address"
+        android:textSize="13sp"
+        android:textColor="#616161" />
+
+    <TextView
+        android:id="@+id/tvGarageDistanceWaiting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Distance"
+        android:textSize="13sp"
+        android:textColor="#616161" />
+
+    <ProgressBar
+        android:id="@+id/pbBottomWaiting"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="24dp"
+        android:layout_gravity="center_horizontal"
+        style="@android:style/Widget.Material.ProgressBar.Large"
+        android:indeterminate="true" />
+
+</LinearLayout>

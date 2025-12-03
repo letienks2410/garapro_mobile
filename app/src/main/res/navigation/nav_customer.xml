@@ -143,7 +143,7 @@
     <fragment
         android:id="@+id/vehiclesFragment"
         android:name="com.example.garapro.ui.vehicles.VehiclesFragment"
-        android:label="Xe của tôi"
+        android:label="My Vehicles"
         tools:layout="@layout/fragment_vehicles" />
 
     <!-- Notifications -->
