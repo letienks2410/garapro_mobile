@@ -16,6 +16,36 @@
         android:clipToPadding="false"
         android:scrollbars="vertical" />
 
+    <!-- Waiting indicator (hidden by default) -->
+    <LinearLayout
+        android:id="@+id/layoutWaiting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progressWaiting"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:indeterminate="true" />
+
+        <TextView
+            android:id="@+id/tvWaiting"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Waiting for response..."
+            android:textSize="14sp"
+            android:layout_marginStart="8dp"
+            android:textColor="#666666" />
+    </LinearLayout>
+
     <!-- Input Section -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
