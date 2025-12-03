@@ -466,4 +466,10 @@ class AppointmentsFragment : Fragment() {
             .setPositiveButton("OK", null)
             .show()
     }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshData()
+
+    }
 }

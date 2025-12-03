@@ -72,16 +72,7 @@ class RepairProgressListFragment : Fragment() {
         observeJobHubEvents()
     }
 
-    private val ratingLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        // Khi RatingActivity trả về RESULT_FEEDBACK_POSTED -> reload danh sách
-        if (result.resultCode == RatingActivity.RESULT_FEEDBACK_POSTED) {
-            // gọi lại API để refresh
-            viewModel.loadRepairOrders()
-            // hoặc nếu dùng paging/flow khác thì trigger reload tương ứng
-        }
-    }
+
 
     private fun setupRecyclerView() {
         adapter = RepairOrderAdapter(
@@ -91,14 +82,7 @@ class RepairProgressListFragment : Fragment() {
             onPaymentClick = { repairOrder ->
                 navigateToPaymentBill(repairOrder.repairOrderId)
             },
-            onRatingClick = { item ->
-                val intent = Intent(requireContext(), RatingActivity::class.java).apply {
-                    putExtra(RatingActivity.EXTRA_REPAIR_ORDER_ID, item.repairOrderId)
-                }
-                ratingLauncher.launch(intent)
-//                showPaymentDialog(repairOrder)
 
-            }
         )
 
         binding.recyclerView.apply {

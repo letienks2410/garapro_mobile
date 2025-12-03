@@ -1,14 +1,19 @@
 package com.example.garapro
 
 import android.Manifest
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +21,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavOptions
@@ -25,6 +31,7 @@ import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupWithNavController
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.UpdateDeviceIdRequest
+import com.example.garapro.data.model.emergencies.EmergencySoundPlayer
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.remote.TokenExpiredListener
 import com.example.garapro.ui.home.NavigationInfo
@@ -49,23 +56,29 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     private lateinit var navController: NavController
     private var destinationChangedListener: NavController.OnDestinationChangedListener? = null
     private var notificationBadge: BadgeDrawable? = null
+
+    private var emergencyReceiver: BroadcastReceiver? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+
 
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             Log.e("AppCrash", "Uncaught: ${e.message}", e)
         }
 
+
         tokenManager = TokenManager(this)
-        // 🔹 Khởi tạo RetrofitInstance ở đây
+
         RetrofitInstance.initialize(tokenManager, this)
 
-        // Khởi tạo navController
+
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
-        // Kiểm tra token khi khởi động
+
         lifecycleScope.launch {
             val token = tokenManager.getAccessTokenSync()
             if (token.isNullOrEmpty()) {
@@ -103,6 +116,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         }
 
         requestNotificationPermission()
+        registerEmergencyReceiver()
     }
 
     private fun requestNotificationPermission() {
@@ -123,6 +137,8 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        EmergencySoundPlayer.stop()
+
         handleIntent(intent)
 //        handleDeepLink(intent)
     }
@@ -135,6 +151,8 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         val action = intent.getStringExtra("action")
 
         Log.d("Notification", "Handling - screen: $screen, type: $notificationType, action: $action, ids: $allIds")
+
+
 
         // Xác định destination dựa trên sự kết hợp của các tham số
         val navigationInfo = determineNavigation(screen, notificationType, action, allIds)
@@ -154,6 +172,11 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     ): NavigationInfo {
 
         return when {
+
+            notificationType == "Emergency" && screen == "ReportsFragment" -> {
+                Log.d("Navigation", "Emergency navigation to ReportsFragment")
+                NavigationInfo(R.id.reportsFragment, ids, "emergency")
+            }
             // Case 1: Appointment được chấp nhận
             screen == "QuotationDetailFragment" && ids.containsKey("quotationId") ->
             {
@@ -550,4 +573,60 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             Log.e("Navigation", "Failed to navigate to home: ${e.message}")
         }
     }
+
+    private fun registerEmergencyReceiver() {
+        if (emergencyReceiver != null) return
+
+        emergencyReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val title = intent?.getStringExtra("title") ?: "Emergency"
+                val body = intent?.getStringExtra("body") ?: ""
+                val screen = intent?.getStringExtra("screen") ?: "ReportsFragment"
+
+                // Ở foreground: NotificationService đã start chuông + rung rồi
+                showEmergencyDialog(title, body, screen)
+            }
+        }
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(emergencyReceiver!!,
+                IntentFilter("com.example.garapro.EMERGENCY_EVENT")
+            )
+    }
+
+    private fun showEmergencyDialog(title: String, body: String, screen: String) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(body)
+            .setCancelable(false)
+            .setPositiveButton("OK") { _, _ ->
+
+                EmergencySoundPlayer.stop()
+
+
+                val i = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+                    putExtra("screen", "ReportsFragment")
+                    putExtra("notificationType", "Emergency")
+                    putExtra("from_notification", true)
+                }
+                startActivity(i)
+            }
+            .show()
+    }
+
+
+
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        emergencyReceiver?.let {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(it)
+        }
+    }
+
 }

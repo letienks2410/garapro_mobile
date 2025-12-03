@@ -1,4 +1,4 @@
-package com.example.garapro.ui.emergencies
+package com.example.garapro.ui.TechEmergencies
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -8,11 +8,14 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.location.Location
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
+import android.text.Html
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -27,7 +30,6 @@ import com.example.garapro.R
 import com.example.garapro.data.model.emergencies.DirectionResponse
 import com.example.garapro.data.model.techEmergencies.EmergencyStatus
 import com.example.garapro.data.remote.GoongClient
-import com.example.garapro.ui.TechEmergencies.TechEmergenciesViewModel
 import com.google.android.gms.location.*
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
@@ -48,6 +50,9 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.Locale
 import kotlin.math.min
 
@@ -63,15 +68,17 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var btnCompleteJob: Button
 
     private lateinit var btnPickupCustomer: Button
+    private lateinit var btnCall: Button
     private lateinit var fusedLocation: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
-    // Vị trí hiện tại (KHÔNG hard-code nữa)
+
     private var currentLocation: LatLng? = null
     private var branchLocation: LatLng? = null
 
     private var emergencyId: String? = null
 
+    private lateinit var customerPhone: String
 
 
     private var destinationLatLng: LatLng? = null
@@ -125,7 +132,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // MUST: gọi trước layout
+
         MapLibre.getInstance(
             this,
             getString(R.string.goong_map_key),
@@ -134,7 +141,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         setContentView(R.layout.activity_map_direction_demo)
 
-        // PHẢI init view trước khi dùng
+
         mapView = findViewById(R.id.mapView)
         tvInstruction = findViewById(R.id.tvInstruction)
         btnToggleNav = findViewById(R.id.btnToggleNav)
@@ -149,7 +156,9 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         btnCompleteJob = findViewById(R.id.btnCompleteJob)
         btnCompleteJob.visibility = View.GONE
 
-        tvDebug = findViewById(R.id.tvDebug)
+        btnCall = findViewById(R.id.btnCall)
+
+//        tvDebug = findViewById(R.id.tvDebug)
         // Lấy dữ liệu từ Intent (status + toạ độ khách)
         emergencyStatus = intent.getIntExtra("status", 0)
         val destLat = intent.getDoubleExtra("latitude", 0.0)
@@ -172,14 +181,15 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         Log.d("estatus",emergencyStatus.toString())
 
-        // Set trạng thái NAV ban đầu theo status
-        if (emergencyStatus == 3) { // InProgress
+        customerPhone = intent.getStringExtra("customerPhone") ?: ""
+
+        if (emergencyStatus == 3) {
             isNavigating = true
             tvInstruction.text = "Navigating to customer's location..."
-            btnToggleNav.text = "Stop Navigation"
-        } else { // Assigned (2) hoặc trạng thái khác
+            btnToggleNav.text = "Stop"
+        } else {
             isNavigating = false
-            btnToggleNav.text = "Start Navigation"
+            btnToggleNav.text = "NAV"
             tvInstruction.text = "Press Start Navigation to begin guidance"
         }
 
@@ -200,7 +210,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun setupButton() {
 
-        // CLICK "Bắt đầu đón khách"
+
         btnPickupCustomer.setOnClickListener {
 
             viewModel.updateStatus(emergencyId ?: return@setOnClickListener, EmergencyStatus.Towing.value)
@@ -230,7 +240,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                     emergencyStatus = EmergencyStatus.InProgress.value
                     btnStartJob.visibility = View.GONE
                     isNavigating = true
-                    btnToggleNav.text = "Stop Nav"
+                    btnToggleNav.text = "Stop"
 
                     // Route lại từ vị trí hiện tại
                     currentLocation?.let { getDirectionRoute(it) }
@@ -264,23 +274,23 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
             isNavigating = !isNavigating
 
             if (isNavigating) {
-                // Bắt đầu NAV
+                // Start NAV
                 if (destinationLatLng == null) {
-                    Toast.makeText(this, "Không có vị trí khách hàng", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "No customer location available", Toast.LENGTH_SHORT).show()
                     isNavigating = false
-                    btnToggleNav.text = "Start NAV"
+                    btnToggleNav.text = "NAV"
                     return@setOnClickListener
                 }
 
-                btnToggleNav.text = "Stop NAV"
-                tvInstruction.text = "Đang tính đường đến vị trí khách..."
+                btnToggleNav.text = "Stop"
+                tvInstruction.text = "Calculating route to customer location..."
 
                 // Reset route tracking
                 hasRoute = false
                 lastLocationForRouting = null
                 lastRerouteTime = 0L
 
-                // Nếu đã có GPS → tính route ngay
+                // If GPS is available, calculate the route immediately
                 currentLocation?.let { loc ->
                     hasRoute = true
                     lastLocationForRouting = loc
@@ -289,11 +299,24 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
             } else {
-                // Dừng NAV
-                btnToggleNav.text = "Start NAV"
-                tvInstruction.text = "Đã dừng điều hướng"
-                tts?.speak("Đã dừng điều hướng", TextToSpeech.QUEUE_FLUSH, null, "NAV_STOP")
+                // Stop NAV
+                btnToggleNav.text = "NAV"
+                tvInstruction.text = "Navigation stopped"
+                tts?.speak("Navigation stopped", TextToSpeech.QUEUE_FLUSH, null, "NAV_STOP")
             }
+        }
+
+        btnCall.setOnClickListener {
+            makePhoneCall(customerPhone)
+        }
+
+    }
+
+    private fun makePhoneCall(phone: String) {
+        if (phone.isNotEmpty()) {
+            val intent = Intent(Intent.ACTION_DIAL)
+            intent.data = Uri.parse("tel:$phone")
+            startActivity(intent)
         }
     }
 
@@ -317,7 +340,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 PERMISSION_LOCATION
             )
         } else {
-            // Có quyền rồi → kiểm tra GPS
+            // Có quyền rồi  kiểm tra GPS
             if (ensureLocationEnabled()) {
                 startLocationUpdates()
             }
@@ -333,12 +356,12 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         if (!enabled) {
             AlertDialog.Builder(this)
-                .setTitle("Bật vị trí")
-                .setMessage("Ứng dụng cần bật vị trí để dẫn đường. Vui lòng bật GPS trong cài đặt.")
-                .setPositiveButton("Mở cài đặt") { _, _ ->
+                .setTitle("Enable Location")
+                .setMessage("The app needs location services to provide navigation. Please enable GPS in Settings.")
+                .setPositiveButton("Open Settings") { _, _ ->
                     startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 }
-                .setNegativeButton("Hủy", null)
+                .setNegativeButton("Cancel", null)
                 .show()
         }
 
@@ -359,7 +382,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 startLocationUpdates()
             }
         } else {
-            Toast.makeText(this, "Cần quyền vị trí để dẫn đường", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Location permission is required for navigation", Toast.LENGTH_SHORT).show()
+
         }
     }
 
@@ -563,12 +587,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         tvInstruction.text = "Calculating route to destination..."
 
+
         GoongClient.getApiService().getDirection(
             originStr, destStr, "car", getString(R.string.goong_api_key)
-        )?.enqueue(object : retrofit2.Callback<DirectionResponse?> {
+        )?.enqueue(object : Callback<DirectionResponse?> {
             override fun onResponse(
-                call: retrofit2.Call<DirectionResponse?>,
-                response: retrofit2.Response<DirectionResponse?>
+                call: Call<DirectionResponse?>,
+                response: Response<DirectionResponse?>
             ) {
                 isRequestingRoute = false
 
@@ -580,6 +605,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                     ).show()
                     return
                 }
+
 
                 val direction = response.body()!!
                 val route = direction.routes?.firstOrNull()
@@ -602,7 +628,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
 
-            override fun onFailure(call: retrofit2.Call<DirectionResponse?>, t: Throwable) {
+            override fun onFailure(call: Call<DirectionResponse?>, t: Throwable) {
                 isRequestingRoute = false
                 Toast.makeText(
                     this@MapDirectionDemoActivity,
@@ -624,7 +650,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun plainTextFromHtml(html: String?): String {
         if (html.isNullOrEmpty()) return ""
-        return android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
+        return Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString()
     }
 
     private fun updateInstruction() {
@@ -744,7 +770,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun distanceBetween(a: LatLng, b: LatLng): Float {
         val results = FloatArray(1)
-        android.location.Location.distanceBetween(
+        Location.distanceBetween(
             a.latitude, a.longitude,
             b.latitude, b.longitude,
             results
@@ -833,9 +859,9 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
             val projLatLng = LatLng(projLat, projLon)
 
-            // Tính khoảng cách thật giữa GPS -> điểm snap
+            // Tính khoảng cách thật giữa GPS  điểm snap
             val distArr = FloatArray(1)
-            android.location.Location.distanceBetween(
+            Location.distanceBetween(
                 gpsPos.latitude, gpsPos.longitude,
                 projLatLng.latitude, projLatLng.longitude,
                 distArr
@@ -899,36 +925,19 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
 
-    private fun checkNextStep(pos: LatLng) {
+    private fun checkNextStep(routeIndex: Int) {
         if (!isNavigating) return
         if (currentStepIndex >= steps.size) return
         if (routePoints.isEmpty()) return
 
-        // Dùng snapToRoute để biết đang ở đâu trên route
-        val snapResult = snapToRoute(
-            gpsPos = pos,
-            route = routePoints,
-            currentIndex = currentRoutePointIndex,
-            maxSnapDistMeters = 30f,   // cho phép lệch khá xa mà vẫn coi là đang đi trên route
-            searchWindowBack = 5,
-            searchWindowForward = 50
-        ) ?: return
 
-        val distToRoute = snapResult.distanceToRoute
-        val indexOnRoute = snapResult.routeIndex
+        if (routeIndex <= currentRoutePointIndex + 2) return
 
-        // Nếu đang ở khá gần route và đã tiến thêm vài điểm trên poly
-        if (distToRoute < 40f && indexOnRoute > currentRoutePointIndex + 2) {
-            // Tiến step: tạm thời mỗi lần vượt thêm 1 đoạn poly là +1 step
-            currentStepIndex = (currentStepIndex + 1).coerceAtMost(steps.size - 1)
+        currentStepIndex = (currentStepIndex + 1).coerceAtMost(steps.size - 1)
+        currentRoutePointIndex = routeIndex
 
-            // Cập nhật index route hiện tại
-            currentRoutePointIndex = indexOnRoute
-
-            // Cập nhật chỉ dẫn + rút ngắn poly còn lại
-            updateInstruction()
-            updateRemainingRoute()
-        }
+        updateInstruction()
+        updateRemainingRoute()
     }
 
 
@@ -991,6 +1000,10 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                         lastSnapIndex = snapIndex
                         val now = System.currentTimeMillis()
 
+                        if (isNavigating) {
+                            // kiểm tra xem có nên nhảy step không
+                            checkNextStep(snapIndex)
+                        }
                         when {
                             // ĐI TIẾN HOẶC ĐỨNG NGAY TRÊN CÙNG 1 SEGMENT
                             snapIndex >= currentRoutePointIndex -> {
@@ -1036,7 +1049,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 destinationLatLng?.let { dest ->
                     val d = distanceBetween(rawPos, dest)
 
-                    if (d < 50000f) { // sau này có thể giảm về 30–50m
+                    if (d < 10f) { // sau này có thể giảm về 30–50m
                         when (EmergencyStatus.fromInt(emergencyStatus)) {
                             EmergencyStatus.InProgress -> {
                                 btnPickupCustomer.visibility = View.VISIBLE
@@ -1055,32 +1068,27 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 // ====== DEBUG HUD ======
-                val rawLat = rawPos.latitude
-                val rawLng = rawPos.longitude
-                val snapLat = lastSnappedPos?.latitude
-                val snapLng = lastSnappedPos?.longitude
-
-                val debugText = buildString {
-                    appendLine("GPS: %.6f, %.6f".format(rawLat, rawLng))
-                    appendLine("Speed: %.1f m/s | hasRoute=$hasRoute".format(lastSpeed))
-                    appendLine("snapDist=%.1f m idx=$lastSnapIndex currIdx=$currentRoutePointIndex".format(lastSnapDist))
-                    if (snapLat != null && snapLng != null) {
-                        appendLine("Snap: %.6f, %.6f".format(snapLat, snapLng))
-                    }
-                }
-                tvDebug.text = debugText
-
-
-                // ====== CẬP NHẬT MARKER XE TRÊN MAP ======
+//                val rawLat = rawPos.latitude
+//                val rawLng = rawPos.longitude
+//                val snapLat = lastSnappedPos?.latitude
+//                val snapLng = lastSnappedPos?.longitude
+//
+//                val debugText = buildString {
+//                    appendLine("GPS: %.6f, %.6f".format(rawLat, rawLng))
+//                    appendLine("Speed: %.1f m/s | hasRoute=$hasRoute".format(lastSpeed))
+//                    appendLine("snapDist=%.1f m idx=$lastSnapIndex currIdx=$currentRoutePointIndex".format(lastSnapDist))
+//                    if (snapLat != null && snapLng != null) {
+//                        appendLine("Snap: %.6f, %.6f".format(snapLat, snapLng))
+//                    }
+//                }
+//                tvDebug.text = debugText
                 updateCarMarker(displayPos)
 
-                // ====== FOLLOW CAMERA + CHECK STEP NẾU ĐANG NAV ======
                 if (isNavigating) {
                     updateCamera(displayPos)
-                    checkNextStep(displayPos)
+
                 }
 
-                // Lưu lại vị trí GPS cuối
                 lastGpsPos = rawPos
             }
         }

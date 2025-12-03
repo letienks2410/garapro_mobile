@@ -1,6 +1,8 @@
 package com.example.garapro.ui.RepairProgress.archived
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,6 +31,7 @@ import java.util.Locale
 
 // 🔹 thêm
 import androidx.lifecycle.lifecycleScope
+import com.example.garapro.hubs.RepairOrderArchiveHubService
 import kotlinx.coroutines.launch
 
 class RepairOrderArchivedListFragment : Fragment() {
@@ -38,13 +41,17 @@ class RepairOrderArchivedListFragment : Fragment() {
 
     private lateinit var adapter: RepairOrderArchivedAdapter
 
-    // 🔹 thêm: service cho hub archived
-    private var repairOrderHubService: RepairOrderSignalRService? = null
+
+    private var archiveHubService: RepairOrderArchiveHubService? = null
 
     private val viewModel: RepairOrderArchivedListViewModel by viewModels {
         RepairOrderArchivedListViewModelFactory()
     }
 
+    companion object {
+        private const val PREFS_AUTH = "auth_prefs"
+        private const val KEY_USER_ID = "user_id"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -250,24 +257,24 @@ class RepairOrderArchivedListFragment : Fragment() {
 
 
     private fun initRepairOrderHub() {
+        val hubUrl = Constants.BASE_URL_SIGNALR + "/api/archivehub"
 
-        val hubUrl = Constants.BASE_URL_SIGNALR + "/api/repairorderhub"
+        val prefs = requireContext().getSharedPreferences(PREFS_AUTH, Context.MODE_PRIVATE)
+        val userId = prefs.getString(KEY_USER_ID, null) ?: return
 
-        repairOrderHubService = RepairOrderSignalRService(hubUrl).apply {
+        archiveHubService = RepairOrderArchiveHubService(hubUrl).apply {
             setupListeners()
-
-            connectAndJoin("archived-list")
+            connectAndJoin(userId)
         }
     }
 
     private fun observeRepairOrderHubEvents() {
         viewLifecycleOwner.lifecycleScope.launch {
-            repairOrderHubService?.events?.collect { roId ->
-                // có tín hiệu từ server (Created/Updated/Archived) → reload list archived
+            archiveHubService?.events?.collect {
+                Log.d("ArchivedHub", "Received Archive event")
                 viewModel.refresh()
             }
         }
-
     }
 
     private fun observeViewModel() {
@@ -326,11 +333,10 @@ class RepairOrderArchivedListFragment : Fragment() {
         super.onDestroyView()
 
         try {
-            repairOrderHubService?.leaveGroupAndStop()
-        } catch (_: Exception) {
-        }
-        repairOrderHubService = null
+            archiveHubService?.leaveAndStop()
+        } catch (_: Exception) { }
 
+        archiveHubService = null
         _binding = null
     }
 }

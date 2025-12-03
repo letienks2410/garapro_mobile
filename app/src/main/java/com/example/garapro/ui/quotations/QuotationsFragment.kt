@@ -262,6 +262,12 @@ class QuotationsFragment : Fragment() {
         quotationAdapter.submitList(quotations)
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadQuotations(pageNumber = 1)
+
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
 

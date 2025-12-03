@@ -3,7 +3,6 @@ package com.example.garapro.ui.TechEmergencies
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
-import com.example.garapro.ui.emergencies.MapDirectionDemoActivity
 import kotlin.jvm.java
 
 class ReportsFragment : Fragment() {
@@ -73,6 +71,7 @@ class ReportsFragment : Fragment() {
                     putExtra("branchLatitude", current.branchLatitude)
                     putExtra("branchLongitude", current.branchLongitude)
                     putExtra("status", current.status)
+                    putExtra("customerPhone", current.phoneNumber)
                 }
                 mapLauncher.launch(intent)
 

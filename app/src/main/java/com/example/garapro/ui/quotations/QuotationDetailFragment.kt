@@ -1,5 +1,7 @@
 package com.example.garapro.ui.quotations
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -33,6 +35,7 @@ import java.util.Locale
 class QuotationDetailFragment : Fragment() {
     private var _binding: FragmentQuotationDetailBinding? = null
     private val binding get() = _binding!!
+
     private val viewModel: QuotationDetailViewModel by lazy {
         QuotationDetailViewModel(QuotationRepository(RetrofitInstance.quotationService))
     }
@@ -56,6 +59,9 @@ class QuotationDetailFragment : Fragment() {
         binding.toolbar.setNavigationOnClickListener { findNavController().navigateUp() }
         binding.btnSubmit.setOnClickListener { showSubmitConfirmation() }
 
+        binding.btnCall.setOnClickListener {
+            startCall()
+        }
         binding.etCustomerNote.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -80,6 +86,26 @@ class QuotationDetailFragment : Fragment() {
 
         binding.rvServices.adapter = adapter
         binding.rvServices.layoutManager = LinearLayoutManager(requireContext())
+    }
+
+
+    private fun startCall() {
+        val phone = viewModel.quotation.value?.phoneBranch?.trim().orEmpty()
+
+        if (phone.isBlank()) {
+            Snackbar.make(binding.root, "Phone number not available", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_DIAL).apply {
+            data = Uri.parse("tel:$phone")
+        }
+
+        if (intent.resolveActivity(requireContext().packageManager) != null) {
+            startActivity(intent)
+        } else {
+            Snackbar.make(binding.root, "No dialer app found", Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     private fun updateNoteValidationUI(note: String) {
@@ -163,30 +189,43 @@ class QuotationDetailFragment : Fragment() {
     }
 
     private fun setupUIBasedOnStatus(status: QuotationStatus) {
+
+        val phoneBranch = viewModel.quotation.value?.phoneBranch?.trim().orEmpty()
         when (status) {
             QuotationStatus.Sent -> {
                 // mode edit
                 setupEditableMode()
                 adapter.updateEditable(true)
+
+
+                binding.btnCall.visibility = View.GONE
             }
             QuotationStatus.Good -> {
-                // chỉ cho xem
+
                 setupReadOnlyMode(status)
 
-                // ẩn text readonly cũ, show text “car good” ở tvEditNotice
+
                 binding.tvReadOnlyNotice.visibility = View.GONE
                 binding.tvEditNotice.visibility = View.VISIBLE
-                binding.tvEditNotice.text = "Your car is in good condition."
+                binding.tvEditNotice.text =
+                    "Your car is in good condition. You can come to pick up your car or contact us if you want to use additional services."
+
+                binding.btnCall.visibility = if (phoneBranch.isNotEmpty()) View.VISIBLE else View.GONE
+
 
                 adapter.updateEditable(false)
             }
             else -> {
-                // các trạng thái còn lại: readonly
+
                 setupReadOnlyMode(status)
                 adapter.updateEditable(false)
+
+
+                binding.btnCall.visibility = View.GONE
             }
         }
     }
+
 
     private fun showPromotionBottomSheet(response: CustomerPromotionResponse) {
         try {
@@ -267,6 +306,8 @@ class QuotationDetailFragment : Fragment() {
             showRejectConfirmation()
         }
 
+        binding.btnCall.visibility = View.GONE
+
         calculateTotal()
     }
 
@@ -322,6 +363,9 @@ class QuotationDetailFragment : Fragment() {
 
         binding.btnReject.visibility = View.GONE
 
+
+        binding.btnCall.visibility = View.GONE
+
         // Hide customer note field
         val quotation = viewModel.quotation.value
         val hasNote = !viewModel.customerNote.value.isNullOrBlank()
@@ -341,7 +385,6 @@ class QuotationDetailFragment : Fragment() {
             binding.tilCustomerNote.boxBackgroundColor = ContextCompat.getColor(requireContext(), R.color.gray_light)
         }
 
-        // Show status notification
         binding.tvReadOnlyNotice.text = getReadOnlyMessage(status)
     }
 
@@ -402,28 +445,49 @@ class QuotationDetailFragment : Fragment() {
     }
 
     private fun updateSubmitButton(isSubmitting: Boolean) {
+        // Kiểm tra xem có service nào được chọn không
+        val quotation = viewModel.quotation.value
+        val hasSelectedServices = quotation?.quotationServices?.any { it.isSelected } == true
+
+        // Nếu KHÔNG có service nào được chọn → ẩn nút Submit, chỉ còn Reject
+        if (!hasSelectedServices) {
+            binding.btnSubmit.visibility = View.GONE
+
+            binding.btnReject.visibility = View.VISIBLE
+            binding.btnReject.isEnabled = !isSubmitting
+            // Có thể đổi text nếu muốn: binding.btnReject.text = "Reject"
+            return
+        } else {
+            // Có ít nhất 1 service được chọn → hiện nút Submit như bình thường
+            binding.btnSubmit.visibility = View.VISIBLE
+            binding.btnReject.visibility = View.VISIBLE
+        }
+
+        // Phần còn lại giữ nguyên logic cũ
         val canSubmit = viewModel.canSubmit.value == true
         val isRejectMode = viewModel.isRejectMode.value == true
 
         binding.btnSubmit.isEnabled = canSubmit && !isSubmitting
         binding.btnReject.isEnabled = !isSubmitting
 
-        if (!canSubmit || isSubmitting) {
-            binding.btnSubmit.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.material_on_surface_disabled))
-        } else {
-            binding.btnSubmit.setBackgroundColor(ContextCompat.getColor(requireContext(),
-                if (isRejectMode) R.color.blue else R.color.green))
-        }
+        val bgColorRes =
+            if (!canSubmit || isSubmitting) {
+                R.color.material_on_surface_disabled
+            } else {
+                if (isRejectMode) R.color.blue else R.color.green
+            }
+
+        binding.btnSubmit.setBackgroundColor(
+            ContextCompat.getColor(requireContext(), bgColorRes)
+        )
 
         binding.btnSubmit.text = when {
             isSubmitting -> "Submitting..."
-            isRejectMode -> "Accept partially"
+
             else -> "Accept"
         }
-
-        binding.btnSubmit.setBackgroundColor(ContextCompat.getColor(requireContext(),
-            if (isRejectMode) R.color.blue else R.color.green))
     }
+
 
     private fun showUnselectWarning(event: QuotationDetailViewModel.ServiceToggleEvent) {
         val dialog = MaterialAlertDialogBuilder(requireContext())

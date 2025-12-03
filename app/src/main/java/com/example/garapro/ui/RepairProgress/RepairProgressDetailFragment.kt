@@ -124,6 +124,12 @@ class RepairProgressDetailFragment : Fragment() {
                     loadRepairOrderDetail()
                 }
             }
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "RO Hub event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
         }
     }
 

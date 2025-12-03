@@ -9,8 +9,7 @@ import android.widget.Button
 //import androidx.compose.material3.Button
 import androidx.fragment.app.Fragment
 import com.example.garapro.R
-import com.example.garapro.ui.emergencies.MapActivity
-import com.example.garapro.ui.emergencies.MapDirectionDemoActivity
+import com.example.garapro.ui.TechEmergencies.MapDirectionDemoActivity
 import com.example.garapro.ui.repairRequest.BookingActivity
 
 class HomeFragment : Fragment() {
