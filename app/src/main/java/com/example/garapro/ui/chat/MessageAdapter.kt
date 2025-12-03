@@ -45,13 +45,13 @@ class MessageAdapter(private val messages: MutableList<Message>) :
 
     class MeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         fun bind(msg: Message) {
-            itemView.findViewById<TextView>(R.id.txtMessage).text = msg.text
+            itemView.findViewById<TextView>(R.id.txtMessageMe).text = msg.text
         }
     }
 
     class OtherViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         fun bind(msg: Message) {
-            itemView.findViewById<TextView>(R.id.txtMessage).text = msg.text
+            itemView.findViewById<TextView>(R.id.txtMessageOther).text = msg.text
         }
     }
 }
