@@ -38,6 +38,10 @@ enum class EmergencyStatus(val value: Int) {
 }
 
 data class TechnicianLocationBody(
+    val emergencyRequestId: String,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    val speedKmh: Double?,
+    val bearing: Double?,
+    val recomputeRoute: Boolean = true
 )

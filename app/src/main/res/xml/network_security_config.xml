@@ -15,6 +15,7 @@
         <domain includeSubdomains="true">192.168.1.61</domain>
 
         <domain includeSubdomains="true">192.168.1.32</domain>
-        <domain includeSubdomains="true">103.216.119.34</domain>
+        <domain includeSubdomains="true">192.168.1.116</domain>
+
     </domain-config>
 </network-security-config>

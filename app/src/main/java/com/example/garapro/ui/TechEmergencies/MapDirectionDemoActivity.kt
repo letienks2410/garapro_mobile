@@ -29,8 +29,13 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.garapro.R
 import com.example.garapro.data.model.emergencies.DirectionResponse
 import com.example.garapro.data.model.techEmergencies.EmergencyStatus
+import com.example.garapro.data.model.techEmergencies.TechnicianLocationBody
 import com.example.garapro.data.remote.GoongClient
+import com.example.garapro.data.remote.RetrofitInstance
 import com.google.android.gms.location.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.WellKnownTileServer
 import org.maplibre.android.camera.CameraPosition
@@ -73,6 +78,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
 
 
+
     private var currentLocation: LatLng? = null
     private var branchLocation: LatLng? = null
 
@@ -113,6 +119,14 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private var hasFitRouteBoundsOnce = false
     // TTS
     private var tts: TextToSpeech? = null
+
+    private var lastLocationSent: Location? = null
+
+    private var lastSendLocationTime = 0L
+
+    private val MIN_TIME_BETWEEN_LOCATION_SEND_MS = 10_000L  // 10s
+
+    private val MIN_DISTANCE_TO_SEND_M = 20f
 
     private lateinit var tvDebug: TextView
 
@@ -347,7 +361,68 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    /** Kiểm tra xem Location (GPS/Network) có bật chưa, nếu chưa thì hiện dialog yêu cầu bật */
+
+    private fun maybeSendLocationToServer(loc: Location) {
+        // Nếu không có emergencyId thì không cần gửi
+        val emergencyIdLocal = emergencyId
+        if (emergencyIdLocal.isNullOrEmpty()) return
+
+        val now = System.currentTimeMillis()
+        val last = lastLocationSent
+
+        // Nếu đã gửi trước đó, check khoảng cách & thời gian
+        if (last != null) {
+            val dist = last.distanceTo(loc)  // mét
+            if (dist < MIN_DISTANCE_TO_SEND_M &&
+                now - lastSendLocationTime < MIN_TIME_BETWEEN_LOCATION_SEND_MS
+            ) {
+                // Chưa đi xa và chưa đủ thời gian -> không gửi
+                return
+            }
+        } else {
+            // Lần đầu: vẫn hạn chế spam nếu vừa mới gọi
+            if (now - lastSendLocationTime < MIN_TIME_BETWEEN_LOCATION_SEND_MS) return
+        }
+
+        lastLocationSent = Location(loc)
+        lastSendLocationTime = now
+
+        sendLocationToServer(emergencyIdLocal, loc)
+    }
+
+    private fun sendLocationToServer(emergencyId: String, loc: Location) {
+        val speedKmh = if (loc.hasSpeed()) loc.speed * 3.6 else null  // m/s -> km/h
+        val bearing = if (loc.hasBearing()) loc.bearing.toDouble() else null
+
+        val body = TechnicianLocationBody(
+            emergencyRequestId = emergencyId,
+            latitude = loc.latitude,
+            longitude = loc.longitude,
+            speedKmh = speedKmh,
+            bearing = bearing,
+            recomputeRoute = true
+        )
+
+        // Chạy âm thầm trong IO thread, không đụng UI
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitInstance.techEmergencyService.updateLocation(body)
+                if (response.isSuccessful) {
+                    Log.d("TechLocation", "Send location OK: " +
+                            "lat=${loc.latitude}, lng=${loc.longitude}, speedKmh=$speedKmh, bearing=$bearing")
+                } else {
+                    Log.e(
+                        "TechLocation",
+                        "Send location FAILED: code=${response.code()} body=${response.errorBody()?.string()}"
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("TechLocation", "Exception when sending technician location", e)
+            }
+        }
+    }
+
+
     private fun ensureLocationEnabled(): Boolean {
         val lm = getSystemService(LOCATION_SERVICE) as LocationManager
         val enabled =
@@ -1090,6 +1165,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 lastGpsPos = rawPos
+                maybeSendLocationToServer(loc)
             }
         }
 

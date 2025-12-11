@@ -1,5 +1,6 @@
 package com.example.garapro.data.repository.RepairProgress
 
+import com.example.garapro.data.model.RepairProgresses.CarPickupStatus
 import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
 import com.example.garapro.data.model.RepairProgresses.CreateFeedbackResponse
 import com.example.garapro.data.model.RepairProgresses.OrderStatus
@@ -10,6 +11,7 @@ import com.example.garapro.data.model.RepairProgresses.PagedResult
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedDetail
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderArchivedListItem
+import com.example.garapro.data.model.RepairProgresses.UpdateCarPickupStatusRequest
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatusDto
@@ -41,6 +43,27 @@ class RepairProgressRepository(private val apiService: RepairProgressApiService)
         return try {
             val response = apiService.createLink(createPaymentRequest)
             ApiResponse.Success(response)
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    suspend fun updateCarPickupStatus(
+        repairOrderId: String,
+        status: CarPickupStatus
+    ): ApiResponse<Unit> {
+        return try {
+            val response = apiService.updateCarPickupStatus(
+                repairOrderId,
+                UpdateCarPickupStatusRequest(status)
+            )
+
+            if (response.isSuccessful) {
+                ApiResponse.Success(Unit)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                ApiResponse.Error(errorBody ?: "Failed to update car pickup status")
+            }
         } catch (e: Exception) {
             ApiResponse.Error(e.message ?: "Unknown error")
         }

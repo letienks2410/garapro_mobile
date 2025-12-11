@@ -49,19 +49,19 @@ class TechnicianEmergencyRepository {
         }
     }
 
-    suspend fun updateLocation(latitude: Double, longitude: Double): Boolean {
-        return try {
-            val body = TechnicianLocationBody(latitude = latitude, longitude = longitude)
-            val response = api.updateLocation(body)
-            if (response.isSuccessful) {
-                true
-            } else {
-                Log.e("TechEmergencyRepo", "updateLocation failed: ${response.code()}")
-                false
-            }
-        } catch (e: Exception) {
-            Log.e("TechEmergencyRepo", "updateLocation error: ${e.message}", e)
-            false
-        }
-    }
+//    suspend fun updateLocation(latitude: Double, longitude: Double): Boolean {
+//        return try {
+//            val body = TechnicianLocationBody(latitude = latitude, longitude = longitude)
+//            val response = api.updateLocation(body)
+//            if (response.isSuccessful) {
+//                true
+//            } else {
+//                Log.e("TechEmergencyRepo", "updateLocation failed: ${response.code()}")
+//                false
+//            }
+//        } catch (e: Exception) {
+//            Log.e("TechEmergencyRepo", "updateLocation error: ${e.message}", e)
+//            false
+//        }
+//    }
 }

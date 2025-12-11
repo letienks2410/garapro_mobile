@@ -92,18 +92,17 @@ class QuotationDetailFragment : Fragment() {
     private fun startCall() {
         val phone = viewModel.quotation.value?.phoneBranch?.trim().orEmpty()
 
+        Log.d("phone", phone)
         if (phone.isBlank()) {
             Snackbar.make(binding.root, "Phone number not available", Snackbar.LENGTH_SHORT).show()
             return
         }
 
-        val intent = Intent(Intent.ACTION_DIAL).apply {
-            data = Uri.parse("tel:$phone")
-        }
+        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
 
-        if (intent.resolveActivity(requireContext().packageManager) != null) {
+        try {
             startActivity(intent)
-        } else {
+        } catch (e: Exception) {
             Snackbar.make(binding.root, "No dialer app found", Snackbar.LENGTH_SHORT).show()
         }
     }

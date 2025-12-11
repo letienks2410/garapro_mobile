@@ -14,7 +14,7 @@ interface TechEmergencyService {
     @GET("TechnicianEmergency/technician/me")
     suspend fun getMyEmergencies(): Response<TechnicianEmergencyResponse>
 
-    @POST("TechnicianEmergency//location/update")
+    @POST("Technician/location/update")
     suspend fun updateLocation(
         @Body body: TechnicianLocationBody
     ): Response<Unit>
@@ -26,5 +26,6 @@ interface TechEmergencyService {
             @Path("id") id: String?,
             @Body body: UpdateEmergencyStatusRequest
         ): Response<Unit>
+
 
 }
