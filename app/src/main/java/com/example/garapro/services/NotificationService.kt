@@ -19,6 +19,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.garapro.MainActivity
 import com.example.garapro.R
+import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.UpdateDeviceIdRequest
 import com.example.garapro.data.model.emergencies.EmergencySoundPlayer
 import com.example.garapro.data.remote.RetrofitInstance
@@ -97,37 +98,55 @@ class NotificationService : FirebaseMessagingService() {
         // =========================
 // CASE: EMERGENCY
 // =========================
-        Log.d("type ne",type)
+        Log.d("type ne", type)
         if (type.equals("Emergency", ignoreCase = true)) {
-            val title = data["title"] ?: "Emergency"
-            val body = data["body"] ?: data["message"] ?: ""
-            val screen = data["screen"] ?: "ReportsFragment"
 
-//            EmergencySoundPlayer.start(this)
 
-            if (isAppInForeground()) {
-                val intent = Intent("com.example.garapro.EMERGENCY_EVENT").apply {
-                    putExtra("title", title)
-                    putExtra("body", body)
-                    putExtra("screen", screen)
+            CoroutineScope(Dispatchers.IO).launch {
+                val tokenManager = TokenManager(applicationContext)
+                val userRole = tokenManager.getUserRole()   // suspend fun
+
+                Log.d("EmergencyRole", "Current user role = $userRole")
+
+
+                if (!userRole.equals("Technician", ignoreCase = true)) {
+                    Log.d("EmergencyRole", "User is not Technician, skip emergency notification")
+                    return@launch
                 }
-                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-            } else {
-                Log.d("typeEmer", "emerr")
-                if (canNotify) {
-                    showSystemNotification(
-                        title = title,
-                        body = body,
-                        extraIds = mapOf(
-                            "screen" to screen,
-                            "notificationType" to "Emergency",
-                            "from_notification" to "true"
-                        ),
-                        channelId = CHANNEL_ID_EMERGENCY,
-                        emergency = true
-                    )
+
+                val title = data["title"] ?: "Emergency"
+                val body = data["body"] ?: data["message"] ?: ""
+                val screen = data["screen"] ?: "ReportsFragment"
+
+                 EmergencySoundPlayer.start(this@NotificationService)
+
+                if (isAppInForeground()) {
+                    val intent = Intent("com.example.garapro.EMERGENCY_EVENT").apply {
+                        putExtra("title", title)
+                        putExtra("body", body)
+                        putExtra("screen", screen)
+                    }
+                    LocalBroadcastManager.getInstance(this@NotificationService).sendBroadcast(intent)
+                } else {
+                    Log.d("typeEmer", "emerr")
+                    if (canNotify) {
+                        showSystemNotification(
+                            title = title,
+                            body = body,
+                            extraIds = mapOf(
+                                "screen" to screen,
+                                "notificationType" to "Emergency",
+                                "from_notification" to "true"
+                            ),
+                            channelId = CHANNEL_ID_EMERGENCY,
+                            emergency = true
+                        )
+                    } else {
+                        Log.w("Notification", "No POST_NOTIFICATIONS permission, cannot show emergency notification")
+                    }
                 }
             }
+
 
             return
         }
