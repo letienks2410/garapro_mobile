@@ -114,36 +114,38 @@ class EmergencySummaryAdapter : RecyclerView.Adapter<EmergencySummaryVH>() {
     }
 }
 
-class EmergencySummaryVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
-    private val tvIssue: TextView = itemView.findViewById(R.id.tvIssue)
-    private val chipStatus: com.google.android.material.chip.Chip = itemView.findViewById(R.id.chipStatus)
-    private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
-    private val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
-    private val btnView: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.btnView)
-    fun bind(item: EmergencySummary) {
-        tvTitle.text = item.vehicleTitle
-        tvIssue.text = item.issue
-        chipStatus.text = item.status
-        val ctx = itemView.context
-        val color = when (item.status.lowercase()) {
-            "accepted" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.warning)
-            "inprogress", "in_progress" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.info)
-            "arrived" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.success)
-            "cancelled", "canceled" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.error)
-            else -> androidx.core.content.ContextCompat.getColor(ctx, R.color.chip_selector)
-        }
-        chipStatus.chipBackgroundColor = android.content.res.ColorStateList.valueOf(color)
-        tvTime.text = item.time
-        tvAddress.text = item.garageName
-        btnView.setOnClickListener {
-            android.util.Log.d("EmergencyList", "Open clicked id=" + item.id + ", status=" + item.status)
-            val intent = Intent(ctx, MapActivity::class.java)
-            intent.putExtra("emergency_id", item.id)
-            intent.putExtra("status", item.status)
-            item.technicianName?.let { intent.putExtra("technician_name", it) }
-            item.technicianPhone?.let { intent.putExtra("technician_phone", it) }
-            ctx.startActivity(intent)
+    class EmergencySummaryVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
+        private val tvIssue: TextView = itemView.findViewById(R.id.tvIssue)
+        private val chipStatus: com.google.android.material.chip.Chip = itemView.findViewById(R.id.chipStatus)
+        private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
+        private val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
+        private val btnView: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.btnView)
+        fun bind(item: EmergencySummary) {
+            tvTitle.text = item.vehicleTitle
+            tvIssue.text = item.issue
+            chipStatus.text = item.status
+            val ctx = itemView.context
+            val color = when (item.status.lowercase()) {
+                "accepted" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.warning)
+                "inprogress", "in_progress" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.info)
+                "arrived" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.success)
+                "cancelled", "canceled" -> androidx.core.content.ContextCompat.getColor(ctx, R.color.error)
+                else -> androidx.core.content.ContextCompat.getColor(ctx, R.color.chip_selector)
+            }
+            chipStatus.chipBackgroundColor = android.content.res.ColorStateList.valueOf(color)
+            tvTime.text = item.time
+            tvAddress.text = item.garageName
+            val lower = item.status.lowercase()
+            btnView.visibility = if (lower == "inprogress" || lower == "in_progress") View.VISIBLE else View.GONE
+            btnView.setOnClickListener {
+                android.util.Log.d("EmergencyList", "Open clicked id=" + item.id + ", status=" + item.status)
+                val intent = Intent(ctx, MapActivity::class.java)
+                intent.putExtra("emergency_id", item.id)
+                intent.putExtra("status", item.status)
+                item.technicianName?.let { intent.putExtra("technician_name", it) }
+                item.technicianPhone?.let { intent.putExtra("technician_phone", it) }
+                ctx.startActivity(intent)
+            }
         }
     }
-}
