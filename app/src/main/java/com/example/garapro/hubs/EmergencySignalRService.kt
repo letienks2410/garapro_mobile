@@ -38,6 +38,7 @@ class EmergencySignalRService(
         hub.on("EmergencyRequestInProgress", { json: JsonObject ->
             _events.tryEmit("EmergencyRequestInProgress" to json.toString())
         }, JsonObject::class.java)
+        
         hub.on("EmergencyRequestCanceled", { json: JsonObject ->
             _events.tryEmit("EmergencyRequestCanceled" to json.toString())
         }, JsonObject::class.java)
@@ -49,6 +50,12 @@ class EmergencySignalRService(
         }, JsonObject::class.java)
         hub.on("TechnicianLocationUpdated", { json: JsonObject ->
             _events.tryEmit("TechnicianLocationUpdated" to json.toString())
+        }, JsonObject::class.java)
+        hub.on("EmergencyRequestArrived", { json: JsonObject ->
+            _events.tryEmit("EmergencyRequestArrived" to json.toString())
+        }, JsonObject::class.java)
+        hub.on("TechnicianArrived", { json: JsonObject ->
+            _events.tryEmit("TechnicianArrived" to json.toString())
         }, JsonObject::class.java)
         hub.on("JoinedCustomerGroup", { grp: String ->
             _events.tryEmit("JoinedCustomerGroup" to grp)
