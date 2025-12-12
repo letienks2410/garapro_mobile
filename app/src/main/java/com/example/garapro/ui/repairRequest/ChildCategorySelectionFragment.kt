@@ -180,7 +180,7 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-        // 🔒 Bật flag để onItemSelected không chạy trong lúc cập nhật
+        // Bật flag để onItemSelected không chạy trong lúc cập nhật
         isUpdatingSpinner = true
 
         binding.spinnerFilter.adapter = adapter
@@ -210,6 +210,8 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
             val services = response.data.flatMap { it.services }
             Log.d("FilterDebug", "Filtered services updated - ${services.size} services")
             serviceAdapter.updateData(services)
+
+            updateEmptyState(services)
         }
 
         bookingViewModel.selectedServices.observe(viewLifecycleOwner) { services ->
@@ -224,9 +226,42 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
     }
 
     private fun updateSelectedServicesUI(services: List<Service>) {
-        binding.tvSelectedCount.text = "Đã chọn: ${services.size} dịch vụ"
+        val label = if (services.size > 1) "services" else "service"
+        binding.tvSelectedCount.text = "Selected: ${services.size} $label"
         updateSelectedServicesPreview(services)
     }
+    private fun updateEmptyState(services: List<Service>) {
+        // Lấy search term hiện tại trong filter state (nếu có)
+        val currentSearch = bookingViewModel.getChildFilterState()?.searchTerm
+
+
+        val emptyRoot = binding.layoutEmptyState.root    // nếu layoutEmptyState là binding-con
+        val tvTitle = binding.layoutEmptyState.tvEmptyTitle
+        val tvMessage = binding.layoutEmptyState.tvEmptyMessage
+        val btnAction = binding.layoutEmptyState.btnEmptyAction
+
+        if (services.isEmpty()) {
+            binding.rvChildCategories.visibility = View.GONE
+            emptyRoot.visibility = View.VISIBLE
+
+            if (!currentSearch.isNullOrEmpty()) {
+                tvTitle.text = "No services found"
+                tvMessage.text = "No services match \"$currentSearch\".\nPlease try another keyword."
+            } else {
+                tvTitle.text = "No services available"
+                tvMessage.text = "There are no services listed in this category."
+            }
+
+
+            btnAction.visibility = View.GONE
+
+
+        } else {
+            binding.rvChildCategories.visibility = View.VISIBLE
+            emptyRoot.visibility = View.GONE
+        }
+    }
+
 
     private fun updateSelectedServicesPreview(services: List<Service>) {
         val container = binding.containerSelectedPreview
@@ -302,14 +337,27 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
         searchTerm: String? = null
     ) {
         val parentId = bookingViewModel.selectedParentCategory.value?.serviceCategoryId
-        parentId?.let {
-            bookingViewModel.loadChildServiceCategories(
-                parentId = it,
-                childServiceCategoryId = childServiceCategoryId,
-                searchTerm = searchTerm
-            )
+        val branchId = bookingViewModel.selectedBranch.value?.branchId  // 🔹 lấy branch đang chọn
+
+        if (parentId == null) {
+            Log.w("ChildCategory", "Parent category is null, cannot load child categories")
+            return
         }
+
+        if (branchId == null) {
+            Log.w("ChildCategory", "Branch is null, cannot load child categories by branch")
+
+            return
+        }
+
+        bookingViewModel.loadChildServiceCategories(
+            parentId = parentId,
+            childServiceCategoryId = childServiceCategoryId,
+            searchTerm = searchTerm,
+            branchId = branchId
+        )
     }
+
 
     override fun onDestroyView() {
         saveFilterState()

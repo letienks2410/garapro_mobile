@@ -125,8 +125,16 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:padding="8dp" />
+
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="16dp"
+            android:visibility="gone" />
         <include
             android:id="@+id/emptyState"
             layout="@layout/layout_empty_state"
@@ -163,11 +171,5 @@
     </FrameLayout>
 
     <!-- Loading indicator -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="16dp"
-        android:visibility="gone" />
+
 </LinearLayout>

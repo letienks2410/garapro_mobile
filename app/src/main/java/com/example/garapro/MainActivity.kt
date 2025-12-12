@@ -1,14 +1,19 @@
 package com.example.garapro
 
 import android.Manifest
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +21,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavOptions
@@ -25,6 +31,7 @@ import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupWithNavController
 import com.example.garapro.data.local.TokenManager
 import com.example.garapro.data.model.UpdateDeviceIdRequest
+import com.example.garapro.data.model.emergencies.EmergencySoundPlayer
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.remote.TokenExpiredListener
 import com.example.garapro.ui.home.NavigationInfo
@@ -38,6 +45,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.google.android.material.badge.BadgeDrawable
 
 class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
@@ -47,23 +55,30 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     private lateinit var tokenManager: TokenManager
     private lateinit var navController: NavController
     private var destinationChangedListener: NavController.OnDestinationChangedListener? = null
+    private var notificationBadge: BadgeDrawable? = null
+
+    private var emergencyReceiver: BroadcastReceiver? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+
 
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             Log.e("AppCrash", "Uncaught: ${e.message}", e)
         }
 
+
         tokenManager = TokenManager(this)
-        // 🔹 Khởi tạo RetrofitInstance ở đây
+
         RetrofitInstance.initialize(tokenManager, this)
 
-        // Khởi tạo navController
+
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
-        // Kiểm tra token khi khởi động
+
         lifecycleScope.launch {
             val token = tokenManager.getAccessTokenSync()
             if (token.isNullOrEmpty()) {
@@ -79,8 +94,14 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             if (hasNotification) {
                 handleIntent(intent)    //  đừng navigate Home trước khi xử lý noti
             } else {
-                // Chỉ vào Home nếu KHÔNG có notification
-                navController.navigate(R.id.homeFragment)
+                val role = tokenManager.getUserRole() // lấy role bạn lưu khi login
+                setupNavigationByRole(role)
+
+                setupNotificationBadge()
+                startUnreadCountPolling()
+
+                // Xử lý intent sau khi setup navigation
+                handleIntent(intent)
             }
         }
 
@@ -95,6 +116,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         }
 
         requestNotificationPermission()
+        registerEmergencyReceiver()
     }
 
     private fun requestNotificationPermission() {
@@ -115,6 +137,8 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        EmergencySoundPlayer.stop()
+
         handleIntent(intent)
 //        handleDeepLink(intent)
     }
@@ -127,6 +151,8 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         val action = intent.getStringExtra("action")
 
         Log.d("Notification", "Handling - screen: $screen, type: $notificationType, action: $action, ids: $allIds")
+
+
 
         // Xác định destination dựa trên sự kết hợp của các tham số
         val navigationInfo = determineNavigation(screen, notificationType, action, allIds)
@@ -146,6 +172,11 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     ): NavigationInfo {
 
         return when {
+
+            notificationType == "Emergency" && screen == "ReportsFragment" -> {
+                Log.d("Navigation", "Emergency navigation to ReportsFragment")
+                NavigationInfo(R.id.reportsFragment, ids, "emergency")
+            }
             // Case 1: Appointment được chấp nhận
             screen == "QuotationDetailFragment" && ids.containsKey("quotationId") ->
             {
@@ -166,7 +197,14 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             {
                 Log.d("quo","ArchivedDetailFragment")
 
-                NavigationInfo(R.id.repairProgressDetailFragment, ids, "repair_updated")
+                NavigationInfo(R.id.repairArchivedDetailFragment, ids, "repair_updated")
+
+            }
+            screen == "RepairRequestDetailFragment" && ids.containsKey("repairRequestId") ->
+            {
+
+
+                NavigationInfo(R.id.appointmentDetailFragment, ids, "repair_updated")
 
             }
 
@@ -241,7 +279,17 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
                     } catch (_: Exception) { }
 
                     // 2. Mở RepairProgressDetail
-                    navController.navigate(R.id.repairProgressDetailFragment, bundle)
+                    navController.navigate(R.id.repairArchivedDetailFragment, bundle)
+                }
+
+                R.id.appointmentDetailFragment -> {
+                    try {
+
+                        navController.navigate(R.id.appointmentGraph)
+                    } catch (_: Exception) { }
+
+
+                    navController.navigate(R.id.appointmentDetailFragment, bundle)
                 }
 
                 else -> {
@@ -256,26 +304,7 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
     }
 
 
-    private fun getParentMenuItemId(destinationId: Int): Int {
-        val graph = navController.graph
 
-        // Tìm destination trong graph (có thể là fragment hoặc nested graph)
-        val destination = graph.findNode(destinationId) ?: return R.id.homeFragment
-
-        var current: NavDestination = destination
-        var parent = current.parent
-
-        // Đi ngược lên cho tới khi cha trực tiếp là top-level graph (nav_customer/nav_technician)
-        while (parent != null && parent.id != graph.id) {
-            current = parent
-            parent = current.parent
-        }
-
-        // current.id lúc này chính là:
-        // - id của fragment top-level (homeFragment, profileFragment, ...)
-        // - hoặc id của nested graph (appointmentGraph, repairTrackingGraph, ...)
-        return current.id
-    }
     private fun extractAllIds(intent: Intent): Map<String, String> {
         val idMap = mutableMapOf<String, String>()
 
@@ -324,89 +353,133 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
         // 3. Tự handle click bottom nav (KHÔNG dùng setupWithNavController nữa)
         bottomNavigation.setOnItemSelectedListener { item ->
             val navOptions = NavOptions.Builder()
-                // pop về startDestination (homeFragment) nhưng không xoá nó
                 .setPopUpTo(navController.graph.startDestinationId, false)
                 .setLaunchSingleTop(true)
                 .build()
 
-            when (item.itemId) {
-                R.id.homeFragment -> {
-                    navController.navigate(R.id.homeFragment, null, navOptions)
-                    true
+            when (role) {
+                "Technician" -> {
+                    when (item.itemId) {
+                        R.id.technicianFragment -> {
+                            navController.navigate(R.id.technicianFragment, null, navOptions)
+                            true
+                        }
+                        R.id.reportsFragment -> {
+                            navController.navigate(R.id.reportsFragment, null, navOptions)
+                            true
+                        }
+                        R.id.notificationsFragment -> {
+                            navController.navigate(R.id.notificationsFragment, null, navOptions)
+                            true
+                        }
+                        R.id.profileFragment -> {
+                            navController.navigate(R.id.profileFragment, null, navOptions)
+                            true
+                        }
+                        else -> false
+                    }
                 }
 
-                R.id.appointmentGraph -> {
-                    navController.navigate(R.id.appointmentGraph, null, navOptions)
-                    true
-                }
+                else -> {
+                    // CUSTOMER ROLE
+                    when (item.itemId) {
+                        R.id.homeFragment -> {
+                            navController.navigate(R.id.homeFragment, null, navOptions)
+                            true
+                        }
 
-                R.id.repairTrackingGraph -> {
-                    navController.navigate(R.id.repairTrackingGraph, null, navOptions)
-                    true
-                }
+                        R.id.appointmentGraph -> {
+                            navController.navigate(R.id.appointmentGraph, null, navOptions)
+                            true
+                        }
 
-                R.id.repairArchivedGraph -> {
-                    navController.navigate(R.id.repairArchivedGraph, null, navOptions)
-                    true
-                }
+                        R.id.repairTrackingGraph -> {
+                            navController.navigate(R.id.repairTrackingGraph, null, navOptions)
+                            true
+                        }
 
-                R.id.chat -> {
-                    navController.navigate(R.id.chat, null, navOptions)
-                    true
-                }
+                        R.id.repairArchivedGraph -> {
+                            navController.navigate(R.id.repairArchivedGraph, null, navOptions)
+                            true
+                        }
 
-                R.id.profileFragment -> {
-                    navController.navigate(R.id.profileFragment, null, navOptions)
-                    true
-                }
+                        R.id.chat -> {
+                            navController.navigate(R.id.chat, null, navOptions)
+                            true
+                        }
 
-                else -> false
+                        R.id.profileFragment -> {
+                            navController.navigate(R.id.profileFragment, null, navOptions)
+                            true
+                        }
+
+                        else -> false
+                    }
+                }
             }
         }
 
         // 4. Listener sync checked state theo destination hiện tại
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-
-                //  HOME
-                R.id.homeFragment -> {
-                    bottomNavigation.menu.findItem(R.id.homeFragment)?.isChecked = true
+            when (role) {
+                "Technician" -> {
+                    when (destination.id) {
+                        R.id.technicianFragment -> {
+                            bottomNavigation.menu.findItem(R.id.technicianFragment)?.isChecked = true
+                        }
+                        R.id.reportsFragment -> {
+                            bottomNavigation.menu.findItem(R.id.reportsFragment)?.isChecked = true
+                        }
+                        R.id.notificationsFragment -> {
+                            bottomNavigation.menu.findItem(R.id.notificationsFragment)?.isChecked = true
+                        }
+                        R.id.profileFragment -> {
+                            bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
+                        }
+                    }
                 }
 
-                //  APPOINTMENTS / QUOTATIONS (tab Appointment)
-                R.id.appointmentNavFragment,
-                R.id.appointmentsFragment,
-                R.id.appointmentDetailFragment,
-                R.id.quotationsFragment,
-                R.id.quotationDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.appointmentGraph)?.isChecked = true
+                else -> {
+                    when (destination.id) {
+                        // HOME
+                        R.id.homeFragment -> {
+                            bottomNavigation.menu.findItem(R.id.homeFragment)?.isChecked = true
+                        }
+
+                        // APPOINTMENTS / QUOTATIONS (tab Appointment)
+                        R.id.appointmentNavFragment,
+                        R.id.appointmentsFragment,
+                        R.id.appointmentDetailFragment,
+                        R.id.quotationsFragment,
+                        R.id.quotationDetailFragment -> {
+                            bottomNavigation.menu.findItem(R.id.appointmentGraph)?.isChecked = true
+                        }
+
+                        // REPAIR TRACKING
+                        R.id.repairTrackingFragment,
+                        R.id.repairProgressDetailFragment -> {
+                            bottomNavigation.menu.findItem(R.id.repairTrackingGraph)?.isChecked = true
+                        }
+
+                        // REPAIR ARCHIVED
+                        R.id.repairArchivedFragment,
+                        R.id.repairArchivedDetailFragment -> {
+                            bottomNavigation.menu.findItem(R.id.repairArchivedGraph)?.isChecked = true
+                        }
+
+                        // PROFILE
+                        R.id.profileFragment -> {
+                            bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
+                        }
+                    }
                 }
-
-                //  REPAIR TRACKING (list + detail)
-                R.id.repairTrackingFragment,
-                R.id.repairProgressDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.repairTrackingGraph)?.isChecked = true
-                }
-
-                //  REPAIR ARCHIVED (list + detail)
-                R.id.repairArchivedFragment,
-                R.id.repairArchivedDetailFragment -> {
-                    bottomNavigation.menu.findItem(R.id.repairArchivedGraph)?.isChecked = true
-                }
-
-
-                //  PROFILE
-                R.id.profileFragment -> {
-                    bottomNavigation.menu.findItem(R.id.profileFragment)?.isChecked = true
-                }
-
-                // nếu bạn có vehiclesFragment, notificationsFragment,… thì map thêm
             }
         }
 
         navController.addOnDestinationChangedListener(listener)
         destinationChangedListener = listener
     }
+
 
 
 
@@ -427,6 +500,60 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             }
         }
     }
+    private fun setupNotificationBadge() {
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
+        notificationBadge = bottomNav.getOrCreateBadge(R.id.notificationsFragment)
+        notificationBadge?.apply {
+            backgroundColor = getColor(R.color.red)
+            badgeTextColor = getColor(R.color.white)
+            isVisible = false
+            maxCharacterCount = 3
+        }
+    }
+
+    private fun startUnreadCountPolling() {
+        loadUnreadCount()
+
+        lifecycleScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(5_000)
+            }
+        }
+    }
+
+    private fun loadUnreadCount() {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitInstance.notificationService.getUnreadCount()
+
+                if (response.isSuccessful) {
+                    response.body()?.let { unreadCountResponse ->
+                        updateBadge(unreadCountResponse.unreadCount)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading unread count: ${e.message}")
+            }
+        }
+    }
+
+    private fun updateBadge(count: Int) {
+        runOnUiThread {
+            notificationBadge?.apply {
+                if (count > 0) {
+                    isVisible = true
+                    number = count
+                } else {
+                    isVisible = false
+                }
+            }
+        }
+    }
+
+    fun updateNotificationBadge(count: Int) {
+        updateBadge(count)
+    }
 
     override fun onTokenExpired() {
         runOnUiThread {
@@ -435,6 +562,10 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             finish()
         }
     }
+    override fun onResume() {
+        super.onResume()
+        loadUnreadCount()
+    }
     private fun navigateToHome() {
         try {
             navController.navigate(R.id.homeFragment)
@@ -442,4 +573,60 @@ class MainActivity : AppCompatActivity(), TokenExpiredListener {
             Log.e("Navigation", "Failed to navigate to home: ${e.message}")
         }
     }
+
+    private fun registerEmergencyReceiver() {
+        if (emergencyReceiver != null) return
+
+        emergencyReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val title = intent?.getStringExtra("title") ?: "Emergency"
+                val body = intent?.getStringExtra("body") ?: ""
+                val screen = intent?.getStringExtra("screen") ?: "ReportsFragment"
+
+                // Ở foreground: NotificationService đã start chuông + rung rồi
+                showEmergencyDialog(title, body, screen)
+            }
+        }
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(emergencyReceiver!!,
+                IntentFilter("com.example.garapro.EMERGENCY_EVENT")
+            )
+    }
+
+    private fun showEmergencyDialog(title: String, body: String, screen: String) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(body)
+            .setCancelable(false)
+            .setPositiveButton("OK") { _, _ ->
+
+                EmergencySoundPlayer.stop()
+
+
+                val i = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+                    putExtra("screen", "ReportsFragment")
+                    putExtra("notificationType", "Emergency")
+                    putExtra("from_notification", true)
+                }
+                startActivity(i)
+            }
+            .show()
+    }
+
+
+
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        emergencyReceiver?.let {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(it)
+        }
+    }
+
 }

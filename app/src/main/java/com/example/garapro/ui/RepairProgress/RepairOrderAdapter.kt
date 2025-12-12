@@ -23,7 +23,7 @@ import java.util.Locale
 class RepairOrderAdapter(
     private val onItemClick: (RepairOrderListItem) -> Unit,
     private val onPaymentClick: (RepairOrderListItem) -> Unit,
-    private val onRatingClick: (RepairOrderListItem) -> Unit
+
 ) : ListAdapter<RepairOrderListItem, RepairOrderAdapter.ViewHolder>(DiffCallback) {
 
     companion object {
@@ -129,14 +129,28 @@ class RepairOrderAdapter(
         }
 
         private fun formatDate(dateString: String): String {
-            return try {
-                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
-                val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                val date = inputFormat.parse(dateString)
-                outputFormat.format(date!!)
-            } catch (e: Exception) {
-                dateString
+            val patterns = listOf(
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",
+                "yyyy-MM-dd'T'HH:mm:ss",
+                "yyyy-M-d'T'HH:mm:ss",     // cho case 2025-2-2T17:00:00
+                "yyyy-MM-dd HH:mm:ss"
+            )
+
+            for (pattern in patterns) {
+                try {
+                    val input = SimpleDateFormat(pattern, Locale.getDefault())
+                    val date = input.parse(dateString)
+                    if (date != null) {
+                        val output = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        return output.format(date)
+                    }
+                } catch (_: Exception) {
+                    // thử pattern tiếp theo
+                }
             }
+
+
+            return dateString
         }
 
         private fun formatCurrency(amount: Double): String {

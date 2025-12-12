@@ -85,7 +85,7 @@ class RepairProgressDetailFragment : Fragment() {
 
     private fun initRepairHub() {
 
-        val hubUrl =Constants.BASE_URL_SIGNALR +"/hubs/repair"
+        val hubUrl =Constants.BASE_URL_SIGNALR +"/api/repair"
 
         signalRService = RepairOrderSignalRService(hubUrl).apply {
             setupListeners()
@@ -113,6 +113,12 @@ class RepairProgressDetailFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             jobHubService?.events?.collect { roId ->
                 Log.d("SignalR", "JobHub event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "RO Hub event for RO: $roId")
                 if (roId == repairOrderId) {
                     loadRepairOrderDetail()
                 }

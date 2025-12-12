@@ -141,7 +141,7 @@ class LoginActivity : AppCompatActivity() {
                     }
                     Toast.makeText(
                         this,
-                        "Đăng nhập thành công!",
+                        "Login successfuly!",
                         Toast.LENGTH_SHORT
                     ).show()
 
@@ -153,7 +153,7 @@ class LoginActivity : AppCompatActivity() {
 
                     Toast.makeText(
                         this,
-                        result.message ?: "Đăng nhập thất bại",
+                        result.message ?: "Login False",
                         Toast.LENGTH_LONG
                     ).show()
                 }

@@ -5,5 +5,6 @@ enum class QuotationStatus {
     Sent,
     Approved,
     Rejected,
-    Expired
+    Expired,
+    Good
 }

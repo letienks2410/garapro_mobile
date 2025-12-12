@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
 class RepairOrderSignalRService(
-    hubUrl: String  // ví dụ: "https://your-api.com/repairHub"
+    hubUrl: String
 ) {
 
     private val hub: HubConnection =
@@ -55,11 +55,27 @@ class RepairOrderSignalRService(
             },
             JsonObject::class.java
         )
+
+        hub.on(
+            "RepairOrderArchived",
+            { roId: String ->
+                Log.d("SignalR", "RepairOrderArchived payload: $roId")
+                _events.tryEmit(roId)
+            },
+            String::class.java
+        )
+
+        hub.on(
+            "RepairOrderMoved",
+            { roId: String ->
+                Log.d("SignalR", "RepairOrderMoved: roId=$roId")
+                _events.tryEmit(roId)
+            },
+            String::class.java
+        )
     }
 
-    /**
-     * Gọi 1 lần: nó sẽ connect và join đúng group RepairOrder_{repairOrderId}
-     */
+
     fun connectAndJoin(repairOrderId: String) {
         currentRepairOrderId = repairOrderId
 

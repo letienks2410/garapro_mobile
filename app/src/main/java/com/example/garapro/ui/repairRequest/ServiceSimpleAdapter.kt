@@ -1,9 +1,11 @@
 package com.example.garapro.ui.repairRequest
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.CompoundButton
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -11,7 +13,7 @@ import com.example.garapro.R
 import com.example.garapro.data.model.repairRequest.Service
 import com.example.garapro.utils.MoneyUtils
 import com.google.android.material.card.MaterialCardView
-import android.util.Log
+
 class ServiceSimpleAdapter(
     private var services: List<Service>,
     private val onServiceSelected: (Service) -> Unit,
@@ -38,54 +40,65 @@ class ServiceSimpleAdapter(
 
         Log.d("ServiceAdapter", "Binding service: ${service.serviceName}, isSelected: $isSelected")
 
-        // Cập nhật UI ban đầu
+
         updateServiceUI(holder, service, isSelected)
 
-        // QUAN TRỌNG: Remove listener cũ trước khi set mới
-        holder.cardService.setOnClickListener(null)
 
-        // Set click listener cho CardView
-        holder.cardService.setOnClickListener {
-            Log.d("ServiceAdapter", "Card clicked for: ${service.serviceName}")
+        holder.checkboxService.setOnCheckedChangeListener(null)
 
-            // Gọi callback để toggle selection trong ViewModel
+
+        holder.checkboxService.isChecked = isSelected
+
+        //  listener CHUNG cho checkbox
+        val checkChangeListener = CompoundButton.OnCheckedChangeListener { _, _ ->
+            Log.d("ServiceAdapter", "Checkbox clicked for: ${service.serviceName}")
+
+
             onServiceSelected(service)
 
-            // Lấy trạng thái MỚI sau khi toggle
+
             val newIsSelected = isServiceSelected(service)
             Log.d("ServiceAdapter", "After toggle - newIsSelected: $newIsSelected")
 
-            // Update UI ngay lập tức
-            holder.checkboxService.isChecked = newIsSelected
+
             updateCardStroke(holder, newIsSelected)
         }
 
-        // Checkbox chỉ để hiển thị, không cho click
-        holder.checkboxService.isClickable = false
-        holder.checkboxService.isFocusable = false
-        holder.checkboxService.setOnClickListener(null)
+
+        holder.checkboxService.setOnCheckedChangeListener(checkChangeListener)
+
+
+        holder.cardService.setOnClickListener {
+            Log.d("ServiceAdapter", "Card clicked for: ${service.serviceName}")
+            holder.checkboxService.performClick()
+        }
     }
 
-    private fun updateServiceUI(holder: ViewHolder, service: Service, isSelected: Boolean) {
-        // Update checkbox
-        holder.checkboxService.isChecked = isSelected
 
-        // Update text
+    private fun updateServiceUI(holder: ViewHolder, service: Service, isSelected: Boolean) {
         holder.tvServiceName.text = service.serviceName
 
-        // Format giá
         val servicePrice = MoneyUtils.calculateServicePrice(service)
+
+        // Nếu có giá khuyến mãi hợp lệ
         if (service.discountedPrice > 0 && service.discountedPrice < service.price) {
-            holder.tvServicePrice.text = "${MoneyUtils.formatVietnameseCurrency(servicePrice)} (Giảm ${MoneyUtils.formatVietnameseCurrency(service.price - service.discountedPrice)})"
-            holder.tvServicePrice.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.success))
+            holder.tvServicePrice.text =
+                MoneyUtils.formatVietnameseCurrency(service.discountedPrice)
+            holder.tvServicePrice.setTextColor(
+                ContextCompat.getColor(holder.itemView.context, R.color.success)
+            )
         } else {
-            holder.tvServicePrice.text = MoneyUtils.formatVietnameseCurrency(servicePrice)
-            holder.tvServicePrice.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.primary))
+            holder.tvServicePrice.text =
+                MoneyUtils.formatVietnameseCurrency(servicePrice)
+            holder.tvServicePrice.setTextColor(
+                ContextCompat.getColor(holder.itemView.context, R.color.primary)
+            )
         }
 
         holder.tvServiceDescription.text = service.description
 
-        // Update card stroke
+        
+        holder.checkboxService.isChecked = isSelected
         updateCardStroke(holder, isSelected)
     }
 

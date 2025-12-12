@@ -34,18 +34,25 @@ data class RepairOrderArchivedDetail(
     val estimatedAmount: Double,
     val paidAmount: Double,
     val paidStatus: String, // hoặc PaidStatus enum bên server map sang string
-
+    val carPickupStatus: CarPickupStatus = CarPickupStatus.None ,
     val note: String?,
 
     val jobs: List<ArchivedJob>,
     val feedBacks: Feedback?
 )
+enum class CarPickupStatus {
+    None,
+    PickedUp,
+    NotPickedUp
+}
 @Parcelize
 data class ArchivedJob(
     val jobId: String,
     val jobName: String,
     val status: String,
     val deadline: String?,
+    val servicePrice: Double,
+    val discountValue: Double?,
     val totalAmount: Double,
     val repair: ArchivedRepair?,
     val technicians: List<ArchivedTechnician>,

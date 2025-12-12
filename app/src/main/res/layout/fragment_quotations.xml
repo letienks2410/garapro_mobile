@@ -32,63 +32,19 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Lọc theo trạng thái"
+                    android:text="Filter By Status"
                     android:textColor="?attr/colorPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp" />
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroup"
+                <!-- Spinner status thay cho ChipGroup -->
+                <Spinner
+                    android:id="@+id/spinnerStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:singleSelection="true"
-                    app:selectionRequired="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipAll"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tất cả"
-                        android:checked="true" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipPending"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Chờ xử lý" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipSent"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Đã gửi" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipApproved"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Đã duyệt" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipRejected"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Đã từ chối" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipExpired"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Hết hạn" />
-
-                </com.google.android.material.chip.ChipGroup>
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/spinner_background_black" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -103,7 +59,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="Áp dụng" />
+                        android:text="Apply" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnClearFilter"
@@ -112,11 +68,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="Xóa lọc" />
+                        android:text="Clear" />
 
                 </LinearLayout>
-
-
 
             </LinearLayout>
 

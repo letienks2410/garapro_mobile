@@ -29,7 +29,7 @@ class ArchivedJobAdapter(
         fun bind(item: ArchivedJob) = with(binding) {
             tvJobName.text = item.jobName
             tvJobStatus.text = getStatusText(item.status)
-            tvTotalAmount.text = formatCurrency(item.totalAmount)
+            tvTotalAmount.text = "${formatCurrency(item.totalAmount-(item.discountValue ?: 0.0))}"
             tvRepairTime.text = formatRepairTime(item.repair?.startTime, item.repair?.endTime)
             tvTechnicianCount.text = "Technicians: ${item.technicians.size}"
             tvPartCount.text = "Parts: ${item.parts.size}"

@@ -50,11 +50,28 @@ class RepairArchivedJobDetailBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun bindJob(job: ArchivedJob) = with(binding) {
-        tvJobName.text = job.jobName
-        tvJobStatus.text = job.status
-        tvJobTotalAmount.text = "Total: ${formatCurrency(job.totalAmount)}"
 
-        tvRepairTime.text = "Repair time: ${formatRepairTime(job.repair?.startTime, job.repair?.endTime)}"
+        val discount = job.discountValue ?: 0.0
+
+        // Sum parts price
+        val totalParts = job.parts.sumOf { it.unitPrice * it.quantity }
+
+        // Final total
+        val finalTotal = job.servicePrice + totalParts - discount
+
+        tvJobName.text = job.jobName
+
+        tvJobServicePrice.text = "Service: ${formatCurrency(job.servicePrice)}"
+        tvJobPartsTotal.text = "Parts: ${formatCurrency(totalParts)}"
+        tvJobDiscount.text = "Discount: -${formatCurrency(discount)}"
+
+        tvJobTotalAmount.text =
+            "Total: ${formatCurrency(finalTotal)} " +
+                    "(${formatCurrency(job.servicePrice)} + ${formatCurrency(totalParts)} - ${formatCurrency(discount)})"
+
+        tvRepairTime.text =
+            "Repair time: ${formatRepairTime(job.repair?.startTime, job.repair?.endTime)}"
+
         tvRepairNotes.text = "Notes: ${job.repair?.notes ?: "-"}"
 
         rvTechnicians.apply {

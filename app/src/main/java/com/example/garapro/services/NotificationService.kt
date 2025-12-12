@@ -9,6 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -17,7 +20,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.garapro.MainActivity
 import com.example.garapro.R
 import com.example.garapro.data.model.UpdateDeviceIdRequest
+import com.example.garapro.data.model.emergencies.EmergencySoundPlayer
 import com.example.garapro.data.remote.RetrofitInstance
+import com.example.garapro.ui.TechEmergencies.IncomingEmergencyActivity
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +32,7 @@ import kotlinx.coroutines.launch
 class NotificationService : FirebaseMessagingService() {
 
     private val CHANNEL_ID = "my_channel_id"
+    private val CHANNEL_ID_EMERGENCY = "emergency_channel_v2"
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -39,10 +45,8 @@ class NotificationService : FirebaseMessagingService() {
 
         Log.d("Notification", "Message received: ${remoteMessage.data}")
 
-        // 1) Tạo channel nếu cần
         createNotificationChannel()
 
-        // 2) Check permission Android 13+
         val canNotify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ActivityCompat.checkSelfPermission(
                 this,
@@ -51,6 +55,8 @@ class NotificationService : FirebaseMessagingService() {
         } else true
 
         val data = remoteMessage.data
+
+        Log.d("data ne",data.isEmpty().toString())
         if (data.isEmpty()) return
 
         val type = data["type"] ?: ""
@@ -64,7 +70,6 @@ class NotificationService : FirebaseMessagingService() {
             val conversationId = data["conversationId"]
 
             if (isAppInForeground()) {
-                // App đang mở -> đẩy vào UI qua broadcast, không show system notification
                 val intent = Intent("com.example.garapro.NEW_CHAT_MESSAGE").apply {
                     putExtra("message", message)
                     putExtra("fromUserId", fromUserId)
@@ -72,12 +77,10 @@ class NotificationService : FirebaseMessagingService() {
                 }
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
                 Log.d("Notification", "Broadcast sent to UI (foreground). message=$message")
-                return
             } else {
-                // App background -> show system notification nếu có permission
                 if (canNotify) {
                     showSystemNotification(
-                        title = data["title"] ?: "Tin nhắn mới",
+                        title = data["title"] ?: "New message",
                         body = message,
                         extraIds = mapOf(
                             "conversationId" to (conversationId ?: ""),
@@ -87,20 +90,57 @@ class NotificationService : FirebaseMessagingService() {
                 } else {
                     Log.w("Notification", "No POST_NOTIFICATIONS permission, cannot show chat notification")
                 }
-                return
             }
+            return
         }
+
+        // =========================
+// CASE: EMERGENCY
+// =========================
+        Log.d("type ne",type)
+        if (type.equals("Emergency", ignoreCase = true)) {
+            val title = data["title"] ?: "Emergency"
+            val body = data["body"] ?: data["message"] ?: ""
+            val screen = data["screen"] ?: "ReportsFragment"
+
+//            EmergencySoundPlayer.start(this)
+
+            if (isAppInForeground()) {
+                val intent = Intent("com.example.garapro.EMERGENCY_EVENT").apply {
+                    putExtra("title", title)
+                    putExtra("body", body)
+                    putExtra("screen", screen)
+                }
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+            } else {
+                Log.d("typeEmer", "emerr")
+                if (canNotify) {
+                    showSystemNotification(
+                        title = title,
+                        body = body,
+                        extraIds = mapOf(
+                            "screen" to screen,
+                            "notificationType" to "Emergency",
+                            "from_notification" to "true"
+                        ),
+                        channelId = CHANNEL_ID_EMERGENCY,
+                        emergency = true
+                    )
+                }
+            }
+
+            return
+        }
+
 
         // =========================
         // CASE 2: Các loại notification khác
         // =========================
-        val title = data["title"] ?: "Thông báo"
+        val title = data["title"] ?: "Notification"
         val body = data["body"] ?: data["message"] ?: ""
         val screen = data["screen"]
-        val notificationType = data["type"]
         val action = data["action"]
 
-        // Lấy tất cả ID (repairRequestId, orderId, quotationId, conversationId, fromUserId, ...)
         val allIds = extractAllIdsFromMessage(data)
 
         if (canNotify) {
@@ -109,29 +149,28 @@ class NotificationService : FirebaseMessagingService() {
                 body = body,
                 extraIds = allIds + mapOf(
                     "screen" to (screen ?: ""),
-                    "type" to (notificationType ?: ""),
+                    "type" to type,
                     "action" to (action ?: "")
                 )
             )
         } else {
             Log.w("Notification", "Notification permission not granted, skip system notification")
-            // App đang foreground? nếu có logic broadcast riêng cho non-chat thì xử lý thêm ở đây (nếu cần)
         }
     }
 
-    /**
-     * Show system notification, mở MainActivity và truyền toàn bộ extraIds qua Intent
-     */
     private fun showSystemNotification(
         title: String?,
         body: String?,
-        extraIds: Map<String, String>
+        extraIds: Map<String, String>,
+        channelId: String = CHANNEL_ID,
+        emergency: Boolean = false
     ) {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        // Intent mở MainActivity khi user bấm vào notification (khi không dùng full-screen)
+        val mainIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("from_notification", true)
-
-            // Put all extras để MainActivity tự route
             extraIds.forEach { (key, value) ->
                 putExtra(key, value)
             }
@@ -139,18 +178,18 @@ class NotificationService : FirebaseMessagingService() {
 
         val notificationId = generateNotificationId(extraIds)
 
-        val pendingIntent = PendingIntent.getActivity(
+        val contentPendingIntent = PendingIntent.getActivity(
             this,
             notificationId,
-            intent,
+            mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_notifications)
             .setContentTitle(title)
             .setContentText(body)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(contentPendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
 
@@ -158,15 +197,48 @@ class NotificationService : FirebaseMessagingService() {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
         }
 
+        if (emergency) {
+
+            val fullScreenIntent = Intent(this, IncomingEmergencyActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+                putExtra("title", title ?: "Emergency")
+                putExtra("body", body ?: "")
+                putExtra("screen", extraIds["screen"] ?: "ReportsFragment")
+            }
+
+            val fullScreenPendingIntent = PendingIntent.getActivity(
+                this,
+                notificationId + 1,
+                fullScreenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+
+            builder
+                .setContentIntent(fullScreenPendingIntent)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setOngoing(true)
+                .setFullScreenIntent(fullScreenPendingIntent, true)
+                .setAutoCancel(true)
+            // Không cần addAction "OK" nữa, chạm vào noti là mở màn IncomingEmergencyActivity
+        }
+
         NotificationManagerCompat.from(this)
             .notify(notificationId, builder.build())
 
-        Log.d("Notification", "System notification shown with ID: $notificationId, extras=$extraIds")
+        Log.d(
+            "Notification",
+            "System notification shown with ID: $notificationId, extras=$extraIds, channel=$channelId, emergency=$emergency"
+        )
     }
 
-    /**
-     * Kiểm tra app đang foreground hay không
-     */
+
+
+
     private fun isAppInForeground(): Boolean {
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appProcesses = activityManager.runningAppProcesses ?: return false
@@ -182,9 +254,6 @@ class NotificationService : FirebaseMessagingService() {
         return false
     }
 
-    /**
-     * Lấy tất cả ID có thể có từ data
-     */
     private fun extractAllIdsFromMessage(data: Map<String, String>): Map<String, String> {
         val idMap = mutableMapOf<String, String>()
 
@@ -206,9 +275,6 @@ class NotificationService : FirebaseMessagingService() {
         return idMap
     }
 
-    /**
-     * Tạo notificationId dựa trên tất cả IDs -> đảm bảo cùng 1 "entity" sẽ có ID ổn định
-     */
     private fun generateNotificationId(ids: Map<String, String>): Int {
         val combinedString = ids.entries
             .sortedBy { it.key }
@@ -223,14 +289,26 @@ class NotificationService : FirebaseMessagingService() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+
             val name = "My Notifications"
             val descriptionText = "Thông báo từ app"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
             }
-            val notificationManager = getSystemService(NotificationManager::class.java)
+
+            val emergencyChannel = NotificationChannel(
+                CHANNEL_ID_EMERGENCY,
+                "Emergency Notifications",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Emergency"
+                setSound(null, null)
+            }
+
             notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(emergencyChannel)
         }
     }
 
@@ -249,5 +327,10 @@ class NotificationService : FirebaseMessagingService() {
             }
         }
     }
+
+
+
+
 }
+
 

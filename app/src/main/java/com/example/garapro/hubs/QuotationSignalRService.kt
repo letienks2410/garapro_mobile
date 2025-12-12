@@ -27,11 +27,9 @@ class QuotationSignalRService(
         hub.on("QuotationCreated", { json: JsonObject ->
             Log.d("SignalR", "QuotationCreated payload: $json")
 
-            // Nếu muốn, bạn có thể đọc thêm:
-            // val quotationId = json.get("quotationId")?.asString
-            // val userId = json.get("userId")?.asString
 
-            _events.tryEmit(Unit) // chỉ báo có thay đổi
+
+            _events.tryEmit(Unit)
         }, JsonObject::class.java)
     }
 

@@ -12,6 +12,7 @@ data class QuotationDetail(
     val status: QuotationStatus,
     val totalAmount: Double,
     val discountAmount: Double,
+    val phoneBranch: String,
     val note: String?,
     val isArchived : Boolean,
     val archivedAt : String?,
@@ -31,9 +32,11 @@ data class QuotationServiceDetail(
     var isSelected: Boolean,
     val isAdvanced: Boolean,
 
-    val isRequired: Boolean, // 🔥 THÊM: Service bắt buộc không được bỏ
+    val isRequired: Boolean,
+    val isGood : Boolean,
     val price: Double,
     val quantity: Int,
+
 
     val createdAt: String,
     val discountValue: Double?,            // số tiền giảm (hoặc 0 / null nếu không có)

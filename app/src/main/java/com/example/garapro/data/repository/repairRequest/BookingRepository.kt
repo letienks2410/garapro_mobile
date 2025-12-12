@@ -93,7 +93,8 @@ class BookingRepository(
         pageNumber: Int = 1,
         pageSize: Int = 10,
         childServiceCategoryId: String? = null,
-        searchTerm: String? = null
+        searchTerm: String? = null,
+        branchId: String? = null
     ): ChildCategoriesResponse {
         return try {
             val response = RetrofitInstance.bookingService.getChildServiceCategories(
@@ -101,7 +102,8 @@ class BookingRepository(
                 pageNumber = pageNumber,
                 pageSize = pageSize,
                 childServiceCategoryId = childServiceCategoryId,
-                searchTerm = searchTerm
+                searchTerm = searchTerm,
+                branchId = branchId
             )
             if (response.isSuccessful) {
                 response.body() ?: ChildCategoriesResponse(

@@ -10,7 +10,8 @@ data class SignupRequest(
 )
 
 data class otpRequest(
-    val phoneNumber: String
+    val phoneNumber: String,
+    val email: String?
 )
 
 data class otpVerifyRequest(

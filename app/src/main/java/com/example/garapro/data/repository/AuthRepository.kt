@@ -105,10 +105,10 @@ class AuthRepository(
         }
     }
 
-    fun sendOtp(phone: String): Flow<Resource<otpResponse>> = flow {
+    fun sendOtp(phone: String, email: String?): Flow<Resource<otpResponse>> = flow {
         emit(Resource.Loading())
         try {
-            val response = apiService.sentOtp(otpRequest(phone))
+            val response = apiService.sentOtp(otpRequest(phone, email))
             if (response.isSuccessful && response.body() != null) {
                 emit(Resource.Success(response.body()!!))
             } else {
@@ -135,6 +135,8 @@ class AuthRepository(
             emit(Resource.Error("Lỗi: ${e.localizedMessage}"))
         }
     }
+
+
 
     fun getToken(): Flow<String?> = tokenManager.getAccessToken()
 

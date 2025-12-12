@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -38,6 +39,9 @@ class ChatFragment : Fragment() {
     private var fcmToken: String? = null
     private var userId: String? = null
 
+    // New: waiting layout (progress + text)
+    private lateinit var layoutWaiting: LinearLayout
+
     // Thay bằng webhook của bạn
     private val WEBHOOK_URL = "https://n8n.zanis.id.vn/webhook/b396fc96-535d-4af6-8f1a-33ea454b8bb2"
     private val AUTH_TOKEN: String? = null // nếu cần: "Bearer xxxxx"
@@ -56,6 +60,8 @@ class ChatFragment : Fragment() {
             Handler(Looper.getMainLooper()).post {
                 adapter.addMessage(Message(message, false))
                 rv.scrollToPosition(adapter.itemCount - 1)
+                // Khi nhận phản hồi từ server/notification, chắc chắn ẩn waiting
+                hideWaiting()
             }
         }
     }
@@ -71,6 +77,9 @@ class ChatFragment : Fragment() {
         rv = view.findViewById(R.id.rvMessages)
         edt = view.findViewById(R.id.edtMessage)
         btn = view.findViewById(R.id.btnSend)
+
+        // New: bind waiting layout
+        layoutWaiting = view.findViewById(R.id.layoutWaiting)
 
         rv.layoutManager = LinearLayoutManager(requireContext())
         adapter = MessageAdapter(mutableListOf())
@@ -96,19 +105,32 @@ class ChatFragment : Fragment() {
                 rv.scrollToPosition(adapter.itemCount - 1)
                 edt.setText("")
 
+                // Hiển thị hiệu ứng chờ và disable nút gửi
+                showWaiting()
+
                 // Gọi hàm gửi, kèm userId + fcmToken
                 sendMessageToWebhook(text,
                     userId = userId,
                     fcmToken = fcmToken,
                     onSuccess = { _responseBody ->
                         Handler(Looper.getMainLooper()).post {
-                          //  adapter.addMessage(Message("Gửi đến n8n thành công", false))
+                            // ẩn waiting khi có phản hồi từ webhook
+                            hideWaiting()
                             rv.scrollToPosition(adapter.itemCount - 1)
+                            // bạn có thể parse _responseBody và thêm message bot ở đây
+                            _responseBody?.let {
+                                // ví dụ thêm phản hồi bot (nếu webhook trả text trực tiếp)
+                                // adapter.addMessage(Message(it, false))
+                                // rv.scrollToPosition(adapter.itemCount - 1)
+                            }
                         }
                     },
                     onFailure = { err ->
                         Handler(Looper.getMainLooper()).post {
-                         //   adapter.addMessage(Message("Gửi thất bại: $err", false))
+                            // ẩn waiting và bật lại nút
+                            hideWaiting()
+                            // show lỗi (tạm comment hoặc bật)
+                            adapter.addMessage(Message("Send error: $err", false))
                             rv.scrollToPosition(adapter.itemCount - 1)
                         }
                     }
@@ -127,6 +149,21 @@ class ChatFragment : Fragment() {
         LocalBroadcastManager.getInstance(requireContext())
             .unregisterReceiver(newMessageReceiver)
         super.onPause()
+    }
+
+    // Hiển thị/ẩn waiting
+    private fun showWaiting() {
+        Handler(Looper.getMainLooper()).post {
+            layoutWaiting.visibility = View.VISIBLE
+            btn.isEnabled = false
+        }
+    }
+
+    private fun hideWaiting() {
+        Handler(Looper.getMainLooper()).post {
+            layoutWaiting.visibility = View.GONE
+            btn.isEnabled = true
+        }
     }
 
     private fun sendMessageToWebhook(
@@ -157,7 +194,9 @@ class ChatFragment : Fragment() {
         val request = requestBuilder.build()
 
         client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) = onFailure(e.message ?: "Network error")
+            override fun onFailure(call: Call, e: IOException) {
+                onFailure(e.message ?: "Network error")
+            }
             override fun onResponse(call: Call, response: Response) {
                 response.use {
                     if (!it.isSuccessful) onFailure("HTTP ${it.code}: ${it.message}")

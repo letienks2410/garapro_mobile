@@ -209,7 +209,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <!-- Progress Bar -->
                     <ProgressBar
                         android:id="@+id/progressBar"
                         style="?android:attr/progressBarStyleHorizontal"
@@ -225,6 +224,15 @@
                         android:clipToPadding="false"
                         android:padding="8dp"
                         tools:listitem="@layout/item_repair_order" />
+                    <ProgressBar
+                        android:id="@+id/loadingSpinner"
+                        style="?android:attr/progressBarStyleLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:visibility="gone"
+                        android:padding="16dp" />
+                    <!-- Progress Bar -->
 
                     <!-- Empty State -->
                     <LinearLayout

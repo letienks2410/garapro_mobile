@@ -220,7 +220,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:maxHeight="300dp"
+            android:maxHeight="500dp"
             android:visibility="gone" />
 
     </LinearLayout>

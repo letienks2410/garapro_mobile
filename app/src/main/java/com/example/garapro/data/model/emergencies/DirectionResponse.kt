@@ -37,7 +37,7 @@ class DirectionResponse {
         private val duration: Duration? = null
 
         @SerializedName("steps")
-        private val steps: MutableList<Step?>? = null
+         val steps: MutableList<Step?>? = null
     }
 
     class Step {
@@ -45,10 +45,10 @@ class DirectionResponse {
         val instructions: String? = null
 
         @SerializedName("distance")
-        private val distance: Distance? = null
+        val distance: Distance? = null
 
         @SerializedName("duration")
-        private val duration: Duration? = null
+         val duration: Duration? = null
     }
 
     class Distance {

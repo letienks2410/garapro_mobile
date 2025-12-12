@@ -23,12 +23,8 @@ class HomeFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
-        val btnGoToBooking = view.findViewById<Button>(R.id.btnGoToBooking)
-        btnGoToBooking.setOnClickListener {
-            val intent = Intent(requireContext(), BookingActivity::class.java)
-            startActivity(intent)
-        }
-        val btnGoToMap = view.findViewById<Button>(R.id.btnGoToMap)
+
+        val btnGoToMap = view.findViewById<Button>(R.id.btnEmergencySOS)
         btnGoToMap.setOnClickListener {
             val userPrefs = requireContext().getSharedPreferences(com.example.garapro.utils.Constants.USER_PREFERENCES, android.content.Context.MODE_PRIVATE)
             val authPrefs = requireContext().getSharedPreferences("auth_prefs", android.content.Context.MODE_PRIVATE)

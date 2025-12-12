@@ -2,6 +2,7 @@ package com.example.garapro.ui.quotations
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -99,6 +100,27 @@ class QuotationsFragment : Fragment() {
     }
 
     private fun setupUI() {
+
+        val statusItems = listOf(
+            "All",
+            "Sent",
+            "Approved",
+            "Rejected",
+            "Expired",
+            "Good"
+        )
+
+        val statusAdapter = android.widget.ArrayAdapter(
+            requireContext(),
+
+            android.R.layout.simple_spinner_item,
+            statusItems
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        binding.spinnerStatus.adapter = statusAdapter
+
+
         binding.swipeRefresh.setOnRefreshListener {
             // load lại từ trang 1
             viewModel.loadQuotations(pageNumber = 1)
@@ -120,10 +142,6 @@ class QuotationsFragment : Fragment() {
             clearFilter()
         }
 
-        // Chip selection listener
-        binding.chipGroup.setOnCheckedStateChangeListener { _, _ ->
-            updateChipAppearance()
-        }
     }
 
     private fun initQuotationHub() {
@@ -143,9 +161,16 @@ class QuotationsFragment : Fragment() {
     }
 
     private fun observeQuotationHubEvents() {
+        val service = quotationHubService
+        if (service == null) {
+            Log.w("SignalR", "observeQuotationHubEvents: quotationHubService is null")
+            return
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
-            quotationHubService?.events?.collect {
-                // reload lại từ trang 1 khi có thay đổi
+            Log.d("SignalR", "Start collecting quotationHubService.events")
+            service.events.collect {
+                Log.d("R", "load from SignalR")
                 viewModel.loadQuotations(pageNumber = 1)
             }
         }
@@ -164,21 +189,22 @@ class QuotationsFragment : Fragment() {
     }
 
     private fun applyFilter() {
-        val selectedChipId = binding.chipGroup.checkedChipId
-        val status = when (selectedChipId) {
-            binding.chipAll.id -> null
-            binding.chipPending.id -> QuotationStatus.Pending
-            binding.chipSent.id -> QuotationStatus.Sent
-            binding.chipApproved.id -> QuotationStatus.Approved
-            binding.chipRejected.id -> QuotationStatus.Rejected
-            binding.chipExpired.id -> QuotationStatus.Expired
+        val position = binding.spinnerStatus.selectedItemPosition
+        val status = when (position) {
+            0 -> null
+            1 -> QuotationStatus.Sent
+            2 -> QuotationStatus.Approved
+            3 -> QuotationStatus.Rejected
+            4 -> QuotationStatus.Expired
+            5 -> QuotationStatus.Good
             else -> null
         }
-        viewModel.filterByStatus(status)  // ViewModel sẽ tự load lại trang 1
+
+        viewModel.filterByStatus(status)
     }
 
     private fun clearFilter() {
-        binding.chipAll.isChecked = true
+        binding.spinnerStatus.setSelection(0)
         viewModel.filterByStatus(null)
     }
 
@@ -208,20 +234,21 @@ class QuotationsFragment : Fragment() {
         }
 
         viewModel.selectedStatus.observe(viewLifecycleOwner) { status ->
-            updateSelectedChip(status)
+            updateSelectedFilter(status)
         }
     }
 
-    private fun updateSelectedChip(status: QuotationStatus?) {
-        val chipId = when (status) {
-            null -> binding.chipAll.id
-            QuotationStatus.Pending -> binding.chipPending.id
-            QuotationStatus.Sent -> binding.chipSent.id
-            QuotationStatus.Approved -> binding.chipApproved.id
-            QuotationStatus.Rejected -> binding.chipRejected.id
-            QuotationStatus.Expired -> binding.chipExpired.id
+    private fun updateSelectedFilter(status: QuotationStatus?) {
+        val position = when (status) {
+            null -> 0
+            QuotationStatus.Sent -> 1
+            QuotationStatus.Approved -> 2
+            QuotationStatus.Rejected -> 3
+            QuotationStatus.Expired -> 4
+            QuotationStatus.Good -> 5
+            QuotationStatus.Pending -> 0
         }
-        binding.chipGroup.check(chipId)
+        binding.spinnerStatus.setSelection(position)
     }
 
     private fun showEmptyState() {
@@ -233,6 +260,12 @@ class QuotationsFragment : Fragment() {
         binding.emptyState.root.visibility = View.GONE
         binding.rvQuotations.visibility = View.VISIBLE
         quotationAdapter.submitList(quotations)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadQuotations(pageNumber = 1)
+
     }
 
     override fun onDestroyView() {
