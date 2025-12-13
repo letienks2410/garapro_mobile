@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.garapro.R
 import com.example.garapro.data.model.RepairProgresses.CreateFeedbackRequest
 import com.example.garapro.data.remote.RetrofitInstance
+import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +31,15 @@ class RatingActivity : AppCompatActivity() {
         val ratingBar = findViewById<RatingBar>(R.id.ratingBar)
         val commentEdit = findViewById<EditText>(R.id.edtFeedback)
         val submitBtn = findViewById<Button>(R.id.btnSubmit)
+
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+
+        toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
 
         submitBtn.setOnClickListener {
             val rating = ratingBar.rating.toInt()

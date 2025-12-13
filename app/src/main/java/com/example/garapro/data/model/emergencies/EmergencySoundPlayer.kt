@@ -3,54 +3,49 @@ package com.example.garapro.data.model.emergencies
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.util.Log
 
 object EmergencySoundPlayer {
 
-    private var mediaPlayer: MediaPlayer? = null
+    private var ringtone: Ringtone? = null
+    private var isPlaying = false
 
     fun start(context: Context) {
-
         try {
+            if (isPlaying) return
 
-            if (mediaPlayer?.isPlaying == true) return   // đã phát rồi
 
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(context, uri)
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .build()
-                )
-                isLooping = true
-                prepare()
-                start()
+            ringtone = RingtoneManager.getRingtone(context, uri).apply {
+                audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
             }
 
-            Log.d("EmergencySound", "Emergency sound started")
+            ringtone?.play()
+            isPlaying = true
+
+            Log.d("EmergencySound", "Ringtone emergency started")
         } catch (e: Exception) {
-            Log.e("EmergencySound", "Error starting emergency sound: ${e.message}")
+            Log.e("EmergencySound", "Error starting ringtone: ${e.message}")
             stop()
         }
     }
 
     fun stop() {
         try {
-            mediaPlayer?.let {
-                if (it.isPlaying) {
-                    it.stop()
-                }
-                it.release()
-            }
+            ringtone?.stop()
         } catch (e: Exception) {
-            Log.e("EmergencySound", "Error stopping emergency sound: ${e.message}")
+            Log.e("EmergencySound", "Error stopping ringtone: ${e.message}")
         } finally {
-            mediaPlayer = null
+            ringtone = null
+            isPlaying = false
         }
     }
 }
+
