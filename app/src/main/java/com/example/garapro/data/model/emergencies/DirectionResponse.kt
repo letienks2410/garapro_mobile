@@ -40,16 +40,38 @@ class DirectionResponse {
          val steps: MutableList<Step?>? = null
     }
 
-    class Step {
+    data class LatLngJson(
+        @SerializedName("lat") val lat: Double,
+        @SerializedName("lng") val lng: Double
+    )
+
+    data class Polyline(
+        @SerializedName("points") val points: String? = null
+    )
+
+    data class Step(
         @SerializedName("html_instructions")
-        val instructions: String? = null
+        val instructions: String? = null,
 
         @SerializedName("distance")
-        val distance: Distance? = null
+        val distance: Distance? = null,
 
         @SerializedName("duration")
-         val duration: Duration? = null
-    }
+        val duration: Duration? = null,
+
+        @SerializedName("start_location")
+        val startLocation: LatLngJson? = null,
+
+        @SerializedName("end_location")
+        val endLocation: LatLngJson? = null,
+
+        // JSON bạn gửi: "maneuver": "" (string)
+        @SerializedName("maneuver")
+        val maneuver: String? = null,
+
+        @SerializedName("polyline")
+        val polyline: Polyline? = null
+    )
 
     class Distance {
         @SerializedName("text")

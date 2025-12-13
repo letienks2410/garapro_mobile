@@ -82,6 +82,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private var currentLocation: LatLng? = null
     private var branchLocation: LatLng? = null
 
+    private var customerLocation: LatLng? = null
     private var emergencyId: String? = null
 
     private lateinit var customerPhone: String
@@ -112,6 +113,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val BEARING_SPEED_THRESHOLD = 1.2f      // > 1.2 m/s (~4.3km/h) mới coi là đang chạy
 
+
+
+
+    private val MIN_STEP_ADVANCE_MS = 1200L
+
+    private var lastStepAdvanceTime = 0L
+
     // Camera
     private var lastGpsPos: LatLng? = null
 
@@ -136,6 +144,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private var isRequestingRoute = false
 
+    private var lastSpokenStepIndex = -1
     private lateinit var viewModel: TechEmergenciesViewModel
 
 
@@ -189,23 +198,36 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         emergencyId = intent.getStringExtra("emergencyId") ?: ""
 
-        branchLocation = if (branchLat != 0.0 && branchLng != 0.0) {
-            LatLng(branchLat, branchLng)
-        } else null
+        customerLocation = if (destLat != 0.0 && destLng != 0.0) LatLng(destLat, destLng) else null
+        branchLocation   = if (branchLat != 0.0 && branchLng != 0.0) LatLng(branchLat, branchLng) else null
+
+
+        destinationLatLng = when (EmergencyStatus.fromInt(emergencyStatus)) {
+            EmergencyStatus.Towing -> branchLocation
+            EmergencyStatus.Completed -> null
+            else -> customerLocation
+        }
 
         Log.d("estatus",emergencyStatus.toString())
 
         customerPhone = intent.getStringExtra("customerPhone") ?: ""
 
-        if (emergencyStatus == 3) {
-            isNavigating = true
-            tvInstruction.text = "Navigating to customer's location..."
+        isNavigating = when (EmergencyStatus.fromInt(emergencyStatus)) {
+            EmergencyStatus.InProgress, EmergencyStatus.Towing -> true
+            else -> false
+        }
+
+        if (isNavigating) {
             btnToggleNav.text = "Stop"
+            tvInstruction.text = when (EmergencyStatus.fromInt(emergencyStatus)) {
+                EmergencyStatus.Towing -> "Navigating to branch..."
+                else -> "Navigating to customer's location..."
+            }
         } else {
-            isNavigating = false
             btnToggleNav.text = "NAV"
             tvInstruction.text = "Press Start Navigation to begin guidance"
         }
+
 
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
@@ -343,7 +365,35 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    /** Kiểm tra quyền + bật GPS */
+
+
+    private fun dynamicStepThresholdMeters(speedMps: Float): Float {
+        return when {
+            speedMps >= 8f -> 45f
+            speedMps >= 4f -> 30f
+            else -> 18f
+        }
+    }
+
+    private fun checkNextStepByDistance(pos: LatLng) {
+        if (!isNavigating) return
+        if (currentStepIndex >= steps.size) return
+
+        val end = steps[currentStepIndex].endLocation ?: return
+        val endPos = LatLng(end.lat, end.lng)
+
+        val d = distanceBetween(pos, endPos)
+        val now = System.currentTimeMillis()
+        val thresh = dynamicStepThresholdMeters(lastSpeed)
+
+        if (d <= thresh && now - lastStepAdvanceTime >= MIN_STEP_ADVANCE_MS) {
+            currentStepIndex = (currentStepIndex + 1).coerceAtMost(steps.size)
+            lastStepAdvanceTime = now
+            updateInstruction()
+        }
+    }
+
+
     private fun checkPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
@@ -689,6 +739,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 val leg = route.legs?.firstOrNull()
                 steps = leg?.steps?.filterNotNull() ?: emptyList()
 
+                Log.d("steps",steps.toString())
                 currentStepIndex = 0
                 currentRoutePointIndex = 0
                 hasRoute = true
@@ -729,21 +780,25 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateInstruction() {
-//        if (!isNavigating) return
-
         if (currentStepIndex >= steps.size) {
-            tvInstruction.text = "Đã đến nơi "
-            speak("Bạn đã đến nơi")
+            tvInstruction.text = "Đã đến nơi"
+            if (lastSpokenStepIndex != currentStepIndex) {
+                speak("Bạn đã đến nơi")
+                lastSpokenStepIndex = currentStepIndex
+            }
             return
         }
 
         val step = steps[currentStepIndex]
         val instrText = plainTextFromHtml(step.instructions)
         val distanceText = step.distance?.text ?: ""
-
         val display = "$distanceText, $instrText"
+
         tvInstruction.text = display
-        speak(display)
+        if (lastSpokenStepIndex != currentStepIndex) {
+            speak(display)
+            lastSpokenStepIndex = currentStepIndex
+        }
     }
 
     // decode polyline
@@ -1118,6 +1173,9 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                             Log.d("Nav", "Reroute: off route, moved=$moved")
                         }
                     }
+                }
+                if (isNavigating && steps.isNotEmpty()) {
+                    checkNextStepByDistance(displayPos)
                 }
 
                 // ====== CHECK ĐANG GẦN ĐÍCH ĐỂ SHOW NÚT ======

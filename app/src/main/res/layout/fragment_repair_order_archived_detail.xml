@@ -352,9 +352,19 @@
                         android:nestedScrollingEnabled="false"
                         tools:listitem="@layout/item_archived_job" />
 
+                    <TextView
+                        android:id="@+id/tvNoJobsMessage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No repairs were performed. This order includes inspection/diagnostic fee only."
+                        android:visibility="gone"
+                        android:padding="16dp" />
+
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/feedbackCard"
                 android:layout_width="match_parent"
