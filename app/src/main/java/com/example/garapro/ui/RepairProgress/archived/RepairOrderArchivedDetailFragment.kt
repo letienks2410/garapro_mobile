@@ -143,51 +143,51 @@ class RepairOrderArchivedDetailFragment : Fragment() {
         }
 
         //  CarPickupStatus UI logic
-        when (detail.carPickupStatus) {
-            CarPickupStatus.None -> {
-                // Cho phép chọn: Already picked / Not yet
-                layoutPickupActions.visibility = View.VISIBLE
-
-                // Khi chưa chọn pickup status thì không cho feedback
-                btnFeedback.visibility = View.GONE
-            }
-
-            CarPickupStatus.PickedUp-> {
-                layoutPickupActions.visibility = View.GONE
-
-                // Chỉ show nút feedback nếu chưa có feedback
-                btnFeedback.visibility = if (detail.feedBacks == null) View.VISIBLE else View.GONE
-            }
-
-            CarPickupStatus.NotPickedUp -> {
-                layoutPickupActions.visibility = View.GONE
-                // Nếu khách bảo chưa lấy → không show feedback button
-                btnFeedback.visibility = View.GONE
-            }
-        }
+//        when (detail.carPickupStatus) {
+//            CarPickupStatus.None -> {
+//                // Cho phép chọn: Already picked / Not yet
+//                layoutPickupActions.visibility = View.VISIBLE
+//
+//                // Khi chưa chọn pickup status thì không cho feedback
+//                btnFeedback.visibility = View.GONE
+//            }
+//
+//            CarPickupStatus.PickedUp-> {
+//                layoutPickupActions.visibility = View.GONE
+//
+//                // Chỉ show nút feedback nếu chưa có feedback
+//                btnFeedback.visibility = if (detail.feedBacks == null) View.VISIBLE else View.GONE
+//            }
+//
+//            CarPickupStatus.NotPickedUp -> {
+//                layoutPickupActions.visibility = View.GONE
+//                // Nếu khách bảo chưa lấy → không show feedback button
+//                btnFeedback.visibility = View.GONE
+//            }
+//        }
 
         // Click listeners cho 2 nút pickup
-        btnAlreadyPickedUp.setOnClickListener {
-            currentRepairOrderId?.let { id ->
-                showConfirmPickedUpDialog(
-                    onConfirm = {
-                        viewModel.updateCarPickupStatus(id, CarPickupStatus.PickedUp)
-                        showThankYouDialog()
-                    }
-                )
-            }
-        }
-
-        btnNotPickedUp.setOnClickListener {
-            currentRepairOrderId?.let { id ->
-                showConfirmNotPickedUpDialog(
-                    onConfirm = {
-                        viewModel.updateCarPickupStatus(id, CarPickupStatus.NotPickedUp)
-                        showSorryDialog()
-                    }
-                )
-            }
-        }
+//        btnAlreadyPickedUp.setOnClickListener {
+//            currentRepairOrderId?.let { id ->
+//                showConfirmPickedUpDialog(
+//                    onConfirm = {
+//                        viewModel.updateCarPickupStatus(id, CarPickupStatus.PickedUp)
+//                        showThankYouDialog()
+//                    }
+//                )
+//            }
+//        }
+//
+//        btnNotPickedUp.setOnClickListener {
+//            currentRepairOrderId?.let { id ->
+//                showConfirmNotPickedUpDialog(
+//                    onConfirm = {
+//                        viewModel.updateCarPickupStatus(id, CarPickupStatus.NotPickedUp)
+//                        showSorryDialog()
+//                    }
+//                )
+//            }
+//        }
 
         // Nút Feedback (chỉ dùng khi PICKED_UP & chưa có feedback)
         btnFeedback.setOnClickListener {
