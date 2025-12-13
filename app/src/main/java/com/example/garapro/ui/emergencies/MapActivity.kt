@@ -361,6 +361,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                     Log.d("EmergencyState", "🟢 WaitingForGarage triggered for ${state.garage.name}")
                     showLoading(false)
                     topAppBar.visibility = View.GONE
+                    try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                    try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
                     waitingForGarageActive = true
                     mapView?.post {
                         emergencyBottomSheet?.showWaitingForGarage(state.garage)
@@ -979,6 +981,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
                             emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
                             topAppBar.visibility = View.GONE
+                            try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                            try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
                             refreshTrackingFromApi()
                         }
                     } catch (_: Exception) {}
@@ -1067,6 +1071,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun showEmergencyUI() {
         topAppBar.visibility = View.VISIBLE
         fabEmergency.visibility = View.GONE
+        fabCurrentLocation.visibility = View.VISIBLE
 
         // Hiển thị bottom sheet với danh sách gara
         val allGarages = viewModel.nearbyGarages.value ?: emptyList()
@@ -1155,6 +1160,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         when (emergency.status) {
                             com.example.garapro.data.model.emergencies.EmergencyStatus.ACCEPTED -> {
                                 topAppBar.visibility = View.GONE
+                                try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
                                 val g = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
                                 if (g != null) emergencyBottomSheet.showAcceptedWaitingForTechnician(g)
                                 else {
@@ -1295,6 +1302,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun hideEmergencyUI() {
         topAppBar.visibility = View.GONE
         fabEmergency.visibility = View.VISIBLE
+        fabCurrentLocation.visibility = View.GONE
         emergencyBottomSheet.dismiss()
         viewModel.resetState()
         rejectedGarageIds.clear()
@@ -1481,6 +1489,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         if (tech != null) moveCameraToLocation(tech)
         emergencyBottomSheet.updateTrackingSkeleton(tech == null)
         Toast.makeText(this, "Đang theo dõi kỹ thuật viên", Toast.LENGTH_SHORT).show()
+        try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+        try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
     }
 
     private fun openExternalMap(garage: com.example.garapro.data.model.emergencies.Garage?) {
@@ -1614,6 +1624,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                                     enableTrackingUI()
                                     emergencyBottomSheet.showTracking(garage, null)
                                     emergencyBottomSheet.updateTrackingTechnician(technicianName, technicianPhone)
+                                    try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                    try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
                                     val id2 = viewModel.getCurrentEmergency()?.id
                                     if (!id2.isNullOrBlank()) viewModel.fetchRouteNow()
                                 }
@@ -1630,6 +1642,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             com.example.garapro.data.model.emergencies.EmergencyStatus.ACCEPTED -> {
                                 if (garage != null) emergencyBottomSheet.showAcceptedWaitingForTechnician(garage)
                                 topAppBar.visibility = View.GONE
+                                try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
                             }
                             else -> {}
                         }
