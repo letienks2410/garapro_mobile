@@ -43,7 +43,7 @@ class ChatFragment : Fragment() {
     private lateinit var layoutWaiting: LinearLayout
 
     // Thay bằng webhook của bạn
-    private val WEBHOOK_URL = "https://n8n.zanis.id.vn/webhook/b396fc96-535d-4af6-8f1a-33ea454b8bb2"
+    private val WEBHOOK_URL = "https://n8n.zanis.id.vn/webhook-test/4c025dbd-e79c-4d24-93e1-c9238c388964"
     private val AUTH_TOKEN: String? = null // nếu cần: "Bearer xxxxx"
 
     private val client = OkHttpClient()
