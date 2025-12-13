@@ -92,6 +92,7 @@ class EmergencyBottomSheet(
 
     fun showAccepted(garage: Garage, etaMinutes: Int?, arrived: Boolean = false) {
         dismissSilently()
+        lastGarage = garage
         bottomSheetDialog = BottomSheetDialog(context).apply {
             val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_accepted, null)
             setContentView(view)
@@ -183,7 +184,7 @@ class EmergencyBottomSheet(
 
         // Hiển thị thông tin gara
         tvGarageName.text = garage.name
-        tvGarageInfo.text = "${garage.distance.formatDistance()} km • ${garage.rating} ⭐"
+        tvGarageInfo.text = "${garage.distance.formatDistance()} km "
         tvWaitingText.text = "Waiting for ${garage.name} to confirm..."
 
         // Setup nút hủy
@@ -344,7 +345,7 @@ class EmergencyBottomSheet(
             tvTechPhone.text = ""
             
             btnViewMap.setOnClickListener { dismiss(); onViewMapClickListener?.invoke() }
-            btnBack.setOnClickListener { showAccepted(garage, etaMinutes) }
+            btnBack.visibility = View.GONE
             
             show()
         }
