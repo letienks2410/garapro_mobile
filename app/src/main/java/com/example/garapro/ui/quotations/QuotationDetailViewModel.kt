@@ -338,7 +338,10 @@ private val repository: QuotationRepository
             try {
                 repository.getCustomerPromotions(service.serviceId, currentValue)
                     .onSuccess { response ->
-                        // Use currentValue as original price (service + parts)
+
+                        Log.d("service",service.serviceId)
+                        Log.d("serviceQuop",service.quotationServiceId)
+
                         val fixed = response.copy(
                             servicePrice = currentValue
                         )

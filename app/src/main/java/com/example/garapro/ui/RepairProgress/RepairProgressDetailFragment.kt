@@ -90,10 +90,6 @@ class RepairProgressDetailFragment : Fragment() {
         signalRService = RepairOrderSignalRService(hubUrl).apply {
             setupListeners()
         }
-
-        repairOrderId?.let { id ->
-            signalRService?.connectAndJoin(id)
-        }
     }
 
     private fun observeRepairHubEvents() {
@@ -111,15 +107,18 @@ class RepairProgressDetailFragment : Fragment() {
         jobHubService = JobSignalRService(jobHubUrl).apply {
             setupListeners()
         }
-        repairOrderId?.let { id ->
-            jobHubService?.connectAndJoinRepairOrder(id)
-        }
     }
 
     private fun observeJobHubEvents() {
         viewLifecycleOwner.lifecycleScope.launch {
             jobHubService?.events?.collect { roId ->
                 Log.d("SignalR", "JobHub event for RO: $roId")
+                if (roId == repairOrderId) {
+                    loadRepairOrderDetail()
+                }
+            }
+            jobHubService?.events?.collect { roId ->
+                Log.d("SignalR", "RO Hub event for RO: $roId")
                 if (roId == repairOrderId) {
                     loadRepairOrderDetail()
                 }
@@ -152,6 +151,15 @@ class RepairProgressDetailFragment : Fragment() {
                     is RepairProgressRepository.ApiResponse.Success -> {
                         showLoading(false)
                         bindRepairOrderDetail(response.data)
+                        val status = response.data.orderStatus.statusName
+                        val roId = repairOrderId
+                        if (status == "In Progress" && roId != null) {
+                            signalRService?.connectAndJoin(roId)
+                            jobHubService?.connectAndJoinRepairOrder(roId)
+                        } else {
+                            signalRService?.leaveGroupAndStop()
+                            jobHubService?.leaveRepairOrderGroupAndStop()
+                        }
                     }
                     is RepairProgressRepository.ApiResponse.Error -> {
                         showLoading(false)

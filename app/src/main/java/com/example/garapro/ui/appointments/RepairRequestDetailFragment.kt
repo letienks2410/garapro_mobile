@@ -159,27 +159,27 @@ class RepairRequestDetailFragment : Fragment() {
         val isCompleted = detail.status == 4  // COMPLETED
         val repairOrderId = detail.repairOrderId   // dùng để navigate sang tracking
 
-        if (isCompleted && !repairOrderId.isNullOrEmpty()) {
-            binding.btnViewRepairProgress.visibility = View.VISIBLE
-
-            binding.btnViewRepairProgress.setOnClickListener {
-                val isArchieved = detail.isArchived == true
-
-                val actionId = if (isArchieved) {
-                    R.id.action_global_repairArchivedFromRequest
-                } else {
-                    R.id.action_global_repairTrackingFromRequest
-                }
-
-                val bundle = bundleOf(
-                    "repairOrderId" to repairOrderId
-                )
-
-                findNavController().navigate(actionId, bundle)
-            }
-        } else {
-            binding.btnViewRepairProgress.visibility = View.GONE
-        }
+//        if (isCompleted && !repairOrderId.isNullOrEmpty()) {
+//            binding.btnViewRepairProgress.visibility = View.VISIBLE
+//
+//            binding.btnViewRepairProgress.setOnClickListener {
+//                val isArchieved = detail.isArchived == true
+//
+//                val actionId = if (isArchieved) {
+//                    R.id.action_global_repairArchivedFromRequest
+//                } else {
+//                    R.id.action_global_repairTrackingFromRequest
+//                }
+//
+//                val bundle = bundleOf(
+//                    "repairOrderId" to repairOrderId
+//                )
+//
+//                findNavController().navigate(actionId, bundle)
+//            }
+//        } else {
+//            binding.btnViewRepairProgress.visibility = View.GONE
+//        }
     }
 
     private fun loadImages(

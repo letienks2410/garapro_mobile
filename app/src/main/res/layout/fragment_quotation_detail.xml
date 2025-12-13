@@ -63,7 +63,21 @@
                         android:textSize="14sp"
                         android:visibility="gone" />
 
-                    <!-- Read-only mode notification -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCall"
+                        style="@style/Widget.Material3.Button.ElevatedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Call"
+                        android:textAllCaps="false"
+                        android:visibility="gone"
+                        app:icon="@drawable/ic_phone"
+                        app:iconPadding="8dp"
+                        app:iconGravity="textStart"
+                        android:backgroundTint="@color/green"
+                    android:textColor="@android:color/white" />
+
                     <TextView
                         android:id="@+id/tvReadOnlyNotice"
                         android:layout_width="match_parent"
@@ -364,7 +378,7 @@
                     app:strokeColor="@color/red"
                     app:strokeWidth="1dp" />
 
-                <!-- Accept Button -->
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSubmit"
                     style="@style/Widget.Material3.Button.TextButton"
@@ -377,7 +391,11 @@
                     android:textColor="@android:color/white"
                     android:backgroundTint="@color/primary_color" />
 
+
+
+
             </LinearLayout>
+
 
         </LinearLayout>
 

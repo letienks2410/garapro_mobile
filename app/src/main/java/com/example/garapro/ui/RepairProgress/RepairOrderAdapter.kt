@@ -23,7 +23,7 @@ import java.util.Locale
 class RepairOrderAdapter(
     private val onItemClick: (RepairOrderListItem) -> Unit,
     private val onPaymentClick: (RepairOrderListItem) -> Unit,
-    private val onRatingClick: (RepairOrderListItem) -> Unit
+
 ) : ListAdapter<RepairOrderListItem, RepairOrderAdapter.ViewHolder>(DiffCallback) {
 
     companion object {

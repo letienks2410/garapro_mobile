@@ -25,14 +25,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:gravity="center"
             android:text="On the way"
-            android:textSize="18sp"
-            android:textStyle="bold"
             android:textColor="@android:color/black"
-            android:gravity="center"/>
+            android:textSize="18sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    
+
 
     <TextView
         android:id="@+id/tvTrackingSubtitle"
@@ -47,8 +47,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:padding="12dp"
-        app:cardElevation="2dp">
+        android:padding="30dp"
+        app:cardElevation="4dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -60,7 +60,7 @@
                 android:id="@+id/ivTechAvatar"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:src="@android:color/darker_gray"
+                android:src="@drawable/ic_tech"
                 android:background="#E5E7EB"
                 android:contentDescription="avatar"
                 android:layout_marginEnd="12dp"/>
@@ -90,13 +90,7 @@
                     android:layout_marginTop="2dp"/>
             </LinearLayout>
 
-            <Button
-                android:id="@+id/btnViewMap"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View map"
-                android:textAllCaps="false"
-                android:layout_marginStart="8dp" />
+            <!-- View map button moved to bottom -->
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -134,34 +128,16 @@
         </LinearLayout>
     </LinearLayout>
 
-    
 
-    <LinearLayout
+
+    <Button
+        android:id="@+id/btnViewMap"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_marginTop="16dp"
-        android:padding="12dp"
-        android:background="#F3F4F6">
-
-        <TextView
-            android:id="@+id/tvProgressLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Route progress"
-            android:textSize="13sp"
-            android:textColor="#374151"/>
-
-        <ProgressBar
-            android:id="@+id/pbRouteProgress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_marginTop="8dp"
-            android:progress="0"
-            android:max="100"
-            android:progressTint="#2E7D32"
-            android:progressBackgroundTint="#C8E6C9"/>
-    </LinearLayout>
+        android:text="View map"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/primary"
+        android:textColor="@android:color/white" />
 
 </LinearLayout>

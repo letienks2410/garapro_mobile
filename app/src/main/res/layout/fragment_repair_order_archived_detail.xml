@@ -181,23 +181,23 @@
                         android:orientation="horizontal"
                         android:layout_marginTop="8dp">
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Completed:"
-                            android:textColor="@color/black"
-                            android:textSize="14sp" />
+<!--                        <TextView-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:text="Completed:"-->
+<!--                            android:textColor="@color/black"-->
+<!--                            android:textSize="14sp" />-->
 
-                        <TextView
-                            android:id="@+id/tvCompletionDate"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:gravity="end"
-                            android:textColor="@color/black"
-                            android:textSize="14sp"
-                            tools:text="02/01/2025 15:30" />
+<!--                        <TextView-->
+<!--                            android:id="@+id/tvCompletionDate"-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:gravity="end"-->
+<!--                            android:textColor="@color/black"-->
+<!--                            android:textSize="14sp"-->
+<!--                            tools:text="02/01/2025 15:30" />-->
                     </LinearLayout>
 
                     <!-- Archived At -->
@@ -274,23 +274,23 @@
                             android:orientation="horizontal"
                             android:layout_marginTop="4dp">
 
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Paid:"
-                                android:textColor="@color/black"
-                                android:textSize="14sp" />
+<!--                            <TextView-->
+<!--                                android:layout_width="0dp"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:layout_weight="1"-->
+<!--                                android:text="Paid:"-->
+<!--                                android:textColor="@color/black"-->
+<!--                                android:textSize="14sp" />-->
 
-                            <TextView
-                                android:id="@+id/tvPaidAmount"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:gravity="end"
-                                android:textColor="@color/black"
-                                android:textSize="14sp"
-                                tools:text="9.500.000 đ" />
+<!--                            <TextView-->
+<!--                                android:id="@+id/tvPaidAmount"-->
+<!--                                android:layout_width="0dp"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:layout_weight="1"-->
+<!--                                android:gravity="end"-->
+<!--                                android:textColor="@color/black"-->
+<!--                                android:textSize="14sp"-->
+<!--                                tools:text="9.500.000 đ" />-->
                         </LinearLayout>
 
                     </LinearLayout>
@@ -432,6 +432,44 @@
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Car Pickup Status Actions -->
+            <LinearLayout
+                android:id="@+id/layoutPickupActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAlreadyPickedUp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Already picked up"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/black"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNotPickedUp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Not yet picked up"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/black"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+
+
             <!-- Feedback Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnFeedback"

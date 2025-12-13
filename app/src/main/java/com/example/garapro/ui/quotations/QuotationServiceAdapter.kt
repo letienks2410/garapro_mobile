@@ -26,8 +26,8 @@ class QuotationServiceAdapter(
 
     private val expandedStates = mutableMapOf<String, Boolean>()
     private var currentlyExpandedServiceId: String? = null
+    private val initializedServices = mutableSetOf<String>()
 
-    // serviceId -> promotion state when user picks from bottom sheet
     private var promotions: Map<String, ServicePromotionUiState> = emptyMap()
 
     fun updateEditable(editable: Boolean) {
@@ -37,7 +37,7 @@ class QuotationServiceAdapter(
 
     fun updateOnCheckChanged(newOnCheckChanged: (String, Boolean) -> Unit) {
         this.onCheckChanged = newOnCheckChanged
-        notifyDataSetChanged()
+
     }
 
     fun updateServices(newServices: List<QuotationServiceDetail>) {
@@ -96,6 +96,7 @@ class QuotationServiceAdapter(
                 binding.materialDivider.visibility = View.GONE
 
                 // button promotion: disable, text Good
+                binding.btnPromotion.visibility = View.GONE
                 binding.btnPromotion.isEnabled = false
                 binding.btnPromotion.alpha = 0.7f
                 binding.btnPromotion.text = "Good"
@@ -106,8 +107,36 @@ class QuotationServiceAdapter(
                 binding.btnToggleParts.visibility = View.GONE
                 binding.selectedPartsSummary.visibility = View.GONE
 
-                return  // 🔚 không bind thêm gì nữa cho case Good
+                return
             }
+
+
+            // ====== Default selection when in edit mode ======
+            if (isEditable && !initializedServices.contains(service.quotationServiceId)) {
+                initializedServices.add(service.quotationServiceId)
+
+                if (!service.isSelected && !service.isGood) {
+
+                    binding.root.post {
+
+                        onCheckChanged(service.quotationServiceId, true)
+
+
+                        service.partCategories.forEach { category ->
+                            val hasSelectedPart = category.parts.any { it.isSelected }
+                            if (!hasSelectedPart && category.parts.isNotEmpty()) {
+                                val firstPart = category.parts.first()
+                                onPartToggle(
+                                    service.quotationServiceId,
+                                    category.partCategoryId,
+                                    firstPart.quotationServicePartId
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
 
             // Checkbox logic
             val canToggleService = if (service.isRequired) {

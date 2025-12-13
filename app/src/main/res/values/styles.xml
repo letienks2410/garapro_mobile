@@ -1,0 +1,14 @@
+<!-- Thêm vào res/values/styles.xml -->
+<resources>
+    <!-- Existing styles... -->
+
+    <!-- Full Screen Dialog Style -->
+    <style name="FullScreenDialogStyle" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+</resources>

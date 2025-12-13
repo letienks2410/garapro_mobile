@@ -19,6 +19,7 @@ import com.example.garapro.data.model.Vehicles.*
 import com.example.garapro.data.remote.RetrofitInstance
 import com.example.garapro.data.repository.ApiResponse
 import com.example.garapro.data.repository.VehicleRepository
+import com.example.garapro.ui.common.SuccessDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
@@ -119,7 +120,13 @@ class VehiclesFragment : Fragment() {
                     isActionLoading = false
                     updateLoadingState()
                     if (!isVehicleFormDialogVisible) {
-                        Toast.makeText(requireContext(), "Action succeeded", Toast.LENGTH_SHORT).show()
+                        val msg = when (lastAction) {
+                            "delete" -> getString(R.string.msg_vehicle_deleted)
+                            "create" -> getString(R.string.msg_vehicle_added)
+                            "update" -> getString(R.string.msg_vehicle_updated)
+                            else -> getString(R.string.msg_action_completed)
+                        }
+                        SuccessDialog.show(requireContext(), getString(R.string.title_success), msg)
                     }
                     lastAction = null
                 }
@@ -326,6 +333,7 @@ class VehiclesFragment : Fragment() {
                         odometer = null
                     )
                     waitingForAction = true
+                    lastAction = "create"
                     viewModel.createVehicle(request)
                 } else {
                     val request = UpdateVehicles(
@@ -338,6 +346,7 @@ class VehiclesFragment : Fragment() {
                         odometer = existingVehicle.odometer
                     )
                     waitingForAction = true
+                    lastAction = "update"
                     viewModel.updateVehicle(existingVehicle.vehicleID, request)
                 }
                 positive.isEnabled = false
@@ -347,7 +356,7 @@ class VehiclesFragment : Fragment() {
                 if (!waitingForAction) return@Observer
                 when (resp) {
                     is ApiResponse.Loading -> { positive.isEnabled = false }
-                    is ApiResponse.Success -> { waitingForAction = false; positive.isEnabled = true; dialog.dismiss() }
+                    is ApiResponse.Success -> { waitingForAction = false; positive.isEnabled = true; dialog.dismiss(); SuccessDialog.show(requireContext(), getString(R.string.title_success), if (existingVehicle == null) getString(R.string.msg_vehicle_added) else getString(R.string.msg_vehicle_updated)) }
                     is ApiResponse.Error -> {
                         waitingForAction = false
                         positive.isEnabled = true

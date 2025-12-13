@@ -11,12 +11,15 @@ import com.example.garapro.data.model.RepairProgresses.RepairOrderFilter
 import com.example.garapro.data.model.RepairProgresses.RepairOrderListItem
 import com.example.garapro.data.model.RepairProgresses.RepairProgressDetail
 import com.example.garapro.data.model.RepairProgresses.RoType
+import com.example.garapro.data.model.RepairProgresses.UpdateCarPickupStatusRequest
 import com.example.garapro.data.model.payments.CreatePaymentRequest
 import com.example.garapro.data.model.payments.CreatePaymentResponse
 import com.example.garapro.data.model.payments.PaymentStatusDto
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -62,6 +65,11 @@ interface RepairProgressApiService {
         @Path("repairOrderId") repairOrderId: String
     ): RepairOrderArchivedDetail
 
+    @PUT("MarkCarPickup/{repairOrderId}/car-pickup-status")
+    suspend fun updateCarPickupStatus(
+        @Path("repairOrderId") repairOrderId: String,
+        @Body body: UpdateCarPickupStatusRequest
+    ): Response<Unit>
 }
 
 // Extension function để hỗ trợ filter object

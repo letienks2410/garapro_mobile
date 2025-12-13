@@ -41,16 +41,39 @@
 
             </LinearLayout>
 
-            <!-- Total amount -->
+            <TextView
+                android:id="@+id/tvJobServicePrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Service: 0 đ"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvJobPartsTotal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Parts: 0 đ"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvJobDiscount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Discount: -0 đ"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
+
             <TextView
                 android:id="@+id/tvJobTotalAmount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Total: 1.500.000 đ"
+                android:text="Total: 0 đ"
                 android:textColor="@color/black"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
+
 
             <!-- Repair time -->
             <TextView

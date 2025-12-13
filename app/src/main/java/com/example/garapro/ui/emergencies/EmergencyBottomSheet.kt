@@ -81,6 +81,7 @@ class EmergencyBottomSheet(
     }
 
     fun updateGarages(garages: List<Garage>) {
+        if (!::garageAdapter.isInitialized) return
         garageAdapter.submitList(garages)
         updateTitle(garages.size)
     }
@@ -337,19 +338,14 @@ class EmergencyBottomSheet(
             val tvTechPhone = view.findViewById<TextView>(R.id.tvTechPhoneTracking)
             val btnViewMap = view.findViewById<Button>(R.id.btnViewMap)
             val btnBack = view.findViewById<Button>(R.id.btnBackTracking)
-            val tvProgressLabel = view.findViewById<TextView>(R.id.tvProgressLabel)
-            val pbRoute = view.findViewById<ProgressBar>(R.id.pbRouteProgress)
             tvTitle.text = "On the way"
             tvSubtitle.text = etaMinutes?.let { "Technician en route, ETA ~ ${it} min" } ?: "Technician is en route, please track on the map."
             tvTechName.text = "Technician"
             tvTechPhone.text = ""
-            tvProgressLabel.text = "Route progress"
-            pbRoute.progress = 0
+            
             btnViewMap.setOnClickListener { dismiss(); onViewMapClickListener?.invoke() }
             btnBack.setOnClickListener { showAccepted(garage, etaMinutes) }
-            tvProgressLabel.setOnClickListener {
-                dismiss()
-            }
+            
             show()
         }
     }
@@ -368,7 +364,11 @@ class EmergencyBottomSheet(
     fun updateTrackingTechnician(name: String?, phone: String?) {
         val v = trackingView ?: return
         v.findViewById<TextView>(R.id.tvTechNameTracking)?.text = name ?: "Technician"
-        v.findViewById<TextView>(R.id.tvTechPhoneTracking)?.text = phone ?: ""
+        val phoneView = v.findViewById<TextView>(R.id.tvTechPhoneTracking)
+        phoneView?.text = phone ?: ""
+        phoneView?.setOnClickListener {
+            dialNumber(phone)
+        }
     }
 
     fun setOnViewMapClickListener(listener: (() -> Unit)?) {
