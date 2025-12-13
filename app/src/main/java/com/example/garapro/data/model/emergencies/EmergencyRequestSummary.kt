@@ -1,5 +1,7 @@
 package com.example.garapro.data.model.emergencies
 
+import com.google.gson.annotations.SerializedName
+
 data class EmergencyRequestSummary(
     val emergencyRequestId: String,
     val vehicleName: String?,
@@ -19,5 +21,18 @@ data class EmergencyRequestSummary(
     val customerName: String?,
     val customerPhone: String?,
     val assignedTechnicianName: String?,
+    @SerializedName(
+        value = "assignedTechnicianPhone",
+        alternate = [
+            "AssignedTechnicianPhone",
+            "TechnicianPhone",
+            "technicianPhone",
+            "PhoneNumberTechnician",
+            "phoneNumberTechnician",
+            "PhoneNumberTecnician",
+            "phoneNumberTecnician"
+        ]
+    )
+    val assignedTechnicianPhone: String?,
     val emergencyFee: Double?
 )
