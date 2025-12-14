@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.drawable.VectorDrawable
 import android.location.LocationManager
+import org.maplibre.android.style.layers.Property
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -239,7 +240,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         tvTitle = findViewById(R.id.tvTitle)
         bottomSheetContainer = findViewById(R.id.bottomSheetContainer)
         fabEmergency = findViewById(R.id.fabEmergency)
-        fabCurrentLocation = findViewById(R.id.fabCurrentLocation)
+        //fabCurrentLocation = findViewById(R.id.fabCurrentLocation)
         loadingIndicator = findViewById(R.id.loadingIndicator)
 
         // Hide top app bar initially
@@ -684,16 +685,47 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 // ========== TECHNICIAN LOCATION UPDATED (ĐÃ CẢI TIẾN) ==========
                 if (lower.contains("technicianlocationupdated")) {
                     try {
+                        android.util.Log.d("TechRT", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                         android.util.Log.d("TechRT", "📥 Technician update received")
                         android.util.Log.d("TechRT", "   active=$activityActive, styleLoaded=$styleLoaded, tracking=$trackingActive")
 
+                        // ========== LOG FULL PAYLOAD ==========
+                        android.util.Log.d("TechRT", "")
+                        android.util.Log.d("TechRT", "📦 FULL PAYLOAD:")
+                        android.util.Log.d("TechRT", payload)
+                        android.util.Log.d("TechRT", "")
+
                         val obj = com.google.gson.JsonParser.parseString(payload).asJsonObject
+
+                        // ========== LOG ALL KEYS ==========
+                        android.util.Log.d("TechRT", "🔑 KEYS IN PAYLOAD:")
+                        obj.keySet().forEach { key ->
+                            try {
+                                val value = obj.get(key)
+                                val valueStr = when {
+                                    value.isJsonNull -> "null"
+                                    value.isJsonPrimitive -> {
+                                        if (value.asJsonPrimitive.isString) "\"${value.asString}\""
+                                        else value.toString()
+                                    }
+                                    value.isJsonObject -> "{...}"
+                                    value.isJsonArray -> "[${value.asJsonArray.size()} items]"
+                                    else -> value.toString()
+                                }
+                                android.util.Log.d("TechRT", "  $key = $valueStr")
+                            } catch (e: Exception) {
+                                android.util.Log.d("TechRT", "  $key = [error]")
+                            }
+                        }
+                        android.util.Log.d("TechRT", "")
 
                         // BranchId Processing
                         try {
                             val branchId = arrayOf("BranchId", "branchId", "GarageId", "garageId", "AssignedGarageId", "assignedGarageId").firstNotNullOfOrNull { k ->
                                 if (obj.has(k)) try { obj.get(k).asString } catch (_: Exception) { null } else null
                             }
+                            android.util.Log.d("TechRT", "🏢 Branch ID: ${branchId ?: "not found"}")
+
                             if (!branchId.isNullOrBlank()) {
                                 val prefs = getSharedPreferences(com.example.garapro.utils.Constants.USER_PREFERENCES, Context.MODE_PRIVATE)
                                 prefs.edit().putString("last_assigned_garage_id", branchId).apply()
@@ -720,6 +752,70 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         }
 
                         android.util.Log.d("TechRT", "📍 Location: lat=$lat, lng=$lng")
+
+                        // ========== LOG TECHNICIAN INFO ==========
+                        val techName = arrayOf("TechnicianName", "technicianName", "Name", "name").firstNotNullOfOrNull { k ->
+                            if (obj.has(k)) try { obj.get(k).asString } catch (_: Exception) { null } else null
+                        }
+
+                        val techPhone = arrayOf(
+                            "PhoneNumberTecnician", "phoneNumberTecnician",
+                            "PhoneNumberTechnician", "phoneNumberTechnician",
+                            "TechnicianPhone", "technicianPhone",
+                            "Phone", "phone"
+                        ).firstNotNullOfOrNull { k ->
+                            if (obj.has(k)) try { obj.get(k).asString } catch (_: Exception) { null } else null
+                        }
+
+                        android.util.Log.d("TechRT", "👨‍🔧 Technician: ${techName ?: "not found"}")
+                        android.util.Log.d("TechRT", "📞 Phone: ${techPhone ?: "not found"}")
+
+                        // ========== LOG ETA & DISTANCE ==========
+                        val etaMinutes = try {
+                            when {
+                                obj.has("EtaMinutes") && !obj.get("EtaMinutes").isJsonNull -> obj.get("EtaMinutes").asInt
+                                obj.has("etaMinutes") && !obj.get("etaMinutes").isJsonNull -> obj.get("etaMinutes").asInt
+                                else -> null
+                            }
+                        } catch (_: Exception) { null }
+
+                        val distanceKm = try {
+                            when {
+                                obj.has("DistanceKm") && !obj.get("DistanceKm").isJsonNull -> obj.get("DistanceKm").asDouble
+                                obj.has("distanceKm") && !obj.get("distanceKm").isJsonNull -> obj.get("distanceKm").asDouble
+                                else -> null
+                            }
+                        } catch (_: Exception) { null }
+
+                        android.util.Log.d("TechRT", "⏱️ ETA: ${etaMinutes ?: "not found"} minutes")
+                        android.util.Log.d("TechRT", "📏 Distance: ${distanceKm ?: "not found"} km")
+
+                        // ========== LOG ROUTE ==========
+                        if (obj.has("route") && !obj.get("route").isJsonNull) {
+                            val routeElement = obj.get("route")
+                            android.util.Log.d("TechRT", "🛣️ Route: EXISTS (${routeElement.javaClass.simpleName})")
+
+                            if (routeElement.isJsonObject) {
+                                val routeObj = routeElement.asJsonObject
+                                android.util.Log.d("TechRT", "   Route keys: ${routeObj.keySet()}")
+
+                                if (routeObj.has("coordinates")) {
+                                    val coords = routeObj.getAsJsonArray("coordinates")
+                                    android.util.Log.d("TechRT", "   Coordinates: ${coords.size()} points")
+                                }
+
+                                if (routeObj.has("type")) {
+                                    android.util.Log.d("TechRT", "   Type: ${routeObj.get("type").asString}")
+                                }
+                            } else if (routeElement.isJsonPrimitive && routeElement.asJsonPrimitive.isString) {
+                                val routeStr = routeElement.asString
+                                android.util.Log.d("TechRT", "   Route string length: ${routeStr.length}")
+                            }
+                        } else {
+                            android.util.Log.d("TechRT", "🛣️ Route: NOT FOUND")
+                        }
+
+                        android.util.Log.d("TechRT", "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
                         if (!lat.isNaN() && !lng.isNaN()) {
                             val point = LatLng(lat, lng)
@@ -1870,18 +1966,40 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun addTechnicianLayer(style: Style) {
+        // Thêm icon xe vào style
+        val carDrawable = ContextCompat.getDrawable(this, R.drawable.ic_car)
+        if (carDrawable is VectorDrawable) {
+            val bitmap = Bitmap.createBitmap(
+                carDrawable.intrinsicWidth,
+                carDrawable.intrinsicHeight,
+                Bitmap.Config.ARGB_8888
+            )
+            val canvas = Canvas(bitmap)
+            carDrawable.setBounds(0, 0, canvas.width, canvas.height)
+            carDrawable.draw(canvas)
+            style.addImage("tech-car-marker", bitmap)
+        } else if (carDrawable != null) {
+            // Fallback nếu không phải VectorDrawable
+            val bitmap = BitmapFactory.decodeResource(resources, R.drawable.ic_car)
+            style.addImage("tech-car-marker", bitmap)
+        }
+
+        // Tạo empty source
         val empty = JsonObject().apply {
             addProperty("type", "FeatureCollection")
             add("features", JsonArray())
         }
         style.addSource(GeoJsonSource("technician-source", empty.toString()))
+
+        // Thay CircleLayer bằng SymbolLayer để hiển thị icon xe
         style.addLayer(
-            CircleLayer("technician-layer", "technician-source").withProperties(
-                PropertyFactory.circleRadius(6f),
-                PropertyFactory.circleColor("#2962FF"),
-                PropertyFactory.circleStrokeColor("#FFFFFF"),
-                PropertyFactory.circleStrokeWidth(2f),
-                PropertyFactory.circleOpacity(0.95f)
+            SymbolLayer("technician-layer", "technician-source").withProperties(
+                PropertyFactory.iconImage("tech-car-marker"),
+                PropertyFactory.iconSize(1.0f), // Điều chỉnh kích thước (0.5 - 2.0)
+                PropertyFactory.iconAllowOverlap(true),
+                PropertyFactory.iconIgnorePlacement(true),
+                PropertyFactory.iconRotationAlignment("map"),
+                PropertyFactory.iconPitchAlignment("map")
             )
         )
     }
@@ -1893,20 +2011,44 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         style.addSource(GeoJsonSource("route-source", empty.toString()))
         style.addLayer(
-            LineLayer("route-layer", "route-source").withProperties(
-                PropertyFactory.lineColor("#2563EB"),
-                PropertyFactory.lineWidth(5.0f)
+            LineLayer("route-layer", "route-source").withProperties( PropertyFactory.lineColor("#FF0000"),          // Đỏ tươi
+                PropertyFactory.lineWidth(5.0f),               // Độ dày vừa phải
+                PropertyFactory.lineOpacity(0.9f),             // Hơi trong
+                PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),  // Bo góc
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),    // Bo đầu
+                PropertyFactory.lineBlur(0.5f)
             )
         )
-        style.addSource(GeoJsonSource("route-start-source", empty.toString()))
+        // 2. Source và layer cho VỊ TRÍ KHÁCH HÀNG (customer location)
+        style.addSource(GeoJsonSource("customer-location-source", empty.toString())) // Đổi tên source
         style.addLayer(
-            SymbolLayer("route-start-layer", "route-start-source").withProperties(
-                PropertyFactory.iconImage("custom-marker"),
-                PropertyFactory.iconSize(1.0f),
+            SymbolLayer("customer-location-layer", "customer-location-source").withProperties( // Đổi tên layer
+                PropertyFactory.iconImage("customer-marker"),  // Đổi tên icon
+                PropertyFactory.iconSize(1.2f),                // Kích thước lớn hơn
                 PropertyFactory.iconAllowOverlap(true),
                 PropertyFactory.iconIgnorePlacement(true)
             )
         )
+
+        // 3. Source và layer cho xe kỹ thuật viên
+        style.addSource(GeoJsonSource("technician-source", empty.toString()))
+        style.addLayer(
+            SymbolLayer("technician-layer", "technician-source").withProperties(
+                PropertyFactory.iconImage("tech-car-marker"),
+                PropertyFactory.iconSize(1.3f),
+                PropertyFactory.iconAllowOverlap(true),
+                PropertyFactory.iconIgnorePlacement(true)))
+                //PropertyFactory.iconRotateAlignment(Property.ICON_ROTATE_ALIGNMENT_MAP)
+
+//        style.addSource(GeoJsonSource("route-start-source", empty.toString()))
+//        style.addLayer(
+//            SymbolLayer("route-start-layer", "route-start-source").withProperties(
+//                PropertyFactory.iconImage("custom-marker"),
+//                PropertyFactory.iconSize(1.0f),
+//                PropertyFactory.iconAllowOverlap(true),
+//                PropertyFactory.iconIgnorePlacement(true)
+//            )
+       // )
     }
 
     private fun enableTrackingUI() {
@@ -2221,7 +2363,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 try {
                     emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
                     emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
-                    Toast.makeText(this@MapActivity, "🎉 Technician has arrived!", Toast.LENGTH_LONG).show()
+                   // Toast.makeText(this@MapActivity, " Technician has arrived!", Toast.LENGTH_LONG).show()
                     try { topAppBar.visibility = View.GONE } catch (_: Exception) {}
                     try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
                     try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
@@ -2257,17 +2399,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun addMarkerAtPosition(position: LatLng, title: String = "Location") {
         if (!activityActive || !styleLoaded) return
-        if (title == "Current location" || title == "Assistance location") {
+
+        // CHỈ GIỮ MARKER CỦA CUSTOMER
+        if (title == "Current location" || title == "Assistance location" || title == "Vị trí hiện tại") {
             markerPositions.clear()
+            markerPositions.add(position)
+        } else {
+            // Bỏ qua các marker khác (không thêm vào)
+            return
         }
-        markerPositions.add(position)
+
+        // Tạo marker cho customer location
         val featuresArray = JsonArray()
-        markerPositions.forEachIndexed { i, latLng ->
-            val markerTitle = if (i == markerPositions.size - 1 && title == "Current location") {
-                title
-            } else {
-                "Location ${i + 1}"
-            }
+        markerPositions.forEach { latLng ->
             val feature = JsonObject().apply {
                 addProperty("type", "Feature")
                 add("geometry", JsonObject().apply {
@@ -2278,14 +2422,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                     })
                 })
                 add("properties", JsonObject().apply {
-                    addProperty("title", markerTitle)
+                    addProperty("title", "Customer Location")
                 })
             }
             featuresArray.add(feature)
         }
+
         maplibreMap?.getStyle()?.getSourceAs<GeoJsonSource>("marker-source")
             ?.setGeoJson(featureCollection(featuresArray))
-        Toast.makeText(this, "Marker added: $title", Toast.LENGTH_SHORT).show()
+
+        // Chỉ hiển thị toast cho assistance location
+        if (title == "Assistance location" || title == "Vị trí hiện tại") {
+            Toast.makeText(this, "Marker added: $title", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun checkLocationPermission(): Boolean {
