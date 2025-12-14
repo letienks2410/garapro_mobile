@@ -821,7 +821,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun updateInstruction() {
         if (currentStepIndex >= steps.size) {
-            tvInstruction.text = "Đã đến nơi"
+            tvInstruction.text = "Arrived at destination"
             if (lastSpokenStepIndex != currentStepIndex) {
                 speak("Bạn đã đến nơi")
                 lastSpokenStepIndex = currentStepIndex
@@ -1311,7 +1311,15 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onStart()
         mapView.onStart()
 
-        stopBgTrackingService()
+//        // 1) Tắt service
+//        stopBgTrackingService()
+//
+//        // 2) Bật lại location updates cho Activity (vẽ map)
+//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+//            == PackageManager.PERMISSION_GRANTED && ensureLocationEnabled()
+//        ) {
+//            startLocationUpdates()
+//        }
     }
 
     override fun onResume() {
@@ -1337,8 +1345,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         if(isChangingConfigurations) return
 
-        // app ra background -> bật service để vẫn bắn location
-        startBgTrackingServiceIfNeeded()
+//        // 1) Tắt location updates của Activity để không chạy song song
+//        if (::locationCallback.isInitialized) {
+//            try { fusedLocation.removeLocationUpdates(locationCallback) } catch (_: Exception) {}
+//        }
+
+        // 2) Bật service background
+//        startBgTrackingServiceIfNeeded()
     }
 
     override fun onLowMemory() {
@@ -1350,12 +1363,12 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onDestroy()
         mapView.onDestroy()
 
-        if (::locationCallback.isInitialized) {
-            try {
-                fusedLocation.removeLocationUpdates(locationCallback)
-            } catch (_: Exception) {
-            }
-        }
+//        if (::locationCallback.isInitialized) {
+//            try {
+//                fusedLocation.removeLocationUpdates(locationCallback)
+//            } catch (_: Exception) {
+//            }
+//        }
 
         tts?.stop()
         tts?.shutdown()

@@ -48,9 +48,7 @@ class ReportsFragment : Fragment() {
         val emptyState = view.findViewById<View>(R.id.layoutEmptyState)
 
         adapter = EmergencyForTechnicianAdapter { item ->
-            // Click vào 1 đơn trong list (khi không có current)
-            // Tùy bạn: mở chi tiết, hay map riêng
-            Toast.makeText(requireContext(), "Choose: ${item.issueDescription}", Toast.LENGTH_SHORT).show()
+            viewModel.loadDetail(item.emergencyRequestId)
         }
         rvEmergencies.adapter = adapter
 
@@ -59,6 +57,12 @@ class ReportsFragment : Fragment() {
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
+        viewModel.detail.observe(viewLifecycleOwner) { detail ->
+            if (detail != null) {
+                EmergencyDetailBottomSheet(detail)
+                    .show(parentFragmentManager, "EmergencyDetailBottomSheet")
+            }
+        }
         viewModel.current.observe(viewLifecycleOwner) { current ->
             if (current != null) {
 

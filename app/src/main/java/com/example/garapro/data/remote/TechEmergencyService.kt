@@ -1,5 +1,6 @@
 package com.example.garapro.data.remote
 
+import com.example.garapro.data.model.techEmergencies.EmergencyDetailDto
 import com.example.garapro.data.model.techEmergencies.TechnicianEmergencyResponse
 import com.example.garapro.data.model.techEmergencies.TechnicianLocationBody
 import com.example.garapro.data.model.techEmergencies.UpdateEmergencyStatusRequest
@@ -27,5 +28,8 @@ interface TechEmergencyService {
             @Body body: UpdateEmergencyStatusRequest
         ): Response<Unit>
 
-
+    @GET("TechnicianEmergency/{id}")
+    suspend fun getEmergencyDetail(
+        @Path("id") id: String
+    ): Response<EmergencyDetailDto>
 }
