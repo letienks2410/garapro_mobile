@@ -77,6 +77,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocation: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
+    //test gửi 1 lâần
+    private var hasSentTestLocation = false
 
 
     private var currentLocation: LatLng? = null
@@ -1189,7 +1191,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 //                    val d = distanceBetween(rawPos, dest)
                     val d = distanceBetween(displayPos, dest)
 
-                    if (!hasArrived  && d < 50f) {
+
+                    if (!hasArrived  && d < 30f) {
                         hasArrived = true
                         when (EmergencyStatus.fromInt(emergencyStatus)) {
                             EmergencyStatus.InProgress -> {
@@ -1231,7 +1234,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 lastGpsPos = rawPos
+
                 maybeSendLocationToServer(loc)
+
+//                if (!hasSentTestLocation) {
+//                    hasSentTestLocation = true
+//                    maybeSendLocationToServer(loc)
+//                }
             }
         }
 
