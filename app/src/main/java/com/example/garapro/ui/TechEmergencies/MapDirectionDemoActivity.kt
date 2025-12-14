@@ -147,6 +147,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private var lastSpokenStepIndex = -1
     private lateinit var viewModel: TechEmergenciesViewModel
 
+    private var hasArrived = false
 
     companion object {
         private const val PERMISSION_LOCATION = 1999
@@ -258,8 +259,9 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                     emergencyStatus = EmergencyStatus.Towing.value
                     btnPickupCustomer.visibility = View.GONE
                     destinationLatLng = branchLocation
-
+                    resetNavStateForNewRoute()
                     updateDestinationMarker(branchLocation)
+                    updateDestinationMarker(destinationLatLng)
                     currentLocation?.let { getDirectionRoute(it) }
                 }
             }
@@ -319,7 +321,11 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 btnToggleNav.text = "Stop"
-                tvInstruction.text = "Calculating route to customer location..."
+
+                tvInstruction.text = when (EmergencyStatus.fromInt(emergencyStatus)) {
+                    EmergencyStatus.Towing -> "Calculating route to branch..."
+                    else -> "Calculating route to customer location..."
+                }
 
                 // Reset route tracking
                 hasRoute = false
@@ -1130,10 +1136,10 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                         lastSnapIndex = snapIndex
                         val now = System.currentTimeMillis()
 
-                        if (isNavigating) {
-                            // kiểm tra xem có nên nhảy step không
-                            checkNextStep(snapIndex)
-                        }
+//                        if (isNavigating) {
+//                            // kiểm tra xem có nên nhảy step không
+//                            checkNextStep(snapIndex)
+//                        }
                         when {
                             // ĐI TIẾN HOẶC ĐỨNG NGAY TRÊN CÙNG 1 SEGMENT
                             snapIndex >= currentRoutePointIndex -> {
@@ -1180,9 +1186,11 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 // ====== CHECK ĐANG GẦN ĐÍCH ĐỂ SHOW NÚT ======
                 destinationLatLng?.let { dest ->
-                    val d = distanceBetween(rawPos, dest)
+//                    val d = distanceBetween(rawPos, dest)
+                    val d = distanceBetween(displayPos, dest)
 
-                    if (d < 10f) { // sau này có thể giảm về 30–50m
+                    if (!hasArrived  && d < 50f) {
+                        hasArrived = true
                         when (EmergencyStatus.fromInt(emergencyStatus)) {
                             EmergencyStatus.InProgress -> {
                                 btnPickupCustomer.visibility = View.VISIBLE
@@ -1230,6 +1238,22 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocation.requestLocationUpdates(
             request, locationCallback, Looper.getMainLooper()
         )
+    }
+
+
+    private fun resetNavStateForNewRoute() {
+        hasRoute = false
+        routePoints = emptyList()
+        steps = emptyList()
+        currentStepIndex = 0
+        currentRoutePointIndex = 0
+        lastStepAdvanceTime = 0L
+        lastSpokenStepIndex = -1
+        hasFitRouteBoundsOnce = false
+        lastSnappedPos = null
+        lastSnapIndex = -1
+        lastSnapDist = -1f
+        hasArrived = false
     }
 
 
