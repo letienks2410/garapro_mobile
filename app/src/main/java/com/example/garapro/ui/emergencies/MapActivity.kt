@@ -2160,7 +2160,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
         private const val REQUEST_CHECK_SETTINGS = 2002
-        private const val ARRIVAL_THRESHOLD_METERS = 5.0
+        private const val ARRIVAL_THRESHOLD_METERS = 50.0
     }
 
     // Lifecycle methods
