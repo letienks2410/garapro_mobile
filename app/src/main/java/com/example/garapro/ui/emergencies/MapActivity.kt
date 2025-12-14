@@ -240,7 +240,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         tvTitle = findViewById(R.id.tvTitle)
         bottomSheetContainer = findViewById(R.id.bottomSheetContainer)
         fabEmergency = findViewById(R.id.fabEmergency)
-        //fabCurrentLocation = findViewById(R.id.fabCurrentLocation)
+        fabCurrentLocation = findViewById(R.id.fabCurrentLocation)
         loadingIndicator = findViewById(R.id.loadingIndicator)
 
         // Hide top app bar initially
@@ -2030,14 +2030,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             )
         )
 
-        // 3. Source và layer cho xe kỹ thuật viên
-        style.addSource(GeoJsonSource("technician-source", empty.toString()))
-        style.addLayer(
-            SymbolLayer("technician-layer", "technician-source").withProperties(
-                PropertyFactory.iconImage("tech-car-marker"),
-                PropertyFactory.iconSize(1.3f),
-                PropertyFactory.iconAllowOverlap(true),
-                PropertyFactory.iconIgnorePlacement(true)))
+//        // 3. Source và layer cho xe kỹ thuật viên
+//        style.addSource(GeoJsonSource("technician-source", empty.toString()))
+//        style.addLayer(
+//            SymbolLayer("technician-layer", "technician-source").withProperties(
+//                PropertyFactory.iconImage("tech-car-marker"),
+//                PropertyFactory.iconSize(1.3f),
+//                PropertyFactory.iconAllowOverlap(true),
+//                PropertyFactory.iconIgnorePlacement(true)))
                 //PropertyFactory.iconRotateAlignment(Property.ICON_ROTATE_ALIGNMENT_MAP)
 
 //        style.addSource(GeoJsonSource("route-start-source", empty.toString()))
