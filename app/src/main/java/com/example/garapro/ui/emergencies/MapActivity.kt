@@ -105,7 +105,12 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private val mainHandler: Handler = Handler(Looper.getMainLooper())
     private var fallbackStyleRunnable: Runnable? = null
     private var blockHubUI: Boolean = false
-    
+    private var arrivalConsecutive: Int = 0
+    private var lastArrivalCandidateAt: Long = 0L
+    private val ARRIVAL_CONFIRM_COUNT = 1
+    private val ARRIVAL_CONFIRM_MS = 4000L
+    private var inProgressStartedAt: Long = 0L
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -136,9 +141,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         emergencyHub = EmergencySignalRService(hubUrl).apply {
             setupListeners()
             start {
-                userId?.let { 
+                userId?.let {
                     android.util.Log.d("EmergencyHubJoin", "joinCustomerGroup id=" + it)
-                    joinCustomerGroup(it) 
+                    joinCustomerGroup(it)
                 }
             }
         }
@@ -147,9 +152,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 val alt1 = com.example.garapro.utils.Constants.BASE_URL_SIGNALR + "/hubs/emergencyrequest"
                 android.util.Log.d("EmergencyHub", "attempt reconnect alt1=" + alt1)
                 emergencyHub?.reconnectWithUrl(alt1) {
-                    userId?.let { 
+                    userId?.let {
                         android.util.Log.d("EmergencyHubJoin", "joinCustomerGroup after reconnect id=" + it)
-                        emergencyHub?.joinCustomerGroup(it) 
+                        emergencyHub?.joinCustomerGroup(it)
                     }
                 }
             }
@@ -159,9 +164,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 val alt2 = com.example.garapro.utils.Constants.BASE_URL_SIGNALR + "/hubs/emergency"
                 android.util.Log.d("EmergencyHub", "attempt reconnect alt2=" + alt2)
                 emergencyHub?.reconnectWithUrl(alt2) {
-                    userId?.let { 
+                    userId?.let {
                         android.util.Log.d("EmergencyHubJoin", "joinCustomerGroup after reconnect id=" + it)
-                        emergencyHub?.joinCustomerGroup(it) 
+                        emergencyHub?.joinCustomerGroup(it)
                     }
                 }
             }
@@ -570,19 +575,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         viewModel.distanceMeters.observe(this) { d ->
-            if (d != null && d <= ARRIVAL_THRESHOLD_METERS) {
-                viewModel.stopRoutePolling()
-                val garage = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
-                if (garage != null) {
-                    technicianArrived = true
-                    trackingActive = false
-                    cameraFollowTechnician = false
-                    emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
-                    emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
-                    Toast.makeText(this, "Technician arrived", Toast.LENGTH_SHORT).show()
-                    refreshTrackingFromApi()
-                }
-            }
+            handleArrivalCandidate(d, technicianLatLng)
         }
 
         lifecycleScope.launchWhenStarted {
@@ -687,11 +680,16 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         Toast.makeText(this@MapActivity, "Request canceled", Toast.LENGTH_LONG).show()
                     }
                 }
+
+                // ========== TECHNICIAN LOCATION UPDATED (ĐÃ CẢI TIẾN) ==========
                 if (lower.contains("technicianlocationupdated")) {
                     try {
-                        android.util.Log.d("TechRT", "received technician update; active=" + activityActive + ", styleLoaded=" + styleLoaded + ", tracking=" + trackingActive)
+                        android.util.Log.d("TechRT", "📥 Technician update received")
+                        android.util.Log.d("TechRT", "   active=$activityActive, styleLoaded=$styleLoaded, tracking=$trackingActive")
+
                         val obj = com.google.gson.JsonParser.parseString(payload).asJsonObject
-                        android.util.Log.d("TechRT", "Payload:" + payload)
+
+                        // BranchId Processing
                         try {
                             val branchId = arrayOf("BranchId", "branchId", "GarageId", "garageId", "AssignedGarageId", "assignedGarageId").firstNotNullOfOrNull { k ->
                                 if (obj.has(k)) try { obj.get(k).asString } catch (_: Exception) { null } else null
@@ -699,36 +697,45 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             if (!branchId.isNullOrBlank()) {
                                 val prefs = getSharedPreferences(com.example.garapro.utils.Constants.USER_PREFERENCES, Context.MODE_PRIVATE)
                                 prefs.edit().putString("last_assigned_garage_id", branchId).apply()
-                                try { 
+                                try {
                                     android.util.Log.d("EmergencyHubJoin", "joinBranchGroup id=" + branchId)
-                                    emergencyHub?.joinBranchGroup(branchId) 
+                                    emergencyHub?.joinBranchGroup(branchId)
                                 } catch (_: Exception) {}
                             }
                         } catch (_: Exception) {}
+
+                        // Location Parsing
                         val lat = when {
                             obj.has("latitude") -> obj.get("latitude").asDouble
                             obj.has("Latitude") -> obj.get("Latitude").asDouble
                             obj.has("lat") -> obj.get("lat").asDouble
                             else -> Double.NaN
                         }
+
                         val lng = when {
                             obj.has("longitude") -> obj.get("longitude").asDouble
                             obj.has("Longitude") -> obj.get("Longitude").asDouble
                             obj.has("lng") -> obj.get("lng").asDouble
                             else -> Double.NaN
                         }
-                        android.util.Log.d("TechRT", "lat=" + lat + ", lng=" + lng)
+
+                        android.util.Log.d("TechRT", "📍 Location: lat=$lat, lng=$lng")
+
                         if (!lat.isNaN() && !lng.isNaN()) {
                             val point = LatLng(lat, lng)
+                            technicianLatLng = point
+
                             if (activityActive && styleLoaded) {
-                                technicianLatLng = point
                                 val style = maplibreMap?.style
-                                var src = style?.getSourceAs<GeoJsonSource>("technician-source")
-                                if (src == null && style != null) {
+
+                                // ========== 1. Update Technician Marker ==========
+                                var techSrc = style?.getSourceAs<GeoJsonSource>("technician-source")
+                                if (techSrc == null && style != null) {
                                     addTechnicianLayer(style)
-                                    src = style.getSourceAs("technician-source")
+                                    techSrc = style.getSourceAs("technician-source")
                                 }
-                                val feature = JsonObject().apply {
+
+                                val techFeature = JsonObject().apply {
                                     addProperty("type", "Feature")
                                     add("geometry", JsonObject().apply {
                                         addProperty("type", "Point")
@@ -738,20 +745,155 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                                         })
                                     })
                                 }
-                                val fc = JsonObject().apply {
+
+                                val techFc = JsonObject().apply {
                                     addProperty("type", "FeatureCollection")
-                                    add("features", JsonArray().apply { add(feature) })
+                                    add("features", JsonArray().apply { add(techFeature) })
                                 }
-                                src?.setGeoJson(fc.toString())
-                                android.util.Log.d("TechRT", "GeoJSON set, marker should move")
-                                if (cameraFollowTechnician) moveCameraToLocation(point)
+
+                                techSrc?.setGeoJson(techFc.toString())
+                                android.util.Log.d("TechRT", "✅ Marker updated")
+
+                                // ========== 2. Parse Route from SignalR (FIX!) ==========
+                                var routeParsed = false
+
+                                if (obj.has("route") && !obj.get("route").isJsonNull) {
+                                    try {
+                                        val routeElement = obj.get("route")
+                                        android.util.Log.d("TechRT", "🛣️ Route field found, type=${routeElement.javaClass.simpleName}")
+
+                                        if (routeElement.isJsonObject) {
+                                            val routeObj = routeElement.asJsonObject
+
+                                            if (routeObj.has("coordinates") && routeObj.has("type")) {
+                                                val coords = routeObj.getAsJsonArray("coordinates")
+                                                val type = routeObj.get("type").asString
+
+                                                android.util.Log.d("TechRT", "   type=$type, points=${coords.size()}")
+
+                                                if (type == "LineString" && coords.size() >= 2) {
+                                                    // Build GeoJSON FeatureCollection
+                                                    val geometry = JsonObject().apply {
+                                                        addProperty("type", "LineString")
+                                                        add("coordinates", coords)
+                                                    }
+
+                                                    val feature = JsonObject().apply {
+                                                        addProperty("type", "Feature")
+                                                        add("geometry", geometry)
+                                                    }
+
+                                                    val featureCollection = JsonObject().apply {
+                                                        addProperty("type", "FeatureCollection")
+                                                        add("features", JsonArray().apply { add(feature) })
+                                                    }
+
+                                                    val routeGeometry = featureCollection.toString()
+
+                                                    // Update map
+                                                    val routeSrc = style?.getSourceAs<GeoJsonSource>("route-source")
+                                                    routeSrc?.setGeoJson(routeGeometry)
+
+                                                    android.util.Log.d("TechRT", "✅ Route drawn: ${coords.size()} points")
+
+                                                    // Start point marker
+                                                    try {
+                                                        val startPoint = coords.get(0).asJsonArray
+                                                        val startLng = startPoint.get(0).asDouble
+                                                        val startLat = startPoint.get(1).asDouble
+
+                                                        val startFeature = JsonObject().apply {
+                                                            addProperty("type", "Feature")
+                                                            add("geometry", JsonObject().apply {
+                                                                addProperty("type", "Point")
+                                                                add("coordinates", JsonArray().apply {
+                                                                    add(startLng)
+                                                                    add(startLat)
+                                                                })
+                                                            })
+                                                        }
+
+                                                        val startFc = JsonObject().apply {
+                                                            addProperty("type", "FeatureCollection")
+                                                            add("features", JsonArray().apply { add(startFeature) })
+                                                        }
+
+                                                        style?.getSourceAs<GeoJsonSource>("route-start-source")?.setGeoJson(startFc.toString())
+                                                        android.util.Log.d("TechRT", "✅ Start marker set")
+                                                    } catch (e: Exception) {
+                                                        android.util.Log.e("TechRT", "Start marker error: ${e.message}")
+                                                    }
+
+                                                    // End point (destination)
+                                                    try {
+                                                        val endPoint = coords.get(coords.size() - 1).asJsonArray
+                                                        val endLng = endPoint.get(0).asDouble
+                                                        val endLat = endPoint.get(1).asDouble
+                                                        destinationLatLng = LatLng(endLat, endLng)
+                                                        android.util.Log.d("TechRT", "✅ Destination: $endLat, $endLng")
+                                                    } catch (e: Exception) {
+                                                        android.util.Log.e("TechRT", "Destination error: ${e.message}")
+                                                    }
+
+                                                    routeParsed = true
+
+                                                    // Stop polling vì đã có route từ SignalR
+                                                    try {
+                                                        viewModel.stopRoutePolling()
+                                                        android.util.Log.d("TechRT", "⏸️ Polling stopped")
+                                                    } catch (e: Exception) {
+                                                        android.util.Log.e("TechRT", "Stop polling error: ${e.message}")
+                                                    }
+                                                } else {
+                                                    android.util.Log.w("TechRT", "⚠️ Invalid route: type=$type, points=${coords.size()}")
+                                                }
+                                            } else {
+                                                android.util.Log.w("TechRT", "⚠️ Route missing coordinates or type")
+                                            }
+                                        } else if (routeElement.isJsonPrimitive && routeElement.asJsonPrimitive.isString) {
+                                            // Route is GeoJSON string
+                                            val routeStr = routeElement.asString
+                                            android.util.Log.d("TechRT", "   Route is string, length=${routeStr.length}")
+
+                                            try {
+                                                val routeSrc = style?.getSourceAs<GeoJsonSource>("route-source")
+                                                routeSrc?.setGeoJson(routeStr)
+                                                android.util.Log.d("TechRT", "✅ Route drawn (string)")
+                                                routeParsed = true
+
+                                                viewModel.stopRoutePolling()
+                                                android.util.Log.d("TechRT", "⏸️ Polling stopped")
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("TechRT", "String route error: ${e.message}")
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("TechRT", "❌ Route parse error: ${e.message}")
+                                        e.printStackTrace()
+                                    }
+                                } else {
+                                    android.util.Log.d("TechRT", "⚠️ No route in payload")
+                                }
+
+                                if (!routeParsed) {
+                                    android.util.Log.d("TechRT", "   Continuing with API polling")
+                                }
+
+                                // ========== 3. Camera Follow ==========
+                                if (cameraFollowTechnician) {
+                                    moveCameraToLocation(point)
+                                }
+
                                 emergencyBottomSheet.updateTrackingSkeleton(false)
+
+                                // ========== 4. Technician Info ==========
                                 val name = when {
                                     obj.has("TechnicianName") -> obj.get("TechnicianName").asString
                                     obj.has("technicianName") -> obj.get("technicianName").asString
                                     obj.has("Name") -> obj.get("Name").asString
                                     else -> null
                                 }
+
                                 val phone = when {
                                     obj.has("PhoneNumberTecnician") -> obj.get("PhoneNumberTecnician").asString
                                     obj.has("phoneNumberTecnician") -> obj.get("phoneNumberTecnician").asString
@@ -761,49 +903,231 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                                     obj.has("Phone") -> obj.get("Phone").asString
                                     else -> null
                                 }
+
                                 technicianName = name
                                 technicianPhone = phone
+
                                 val curId = viewModel.getCurrentEmergency()?.id
                                 saveTechContactForEmergency(curId, name, phone)
-                                if (!technicianArrived) emergencyBottomSheet.updateTrackingTechnician(name, phone)
-                                if (!trackingActive) enableTrackingUI() 
+
+                                if (!technicianArrived) {
+                                    emergencyBottomSheet.updateTrackingTechnician(name, phone)
+                                }
+
+                                if (!trackingActive) {
+                                    enableTrackingUI()
+                                }
+
+                                // ========== 5. ETA & Distance ==========
+                                val etaMinutes = try {
+                                    when {
+                                        obj.has("EtaMinutes") && !obj.get("EtaMinutes").isJsonNull -> obj.get("EtaMinutes").asInt
+                                        obj.has("etaMinutes") && !obj.get("etaMinutes").isJsonNull -> obj.get("etaMinutes").asInt
+                                        else -> null
+                                    }
+                                } catch (_: Exception) { null }
+
+                                val distanceKm = try {
+                                    when {
+                                        obj.has("DistanceKm") && !obj.get("DistanceKm").isJsonNull -> obj.get("DistanceKm").asDouble
+                                        obj.has("distanceKm") && !obj.get("distanceKm").isJsonNull -> obj.get("distanceKm").asDouble
+                                        else -> null
+                                    }
+                                } catch (_: Exception) { null }
+
+                                android.util.Log.d("TechRT", "📊 ETA=$etaMinutes min, Distance=$distanceKm km")
+
+                                etaMinutes?.let {
+                                    emergencyBottomSheet.updateTrackingEta(it)
+                                }
+
+                                // ========== 6. ARRIVAL CHECK (FIX!) ==========
+                                if (distanceKm != null) {
+                                    val distanceMeters = distanceKm * 1000
+
+                                    android.util.Log.d("TechRT", "🎯 Arrival check:")
+                                    android.util.Log.d("TechRT", "   Distance: ${distanceMeters}m")
+                                    android.util.Log.d("TechRT", "   Threshold: ${ARRIVAL_THRESHOLD_METERS}m")
+                                    android.util.Log.d("TechRT", "   Already arrived: $technicianArrived")
+                                    android.util.Log.d("TechRT", "   Condition: ${distanceMeters <= ARRIVAL_THRESHOLD_METERS && !technicianArrived}")
+
+                                    if (distanceMeters <= ARRIVAL_THRESHOLD_METERS && !technicianArrived) {
+                                        android.util.Log.d("TechRT", "🚨 ARRIVAL DETECTED!")
+
+                                        try {
+                                            viewModel.stopRoutePolling()
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("TechRT", "Stop polling error: ${e.message}")
+                                        }
+
+                                        val garage = viewModel.assignedGarage.value
+                                            ?: emergencyBottomSheet.lastSelectedGarage()
+                                            ?: viewModel.getCurrentEmergency()?.let {
+                                                com.example.garapro.data.model.emergencies.Garage(
+                                                    id = it.assignedGarageId ?: "",
+                                                    name = "Garage",
+                                                    latitude = 0.0,
+                                                    longitude = 0.0,
+                                                    address = "",
+                                                    phone = "",
+                                                    isAvailable = true,
+                                                    price = 0.0,
+                                                    rating = 0f,
+                                                    distance = 0.0
+                                                )
+                                            }
+
+                                        android.util.Log.d("TechRT", "   Garage: ${garage?.name ?: "NULL"}")
+
+                                        if (garage != null) {
+                                            // Set flags TRƯỚC khi update UI
+                                            technicianArrived = true
+                                            trackingActive = false
+                                            cameraFollowTechnician = false
+
+                                            android.util.Log.d("TechRT", "   Flags set, showing UI...")
+
+                                            // CRITICAL: Run on main thread
+                                            runOnUiThread {
+                                                try {
+                                                    emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                                                    emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+
+                                                    Toast.makeText(
+                                                        this@MapActivity,
+                                                        "🎉 Technician has arrived!",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+
+                                                    android.util.Log.d("TechRT", "✅ Arrived UI shown")
+
+                                                    try { topAppBar.visibility = View.GONE } catch (_: Exception) {}
+                                                    try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                                    try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                                } catch (e: Exception) {
+                                                    android.util.Log.e("TechRT", "Show arrived error: ${e.message}")
+                                                    e.printStackTrace()
+                                                }
+                                            }
+
+                                        } else {
+                                            android.util.Log.e("TechRT", "❌ Cannot show arrived: garage is NULL")
+                                        }
+                                    } else {
+                                        if (distanceMeters > ARRIVAL_THRESHOLD_METERS) {
+                                            android.util.Log.d("TechRT", "   Still ${distanceMeters}m away")
+                                        }
+                                        if (technicianArrived) {
+                                            android.util.Log.d("TechRT", "   Already marked as arrived")
+                                        }
+                                    }
+                                } else {
+                                    android.util.Log.d("TechRT", "⚠️ No distance, using haversine")
+                                    checkArrivalAndUpdateUI(point)
+                                }
+
+                                if (technicianArrived && (trackingActive || topAppBar.visibility == View.VISIBLE)) {
+                                    try { viewModel.stopRoutePolling() } catch (_: Exception) {}
+                                    val garage = viewModel.assignedGarage.value
+                                        ?: emergencyBottomSheet.lastSelectedGarage()
+                                        ?: viewModel.getCurrentEmergency()?.let {
+                                            com.example.garapro.data.model.emergencies.Garage(
+                                                id = it.assignedGarageId ?: "",
+                                                name = "Garage",
+                                                latitude = 0.0,
+                                                longitude = 0.0,
+                                                address = "",
+                                                phone = "",
+                                                isAvailable = true,
+                                                price = 0.0,
+                                                rating = 0f,
+                                                distance = 0.0
+                                            )
+                                        }
+                                    if (garage != null) {
+                                        trackingActive = false
+                                        cameraFollowTechnician = false
+                                        runOnUiThread {
+                                            try {
+                                                emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                                                emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+
+                                                Toast.makeText(
+                                                    this@MapActivity,
+                                                    "🎉 Technician has arrived!",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+
+                                                android.util.Log.d("TechRT", "✅ Arrived UI shown")
+                                                try { topAppBar.visibility = View.GONE } catch (_: Exception) {}
+                                                try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                                try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("TechRT", "Show arrived error: ${e.message}")
+                                                e.printStackTrace()
+                                            }
+                                        }
+                                    }
+                                }
+
                             } else {
-                                android.util.Log.w("TechRT", "update received but UI not ready; active=" + activityActive + ", styleLoaded=" + styleLoaded)
-                            }
-
-                            checkArrivalAndUpdateUI(point)
-
-                            val eta = try {
-                                when {
-                                    obj.has("etaMinutes") -> obj.get("etaMinutes").asInt
-                                    obj.has("EtaMinutes") -> obj.get("EtaMinutes").asInt
-                                    else -> null
-                                }
-                            } catch (_: Exception) { null }
-                            val distanceKm = try {
-                                when {
-                                    obj.has("distanceKm") -> obj.get("distanceKm").asDouble
-                                    obj.has("DistanceKm") -> obj.get("DistanceKm").asDouble
-                                    else -> null
-                                }
-                            } catch (_: Exception) { null }
-                            if ((eta != null && eta <= 0) || (distanceKm != null && distanceKm <= 0.05)) {
-                                val garage = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
-                                if (garage != null) {
-                                    technicianArrived = true
-                                    trackingActive = false
-                                    cameraFollowTechnician = false
-                                    emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
-                                    emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
-                                }
+                                android.util.Log.w("TechRT", "⚠️ UI not ready: active=$activityActive, styleLoaded=$styleLoaded")
+                                try {
+                                    val dKm = when {
+                                        obj.has("DistanceKm") && !obj.get("DistanceKm").isJsonNull -> obj.get("DistanceKm").asDouble
+                                        obj.has("distanceKm") && !obj.get("distanceKm").isJsonNull -> obj.get("distanceKm").asDouble
+                                        else -> null
+                                    }
+                                    if (dKm != null) {
+                                        val dMeters = dKm * 1000
+                                        if (dMeters <= ARRIVAL_THRESHOLD_METERS && !technicianArrived) {
+                                            try { viewModel.stopRoutePolling() } catch (_: Exception) {}
+                                            val garage = viewModel.assignedGarage.value
+                                                ?: emergencyBottomSheet.lastSelectedGarage()
+                                                ?: viewModel.getCurrentEmergency()?.let {
+                                                    com.example.garapro.data.model.emergencies.Garage(
+                                                        id = it.assignedGarageId ?: "",
+                                                        name = "Garage",
+                                                        latitude = 0.0,
+                                                        longitude = 0.0,
+                                                        address = "",
+                                                        phone = "",
+                                                        isAvailable = true,
+                                                        price = 0.0,
+                                                        rating = 0f,
+                                                        distance = 0.0
+                                                    )
+                                                }
+                                            if (garage != null) {
+                                                technicianArrived = true
+                                                trackingActive = false
+                                                cameraFollowTechnician = false
+                                                runOnUiThread {
+                                                    try {
+                                                        emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                                                        emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+                                                        Toast.makeText(this@MapActivity, "🎉 Technician has arrived!", Toast.LENGTH_LONG).show()
+                                                        try { topAppBar.visibility = View.GONE } catch (_: Exception) {}
+                                                        try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                                        try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                                    } catch (_: Exception) {}
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        checkArrivalAndUpdateUI(point)
+                                    }
+                                } catch (_: Exception) {}
                             }
                         } else {
-                            android.util.Log.w("TechRT", "payload missing lat/lng, payload=" + payload)
+                            android.util.Log.w("TechRT", "❌ Invalid coordinates: lat=$lat, lng=$lng")
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("TechRT", "error parsing payload: " + (e.message ?: ""))
+                        android.util.Log.e("TechRT", "💥 Fatal error: ${e.message}")
+                        e.printStackTrace()
                     }
                 }
+
                 //check inprogress
                 if (lower.contains("emergencyrequestinprogress") || lower.contains("inprogress")) {
                     try {
@@ -821,9 +1145,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             if (!branchId.isNullOrBlank()) {
                                 val prefs = getSharedPreferences(com.example.garapro.utils.Constants.USER_PREFERENCES, Context.MODE_PRIVATE)
                                 prefs.edit().putString("last_assigned_garage_id", branchId).apply()
-                                try { 
+                                try {
                                     android.util.Log.d("EmergencyHubJoin", "joinBranchGroup id=" + branchId)
-                                    emergencyHub?.joinBranchGroup(branchId) 
+                                    emergencyHub?.joinBranchGroup(branchId)
                                 } catch (_: Exception) {}
                             }
                         } catch (_: Exception) {}
@@ -847,9 +1171,50 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         val curId = viewModel.getCurrentEmergency()?.id
                         saveTechContactForEmergency(curId, name, phone)
                         if (!technicianArrived) emergencyBottomSheet.updateTrackingTechnician(name, phone)
+                        inProgressStartedAt = System.currentTimeMillis()
                         val garage = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
                         val minutes: Int? = null
                         if (garage != null) {
+                            if (technicianArrived) {
+                                emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                                emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+                                topAppBar.visibility = View.GONE
+                                try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                return@collect
+                            }
+                            try {
+                                val gLat = garage.latitude
+                                val gLng = garage.longitude
+                                if ((technicianLatLng == null || (technicianLatLng?.latitude == 0.0 && technicianLatLng?.longitude == 0.0)) && (gLat != 0.0 || gLng != 0.0)) {
+                                    val init = LatLng(gLat, gLng)
+                                    technicianLatLng = init
+                                    if (activityActive && styleLoaded) {
+                                        val style = maplibreMap?.style
+                                        var techSrc = style?.getSourceAs<GeoJsonSource>("technician-source")
+                                        if (techSrc == null && style != null) {
+                                            addTechnicianLayer(style)
+                                            techSrc = style.getSourceAs("technician-source")
+                                        }
+                                        val techFeature = JsonObject().apply {
+                                            addProperty("type", "Feature")
+                                            add("geometry", JsonObject().apply {
+                                                addProperty("type", "Point")
+                                                add("coordinates", JsonArray().apply {
+                                                    add(gLng)
+                                                    add(gLat)
+                                                })
+                                            })
+                                        }
+                                        val techFc = JsonObject().apply {
+                                            addProperty("type", "FeatureCollection")
+                                            add("features", JsonArray().apply { add(techFeature) })
+                                        }
+                                        techSrc?.setGeoJson(techFc.toString())
+                                        emergencyBottomSheet.updateTrackingSkeleton(false)
+                                    }
+                                }
+                            } catch (_: Exception) {}
                             topAppBar.visibility = View.VISIBLE
                             tvTitle.text = "Tracking technician"
                             enableTrackingUI()
@@ -886,9 +1251,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             if (!branchId.isNullOrBlank()) {
                                 val prefs = getSharedPreferences(com.example.garapro.utils.Constants.USER_PREFERENCES, Context.MODE_PRIVATE)
                                 prefs.edit().putString("last_assigned_garage_id", branchId).apply()
-                                try { 
+                                try {
                                     android.util.Log.d("EmergencyHubJoin", "joinBranchGroup id=" + branchId)
-                                    emergencyHub?.joinBranchGroup(branchId) 
+                                    emergencyHub?.joinBranchGroup(branchId)
                                 } catch (_: Exception) {}
                             }
                         } catch (_: Exception) {}
@@ -915,6 +1280,46 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         val garage = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
                         val minutes: Int? = null
                         if (garage != null) {
+                            if (technicianArrived) {
+                                emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                                emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+                                topAppBar.visibility = View.GONE
+                                try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                return@collect
+                            }
+                            try {
+                                val gLat = garage.latitude
+                                val gLng = garage.longitude
+                                if ((technicianLatLng == null || (technicianLatLng?.latitude == 0.0 && technicianLatLng?.longitude == 0.0)) && (gLat != 0.0 || gLng != 0.0)) {
+                                    val init = LatLng(gLat, gLng)
+                                    technicianLatLng = init
+                                    if (activityActive && styleLoaded) {
+                                        val style = maplibreMap?.style
+                                        var techSrc = style?.getSourceAs<GeoJsonSource>("technician-source")
+                                        if (techSrc == null && style != null) {
+                                            addTechnicianLayer(style)
+                                            techSrc = style.getSourceAs("technician-source")
+                                        }
+                                        val techFeature = JsonObject().apply {
+                                            addProperty("type", "Feature")
+                                            add("geometry", JsonObject().apply {
+                                                addProperty("type", "Point")
+                                                add("coordinates", JsonArray().apply {
+                                                    add(gLng)
+                                                    add(gLat)
+                                                })
+                                            })
+                                        }
+                                        val techFc = JsonObject().apply {
+                                            addProperty("type", "FeatureCollection")
+                                            add("features", JsonArray().apply { add(techFeature) })
+                                        }
+                                        techSrc?.setGeoJson(techFc.toString())
+                                        emergencyBottomSheet.updateTrackingSkeleton(false)
+                                    }
+                                }
+                            } catch (_: Exception) {}
                             emergencyBottomSheet.setOnTrackClickListener {
                                 enableTrackingUI()
                                 emergencyBottomSheet.showTracking(garage, minutes)
@@ -1032,8 +1437,15 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             val resp = withContext(Dispatchers.IO) { RetrofitInstance.vehicleService.getVehicles() }
                             val vehicles = if (resp.isSuccessful) (resp.body() ?: emptyList()) else emptyList()
                             if (vehicles.isEmpty()) {
-                                Toast.makeText(this@MapActivity, "Please add a vehicle first", Toast.LENGTH_LONG).show()
                                 showLoading(false)
+                                try {
+                                    val intent = android.content.Intent(this@MapActivity, com.example.garapro.MainActivity::class.java)
+                                    intent.putExtra("screen", "VehiclesFragment")
+                                    intent.putExtra("action", "open_create_vehicle")
+                                    startActivity(intent)
+                                } catch (_: Exception) {
+                                    Toast.makeText(this@MapActivity, "Please add a vehicle first", Toast.LENGTH_LONG).show()
+                                }
                                 return@launchWhenStarted
                             }
                             if (vehicles.size == 1) {
@@ -1091,7 +1503,21 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 val vehicleId = selectedVehicleId
                 val issue = pendingIssueDescription
                 if (vehicleId.isNullOrBlank()) {
-                    Toast.makeText(this, "Please select a vehicle first", Toast.LENGTH_LONG).show()
+                    try {
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setTitle("No vehicle found")
+                            .setMessage("You need a vehicle to create an emergency. Add one now?")
+                            .setNegativeButton("Close", null)
+                            .setPositiveButton("Add vehicle") { _, _ ->
+                                val intent = android.content.Intent(this, com.example.garapro.MainActivity::class.java)
+                                intent.putExtra("screen", "VehiclesFragment")
+                                intent.putExtra("action", "open_create_vehicle")
+                                startActivity(intent)
+                            }
+                            .show()
+                    } catch (_: Exception) {
+                        Toast.makeText(this, "Please add a vehicle first", Toast.LENGTH_LONG).show()
+                    }
                     return@show
                 }
                 if (issue.isNullOrBlank()) {
@@ -1145,17 +1571,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                     if (emergency != null) {
                         android.util.Log.d("Recover", "status=" + emergency.status.name + ", garageId=" + (emergency.assignedGarageId ?: ""))
                         viewModel.rehydrateEmergency(emergency)
-                        try { 
+                        try {
                             android.util.Log.d("EmergencyHubJoin", "joinEmergencyGroup id=" + emergency.id)
-                            emergencyHub?.joinEmergencyGroup(emergency.id) 
+                            emergencyHub?.joinEmergencyGroup(emergency.id)
                         } catch (_: Exception) {}
                         val branchPref = prefs.getString("last_assigned_garage_id", null)
                         val branchId = emergency.assignedGarageId ?: branchPref
-                        branchId?.let { 
-                            try { 
+                        branchId?.let {
+                            try {
                                 android.util.Log.d("EmergencyHubJoin", "joinBranchGroup id=" + it)
-                                emergencyHub?.joinBranchGroup(it) 
-                            } catch (_: Exception) {} 
+                                emergencyHub?.joinBranchGroup(it)
+                            } catch (_: Exception) {}
                         }
                         when (emergency.status) {
                             com.example.garapro.data.model.emergencies.EmergencyStatus.ACCEPTED -> {
@@ -1336,7 +1762,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         loadingIndicator.visibility = if (show) View.VISIBLE else View.GONE
     }
 
-    
+
 
     // Các hàm cũ giữ nguyên từ đây trở xuống...
     override fun onMapReady(@NonNull map: MapLibreMap) {
@@ -1573,20 +1999,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         val destLng = dest.longitude
         if (destLat == 0.0 && destLng == 0.0) return
         val d = haversineMeters(tech.latitude, tech.longitude, destLat, destLng)
-        if (d <= ARRIVAL_THRESHOLD_METERS) {
-            viewModel.stopRoutePolling()
-            val garage = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
-            if (garage != null) {
-                technicianArrived = true
-                trackingActive = false
-                cameraFollowTechnician = false
-                emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
-                emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
-
-                Toast.makeText(this, "Technician arrived", Toast.LENGTH_SHORT).show()
-                refreshTrackingFromApi()
-            }
-        }
+        handleArrivalCandidate(d, tech)
     }
 
     private fun refreshTrackingFromApi() {
@@ -1619,15 +2032,55 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         when (em.status) {
                             com.example.garapro.data.model.emergencies.EmergencyStatus.IN_PROGRESS -> {
                                 if (garage != null) {
-                                    topAppBar.visibility = View.VISIBLE
-                                    tvTitle.text = "Tracking technician"
-                                    enableTrackingUI()
-                                    emergencyBottomSheet.showTracking(garage, null)
-                                    emergencyBottomSheet.updateTrackingTechnician(technicianName, technicianPhone)
-                                    try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
-                                    try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
-                                    val id2 = viewModel.getCurrentEmergency()?.id
-                                    if (!id2.isNullOrBlank()) viewModel.fetchRouteNow()
+                                    if (technicianArrived) {
+                                        emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                                        emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+                                        topAppBar.visibility = View.GONE
+                                        try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                        try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                    } else {
+                                        try {
+                                            val gLat = garage.latitude
+                                            val gLng = garage.longitude
+                                            if ((technicianLatLng == null || (technicianLatLng?.latitude == 0.0 && technicianLatLng?.longitude == 0.0)) && (gLat != 0.0 || gLng != 0.0)) {
+                                                val init = LatLng(gLat, gLng)
+                                                technicianLatLng = init
+                                                if (activityActive && styleLoaded) {
+                                                    val style = maplibreMap?.style
+                                                    var techSrc = style?.getSourceAs<GeoJsonSource>("technician-source")
+                                                    if (techSrc == null && style != null) {
+                                                        addTechnicianLayer(style)
+                                                        techSrc = style.getSourceAs("technician-source")
+                                                    }
+                                                    val techFeature = JsonObject().apply {
+                                                        addProperty("type", "Feature")
+                                                        add("geometry", JsonObject().apply {
+                                                            addProperty("type", "Point")
+                                                            add("coordinates", JsonArray().apply {
+                                                                add(gLng)
+                                                                add(gLat)
+                                                            })
+                                                        })
+                                                    }
+                                                    val techFc = JsonObject().apply {
+                                                        addProperty("type", "FeatureCollection")
+                                                        add("features", JsonArray().apply { add(techFeature) })
+                                                    }
+                                                    techSrc?.setGeoJson(techFc.toString())
+                                                    emergencyBottomSheet.updateTrackingSkeleton(false)
+                                                }
+                                            }
+                                        } catch (_: Exception) {}
+                                        topAppBar.visibility = View.VISIBLE
+                                        tvTitle.text = "Tracking technician"
+                                        enableTrackingUI()
+                                        emergencyBottomSheet.showTracking(garage, null)
+                                        emergencyBottomSheet.updateTrackingTechnician(technicianName, technicianPhone)
+                                        try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                                        try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                                        val id2 = viewModel.getCurrentEmergency()?.id
+                                        if (!id2.isNullOrBlank()) viewModel.fetchRouteNow()
+                                    }
                                 }
                             }
                             com.example.garapro.data.model.emergencies.EmergencyStatus.COMPLETED -> {
@@ -1654,6 +2107,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun startTrackingTechnician() {
+        if (technicianArrived) return
         val garage = viewModel.assignedGarage.value ?: emergencyBottomSheet.lastSelectedGarage()
         val minutes: Int? = null
         if (garage != null) {
@@ -1733,6 +2187,72 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 Math.sin(dLon / 2) * Math.sin(dLon / 2)
         val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
         return R * c
+    }
+
+    private fun shouldAllowArrived(): Boolean {
+        val now = System.currentTimeMillis()
+        val timeOk = if (inProgressStartedAt == 0L) true else (now - inProgressStartedAt >= ARRIVAL_CONFIRM_MS)
+        return timeOk && (arrivalConsecutive >= ARRIVAL_CONFIRM_COUNT)
+    }
+
+    private fun performArrivedUI() {
+        try { viewModel.stopRoutePolling() } catch (_: Exception) {}
+        val garage = viewModel.assignedGarage.value
+            ?: emergencyBottomSheet.lastSelectedGarage()
+            ?: viewModel.getCurrentEmergency()?.let {
+                com.example.garapro.data.model.emergencies.Garage(
+                    id = it.assignedGarageId ?: "",
+                    name = "Garage",
+                    latitude = 0.0,
+                    longitude = 0.0,
+                    address = "",
+                    phone = "",
+                    isAvailable = true,
+                    price = 0.0,
+                    rating = 0f,
+                    distance = 0.0
+                )
+            }
+        if (garage != null) {
+            technicianArrived = true
+            trackingActive = false
+            cameraFollowTechnician = false
+            runOnUiThread {
+                try {
+                    emergencyBottomSheet.setOnCloseClickListener { finishSafely() }
+                    emergencyBottomSheet.showArrived(garage, technicianName, technicianPhone)
+                    Toast.makeText(this@MapActivity, "🎉 Technician has arrived!", Toast.LENGTH_LONG).show()
+                    try { topAppBar.visibility = View.GONE } catch (_: Exception) {}
+                    try { fabEmergency.visibility = View.GONE } catch (_: Exception) {}
+                    try { fabCurrentLocation.visibility = View.GONE } catch (_: Exception) {}
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    private fun handleArrivalCandidate(distanceMeters: Double?, tech: LatLng?) {
+        var ok = false
+        val dest = destinationLatLng
+            ?: (viewModel.getCurrentEmergency()?.let { LatLng(it.latitude, it.longitude) })
+            ?: pendingLatLng
+        if (tech != null && dest != null && dest.latitude != 0.0 && dest.longitude != 0.0) {
+            val d = haversineMeters(tech.latitude, tech.longitude, dest.latitude, dest.longitude)
+            ok = ok || (d <= ARRIVAL_THRESHOLD_METERS)
+        }
+        if (ok) {
+            val now = System.currentTimeMillis()
+            if (now - lastArrivalCandidateAt <= ARRIVAL_CONFIRM_MS) {
+                arrivalConsecutive += 1
+            } else {
+                arrivalConsecutive = 1
+            }
+            lastArrivalCandidateAt = now
+            if (!technicianArrived && shouldAllowArrived() && arrivalConsecutive >= ARRIVAL_CONFIRM_COUNT) {
+                performArrivedUI()
+            }
+        } else {
+            arrivalConsecutive = 0
+        }
     }
 
     private fun addMarkerAtPosition(position: LatLng, title: String = "Location") {
@@ -1918,7 +2438,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
         private const val REQUEST_CHECK_SETTINGS = 2002
-        private const val ARRIVAL_THRESHOLD_METERS = 5.0
+        private const val ARRIVAL_THRESHOLD_METERS = 50.0
     }
 
     // Lifecycle methods
