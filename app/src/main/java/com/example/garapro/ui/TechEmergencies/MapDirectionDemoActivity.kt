@@ -375,6 +375,38 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
 
+    private fun startBgTrackingServiceIfNeeded() {
+        // chỉ chạy khi đang NAV / đang job (tùy rule bạn)
+        if (!isNavigating) return
+
+        val id = emergencyId ?: return
+        val dest = customerLocation // bạn đang set từ latitude/longitude intent
+        val br = branchLocation
+
+        val i = Intent(this, TechnicianLocationService::class.java).apply {
+            action = TechnicianLocationService.ACTION_START
+
+            putExtra("emergencyId", id)
+            putExtra("latitude", dest?.latitude ?: 0.0)
+            putExtra("longitude", dest?.longitude ?: 0.0)
+            putExtra("branchName", intent.getStringExtra("branchName") ?: "")
+            putExtra("branchLatitude", br?.latitude ?: 0.0)
+            putExtra("branchLongitude", br?.longitude ?: 0.0)
+            putExtra("status", emergencyStatus)
+            putExtra("customerPhone", customerPhone)
+        }
+
+        ContextCompat.startForegroundService(this, i)
+    }
+
+    private fun stopBgTrackingService() {
+        val i = Intent(this, TechnicianLocationService::class.java).apply {
+            action = TechnicianLocationService.ACTION_STOP
+        }
+        startService(i)
+    }
+
+
     private fun dynamicStepThresholdMeters(speedMps: Float): Float {
         return when {
             speedMps >= 8f -> 45f
@@ -1278,6 +1310,8 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onStart() {
         super.onStart()
         mapView.onStart()
+
+        stopBgTrackingService()
     }
 
     override fun onResume() {
@@ -1300,6 +1334,11 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onStop() {
         super.onStop()
         mapView.onStop()
+
+        if(isChangingConfigurations) return
+
+        // app ra background -> bật service để vẫn bắn location
+        startBgTrackingServiceIfNeeded()
     }
 
     override fun onLowMemory() {
