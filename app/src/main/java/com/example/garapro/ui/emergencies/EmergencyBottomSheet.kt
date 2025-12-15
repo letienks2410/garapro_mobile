@@ -319,13 +319,13 @@ fun showArrived(garage: Garage, techName: String? = null, techPhone: String? = n
         }
     }
 
-//    private fun setupCloseButton(view: View) {
-//        val btnClose = view.findViewById<Button>(R.id.btnClose)
-//        btnClose?.setOnClickListener {
-//            dismiss()
-//            onDismissClickListener?.invoke()
-//        }
-//    }
+    private fun setupCloseButton(view: View) {
+        val btnClose = view.findViewById<Button>(R.id.btnClose)
+        btnClose?.setOnClickListener {
+            dismiss()
+            onDismissClickListener?.invoke()
+        }
+    }
 
     private fun updateTitle(garageCount: Int) {
         bottomSheetDialog?.findViewById<TextView>(R.id.tvSheetTitle)?.text =
