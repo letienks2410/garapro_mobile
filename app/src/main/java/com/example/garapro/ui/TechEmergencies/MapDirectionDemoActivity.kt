@@ -1218,7 +1218,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                     checkNextStepByDistance(displayPos)
                 }
 
-                // ====== CHECK ĐANG GẦN ĐÍCH ĐỂ SHOW NÚT ======
+
                 destinationLatLng?.let { dest ->
 //                    val d = distanceBetween(rawPos, dest)
                     val d = distanceBetween(displayPos, dest)
