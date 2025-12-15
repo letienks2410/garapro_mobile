@@ -19,6 +19,9 @@ class EmergencySignalRService(
     val events: SharedFlow<Pair<String, String>> = _events
 
     fun setupListeners() {
+        hub.on("EmergencyRequestTowing", { json: JsonObject ->
+            _events.tryEmit("EmergencyRequestTowing" to json.toString())
+        }, JsonObject::class.java)
         hub.onClosed { error ->
             Log.e("EmergencyHub", "onClosed: ${error?.message}")
             _events.tryEmit("Closed" to (error?.message ?: "unknown"))
