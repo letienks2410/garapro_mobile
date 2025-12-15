@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.garapro.data.model.techEmergencies.EmergencyDetailDto
 import com.example.garapro.data.model.techEmergencies.EmergencyForTechnicianDto
 import com.example.garapro.data.repository.emergencies.TechnicianEmergencyRepository
 import kotlinx.coroutines.launch
@@ -26,6 +27,26 @@ class TechEmergenciesViewModel (
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> get() = _error
 
+    private val _detail = MutableLiveData<EmergencyDetailDto?>()
+    val detail: LiveData<EmergencyDetailDto?> get() = _detail
+    private val _detailLoading = MutableLiveData<Boolean>()
+    val detailLoading: LiveData<Boolean> get() = _detailLoading
+
+    fun loadDetail(id: String) {
+        viewModelScope.launch {
+            _detailLoading.value = true
+            _detail.value = null
+
+            val data = repo.getEmergencyDetail(id)
+
+            _detailLoading.value = false
+            if (data == null) {
+                _error.value = "Cannot load detail"
+            } else {
+                _detail.value = data
+            }
+        }
+    }
     fun loadData() {
         viewModelScope.launch {
             try {

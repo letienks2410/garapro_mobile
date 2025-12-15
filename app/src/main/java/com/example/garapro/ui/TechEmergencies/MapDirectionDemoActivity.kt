@@ -77,11 +77,14 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocation: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 
+    //test gửi 1 lâần
+    private var hasSentTestLocation = false
 
 
     private var currentLocation: LatLng? = null
     private var branchLocation: LatLng? = null
 
+    private var customerLocation: LatLng? = null
     private var emergencyId: String? = null
 
     private lateinit var customerPhone: String
@@ -112,6 +115,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val BEARING_SPEED_THRESHOLD = 1.2f      // > 1.2 m/s (~4.3km/h) mới coi là đang chạy
 
+
+
+
+    private val MIN_STEP_ADVANCE_MS = 1200L
+
+    private var lastStepAdvanceTime = 0L
+
     // Camera
     private var lastGpsPos: LatLng? = null
 
@@ -136,8 +146,10 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private var isRequestingRoute = false
 
+    private var lastSpokenStepIndex = -1
     private lateinit var viewModel: TechEmergenciesViewModel
 
+    private var hasArrived = false
 
     companion object {
         private const val PERMISSION_LOCATION = 1999
@@ -189,23 +201,36 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
 
         emergencyId = intent.getStringExtra("emergencyId") ?: ""
 
-        branchLocation = if (branchLat != 0.0 && branchLng != 0.0) {
-            LatLng(branchLat, branchLng)
-        } else null
+        customerLocation = if (destLat != 0.0 && destLng != 0.0) LatLng(destLat, destLng) else null
+        branchLocation   = if (branchLat != 0.0 && branchLng != 0.0) LatLng(branchLat, branchLng) else null
+
+
+        destinationLatLng = when (EmergencyStatus.fromInt(emergencyStatus)) {
+            EmergencyStatus.Towing -> branchLocation
+            EmergencyStatus.Completed -> null
+            else -> customerLocation
+        }
 
         Log.d("estatus",emergencyStatus.toString())
 
         customerPhone = intent.getStringExtra("customerPhone") ?: ""
 
-        if (emergencyStatus == 3) {
-            isNavigating = true
-            tvInstruction.text = "Navigating to customer's location..."
+        isNavigating = when (EmergencyStatus.fromInt(emergencyStatus)) {
+            EmergencyStatus.InProgress, EmergencyStatus.Towing -> true
+            else -> false
+        }
+
+        if (isNavigating) {
             btnToggleNav.text = "Stop"
+            tvInstruction.text = when (EmergencyStatus.fromInt(emergencyStatus)) {
+                EmergencyStatus.Towing -> "Navigating to branch..."
+                else -> "Navigating to customer's location..."
+            }
         } else {
-            isNavigating = false
             btnToggleNav.text = "NAV"
             tvInstruction.text = "Press Start Navigation to begin guidance"
         }
+
 
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync(this)
@@ -236,8 +261,9 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                     emergencyStatus = EmergencyStatus.Towing.value
                     btnPickupCustomer.visibility = View.GONE
                     destinationLatLng = branchLocation
-
+                    resetNavStateForNewRoute()
                     updateDestinationMarker(branchLocation)
+                    updateDestinationMarker(destinationLatLng)
                     currentLocation?.let { getDirectionRoute(it) }
                 }
             }
@@ -297,7 +323,11 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 btnToggleNav.text = "Stop"
-                tvInstruction.text = "Calculating route to customer location..."
+
+                tvInstruction.text = when (EmergencyStatus.fromInt(emergencyStatus)) {
+                    EmergencyStatus.Towing -> "Calculating route to branch..."
+                    else -> "Calculating route to customer location..."
+                }
 
                 // Reset route tracking
                 hasRoute = false
@@ -343,7 +373,67 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    /** Kiểm tra quyền + bật GPS */
+
+
+    private fun startBgTrackingServiceIfNeeded() {
+        // chỉ chạy khi đang NAV / đang job (tùy rule bạn)
+        if (!isNavigating) return
+
+        val id = emergencyId ?: return
+        val dest = customerLocation // bạn đang set từ latitude/longitude intent
+        val br = branchLocation
+
+        val i = Intent(this, TechnicianLocationService::class.java).apply {
+            action = TechnicianLocationService.ACTION_START
+
+            putExtra("emergencyId", id)
+            putExtra("latitude", dest?.latitude ?: 0.0)
+            putExtra("longitude", dest?.longitude ?: 0.0)
+            putExtra("branchName", intent.getStringExtra("branchName") ?: "")
+            putExtra("branchLatitude", br?.latitude ?: 0.0)
+            putExtra("branchLongitude", br?.longitude ?: 0.0)
+            putExtra("status", emergencyStatus)
+            putExtra("customerPhone", customerPhone)
+        }
+
+        ContextCompat.startForegroundService(this, i)
+    }
+
+    private fun stopBgTrackingService() {
+        val i = Intent(this, TechnicianLocationService::class.java).apply {
+            action = TechnicianLocationService.ACTION_STOP
+        }
+        startService(i)
+    }
+
+
+    private fun dynamicStepThresholdMeters(speedMps: Float): Float {
+        return when {
+            speedMps >= 8f -> 45f
+            speedMps >= 4f -> 30f
+            else -> 18f
+        }
+    }
+
+    private fun checkNextStepByDistance(pos: LatLng) {
+        if (!isNavigating) return
+        if (currentStepIndex >= steps.size) return
+
+        val end = steps[currentStepIndex].endLocation ?: return
+        val endPos = LatLng(end.lat, end.lng)
+
+        val d = distanceBetween(pos, endPos)
+        val now = System.currentTimeMillis()
+        val thresh = dynamicStepThresholdMeters(lastSpeed)
+
+        if (d <= thresh && now - lastStepAdvanceTime >= MIN_STEP_ADVANCE_MS) {
+            currentStepIndex = (currentStepIndex + 1).coerceAtMost(steps.size)
+            lastStepAdvanceTime = now
+            updateInstruction()
+        }
+    }
+
+
     private fun checkPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
@@ -689,6 +779,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 val leg = route.legs?.firstOrNull()
                 steps = leg?.steps?.filterNotNull() ?: emptyList()
 
+                Log.d("steps",steps.toString())
                 currentStepIndex = 0
                 currentRoutePointIndex = 0
                 hasRoute = true
@@ -729,21 +820,25 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateInstruction() {
-//        if (!isNavigating) return
-
         if (currentStepIndex >= steps.size) {
-            tvInstruction.text = "Đã đến nơi "
-            speak("Bạn đã đến nơi")
+            tvInstruction.text = "Arrived at destination"
+            if (lastSpokenStepIndex != currentStepIndex) {
+                speak("Bạn đã đến nơi")
+                lastSpokenStepIndex = currentStepIndex
+            }
             return
         }
 
         val step = steps[currentStepIndex]
         val instrText = plainTextFromHtml(step.instructions)
         val distanceText = step.distance?.text ?: ""
-
         val display = "$distanceText, $instrText"
+
         tvInstruction.text = display
-        speak(display)
+        if (lastSpokenStepIndex != currentStepIndex) {
+            speak(display)
+            lastSpokenStepIndex = currentStepIndex
+        }
     }
 
     // decode polyline
@@ -1075,10 +1170,10 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                         lastSnapIndex = snapIndex
                         val now = System.currentTimeMillis()
 
-                        if (isNavigating) {
-                            // kiểm tra xem có nên nhảy step không
-                            checkNextStep(snapIndex)
-                        }
+//                        if (isNavigating) {
+//                            // kiểm tra xem có nên nhảy step không
+//                            checkNextStep(snapIndex)
+//                        }
                         when {
                             // ĐI TIẾN HOẶC ĐỨNG NGAY TRÊN CÙNG 1 SEGMENT
                             snapIndex >= currentRoutePointIndex -> {
@@ -1119,12 +1214,18 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                         }
                     }
                 }
+                if (isNavigating && steps.isNotEmpty()) {
+                    checkNextStepByDistance(displayPos)
+                }
 
-                // ====== CHECK ĐANG GẦN ĐÍCH ĐỂ SHOW NÚT ======
+
                 destinationLatLng?.let { dest ->
-                    val d = distanceBetween(rawPos, dest)
+//                    val d = distanceBetween(rawPos, dest)
+                    val d = distanceBetween(displayPos, dest)
 
-                    if (d < 10f) { // sau này có thể giảm về 30–50m
+
+                    if (!hasArrived  && d < 30f) {
+                        hasArrived = true
                         when (EmergencyStatus.fromInt(emergencyStatus)) {
                             EmergencyStatus.InProgress -> {
                                 btnPickupCustomer.visibility = View.VISIBLE
@@ -1165,13 +1266,35 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
 
                 lastGpsPos = rawPos
+
                 maybeSendLocationToServer(loc)
+
+//                if (!hasSentTestLocation) {
+//                    hasSentTestLocation = true
+//                    maybeSendLocationToServer(loc)
+//                }
             }
         }
 
         fusedLocation.requestLocationUpdates(
             request, locationCallback, Looper.getMainLooper()
         )
+    }
+
+
+    private fun resetNavStateForNewRoute() {
+        hasRoute = false
+        routePoints = emptyList()
+        steps = emptyList()
+        currentStepIndex = 0
+        currentRoutePointIndex = 0
+        lastStepAdvanceTime = 0L
+        lastSpokenStepIndex = -1
+        hasFitRouteBoundsOnce = false
+        lastSnappedPos = null
+        lastSnapIndex = -1
+        lastSnapDist = -1f
+        hasArrived = false
     }
 
 
@@ -1187,6 +1310,16 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onStart() {
         super.onStart()
         mapView.onStart()
+
+//        // 1) Tắt service
+//        stopBgTrackingService()
+//
+//        // 2) Bật lại location updates cho Activity (vẽ map)
+//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+//            == PackageManager.PERMISSION_GRANTED && ensureLocationEnabled()
+//        ) {
+//            startLocationUpdates()
+//        }
     }
 
     override fun onResume() {
@@ -1209,6 +1342,16 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onStop() {
         super.onStop()
         mapView.onStop()
+
+        if(isChangingConfigurations) return
+
+//        // 1) Tắt location updates của Activity để không chạy song song
+//        if (::locationCallback.isInitialized) {
+//            try { fusedLocation.removeLocationUpdates(locationCallback) } catch (_: Exception) {}
+//        }
+
+        // 2) Bật service background
+//        startBgTrackingServiceIfNeeded()
     }
 
     override fun onLowMemory() {
@@ -1220,12 +1363,13 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onDestroy()
         mapView.onDestroy()
 
-        if (::locationCallback.isInitialized) {
-            try {
-                fusedLocation.removeLocationUpdates(locationCallback)
-            } catch (_: Exception) {
-            }
-        }
+        fusedLocation.removeLocationUpdates(locationCallback)
+//        if (::locationCallback.isInitialized) {
+//            try {
+//                fusedLocation.removeLocationUpdates(locationCallback)
+//            } catch (_: Exception) {
+//            }
+//        }
 
         tts?.stop()
         tts?.shutdown()

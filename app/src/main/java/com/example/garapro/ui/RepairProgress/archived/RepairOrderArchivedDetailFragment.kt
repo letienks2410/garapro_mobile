@@ -116,7 +116,7 @@ class RepairOrderArchivedDetailFragment : Fragment() {
 
 
     private fun bindDetail(detail: RepairOrderArchivedDetail) = with(binding) {
-        currentRepairOrderId  = detail.repairOrderId
+        currentRepairOrderId = detail.repairOrderId
         tvLicensePlate.text = detail.licensePlate
         tvBranchName.text = detail.branchName
         tvModelName.text = detail.modelName
@@ -127,7 +127,19 @@ class RepairOrderArchivedDetailFragment : Fragment() {
         tvCost.text = formatCurrency(detail.cost)
         tvNote.text = detail.note ?: "-"
 
-        jobsAdapter.submitList(detail.jobs)
+        val jobs = detail.jobs
+        val hasJobs = !jobs.isNullOrEmpty()
+
+        rvJobs.visibility = if (hasJobs) View.VISIBLE else View.GONE
+        tvNoJobsMessage.visibility = if (hasJobs) View.GONE else View.VISIBLE
+
+        if (hasJobs) {
+            jobsAdapter.submitList(jobs)
+        } else {
+            jobsAdapter.submitList(emptyList())
+            tvNoJobsMessage.text =
+                "No repairs were performed. This order includes inspection fee only."
+        }
 
         // Feedback UI
         if (detail.feedBacks != null) {

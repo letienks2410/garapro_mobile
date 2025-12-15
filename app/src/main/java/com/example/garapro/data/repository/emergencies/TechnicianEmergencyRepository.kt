@@ -1,6 +1,7 @@
 package com.example.garapro.data.repository.emergencies
 
 import android.util.Log
+import com.example.garapro.data.model.techEmergencies.EmergencyDetailDto
 import com.example.garapro.data.model.techEmergencies.TechnicianEmergencyResponse
 import com.example.garapro.data.model.techEmergencies.TechnicianLocationBody
 import com.example.garapro.data.model.techEmergencies.UpdateEmergencyStatusRequest
@@ -46,6 +47,14 @@ class TechnicianEmergencyRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+    suspend fun getEmergencyDetail(id: String): EmergencyDetailDto? {
+        return try {
+            val res = api.getEmergencyDetail(id)
+            if (res.isSuccessful) res.body() else null
+        } catch (e: Exception) {
+            null
         }
     }
 

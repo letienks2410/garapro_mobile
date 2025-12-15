@@ -92,6 +92,7 @@ class EmergencyBottomSheet(
 
     fun showAccepted(garage: Garage, etaMinutes: Int?, arrived: Boolean = false) {
         dismissSilently()
+        lastGarage = garage
         bottomSheetDialog = BottomSheetDialog(context).apply {
             val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_accepted, null)
             setContentView(view)
@@ -126,23 +127,105 @@ class EmergencyBottomSheet(
         }
     }
 
-    fun showArrived(garage: Garage, techName: String? = null, techPhone: String? = null) {
+//    fun showArrived(garage: Garage, techName: String? = null, techPhone: String? = null) {
+//        dismissSilently()
+//        bottomSheetDialog = BottomSheetDialog(context).apply {
+//            val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_arrived, null)
+//            setContentView(view)
+//            setCancelable(true)
+//            view.findViewById<TextView>(R.id.tvArrivedGarageName)?.text = garage.name
+//            view.findViewById<TextView>(R.id.tvArrivedGarageAddress)?.text = garage.address
+//            view.findViewById<TextView>(R.id.tvTechNameArrived)?.text = techName ?: "Technician"
+//            view.findViewById<TextView>(R.id.tvTechPhoneArrived)?.text = techPhone ?: ""
+//            view.findViewById<Button>(R.id.btnCloseArrived)?.setOnClickListener {
+//                dismiss()
+//                onCloseClickListener?.invoke()
+//            }
+//            show()
+//        }
+//    }
+fun showArrived(garage: Garage, techName: String? = null, techPhone: String? = null) {
+    try {
+        android.util.Log.d("BottomSheet", "════════════════════════════")
+        android.util.Log.d("BottomSheet", "🎯 showArrived START")
+        android.util.Log.d("BottomSheet", "   Garage: ${garage.name}")
+        android.util.Log.d("BottomSheet", "   Tech: $techName / $techPhone")
+        android.util.Log.d("BottomSheet", "   Thread: ${Thread.currentThread().name}")
+
+        // Đảm bảo chạy trên UI thread
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            android.util.Log.w("BottomSheet", "⚠️ NOT on UI thread, posting to main thread...")
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                showArrived(garage, techName, techPhone)
+            }
+            return
+        }
+
+        android.util.Log.d("BottomSheet", "   Calling dismissSilently()...")
         dismissSilently()
+
+        android.util.Log.d("BottomSheet", "   Creating new BottomSheetDialog...")
         bottomSheetDialog = BottomSheetDialog(context).apply {
+            android.util.Log.d("BottomSheet", "   Inflating layout...")
             val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_arrived, null)
+
+            android.util.Log.d("BottomSheet", "   View inflated successfully")
+
+            android.util.Log.d("BottomSheet", "   Setting content view...")
             setContentView(view)
+
+            android.util.Log.d("BottomSheet", "   Setting cancelable...")
             setCancelable(true)
-            view.findViewById<TextView>(R.id.tvArrivedGarageName)?.text = garage.name
-            view.findViewById<TextView>(R.id.tvArrivedGarageAddress)?.text = garage.address
-            view.findViewById<TextView>(R.id.tvTechNameArrived)?.text = techName ?: "Technician"
-            view.findViewById<TextView>(R.id.tvTechPhoneArrived)?.text = techPhone ?: ""
-            view.findViewById<Button>(R.id.btnCloseArrived)?.setOnClickListener {
+
+            android.util.Log.d("BottomSheet", "   Finding views...")
+            val tvGarageName = view.findViewById<TextView>(R.id.tvArrivedGarageName)
+            val tvGarageAddress = view.findViewById<TextView>(R.id.tvArrivedGarageAddress)
+            val tvTechName = view.findViewById<TextView>(R.id.tvTechNameArrived)
+            val tvTechPhone = view.findViewById<TextView>(R.id.tvTechPhoneArrived)
+            val btnClose = view.findViewById<Button>(R.id.btnCloseArrived)
+
+            android.util.Log.d("BottomSheet", "   Views found:")
+            android.util.Log.d("BottomSheet", "     - tvGarageName: ${tvGarageName != null}")
+            android.util.Log.d("BottomSheet", "     - tvGarageAddress: ${tvGarageAddress != null}")
+            android.util.Log.d("BottomSheet", "     - tvTechName: ${tvTechName != null}")
+            android.util.Log.d("BottomSheet", "     - tvTechPhone: ${tvTechPhone != null}")
+            android.util.Log.d("BottomSheet", "     - btnClose: ${btnClose != null}")
+
+            if (tvGarageName == null || btnClose == null) {
+                android.util.Log.e("BottomSheet", "❌ CRITICAL: Required views are NULL!")
+            }
+
+            android.util.Log.d("BottomSheet", "   Setting text values...")
+            tvGarageName?.text = garage.name
+            tvGarageAddress?.text = garage.address
+            tvTechName?.text = techName ?: "Technician"
+            tvTechPhone?.text = techPhone ?: ""
+
+            android.util.Log.d("BottomSheet", "   Setting button listener...")
+            btnClose?.setOnClickListener {
+                android.util.Log.d("BottomSheet", "🔴 Close button clicked")
                 dismiss()
                 onCloseClickListener?.invoke()
             }
+
+            android.util.Log.d("BottomSheet", "   Calling dialog.show()...")
             show()
+
+            android.util.Log.d("BottomSheet", "   Dialog shown!")
+            android.util.Log.d("BottomSheet", "   Dialog.isShowing: ${isShowing}")
         }
+
+        android.util.Log.d("BottomSheet", "✅ showArrived COMPLETE")
+        android.util.Log.d("BottomSheet", "   bottomSheetDialog != null: ${bottomSheetDialog != null}")
+        android.util.Log.d("BottomSheet", "   bottomSheetDialog?.isShowing: ${bottomSheetDialog?.isShowing}")
+        android.util.Log.d("BottomSheet", "════════════════════════════")
+
+    } catch (e: Exception) {
+        android.util.Log.e("BottomSheet", "❌ showArrived CRASHED!", e)
+        e.printStackTrace()
     }
+}
+
 
     fun setOnCloseClickListener(listener: (() -> Unit)?) {
         onCloseClickListener = listener
@@ -183,7 +266,7 @@ class EmergencyBottomSheet(
 
         // Hiển thị thông tin gara
         tvGarageName.text = garage.name
-        tvGarageInfo.text = "${garage.distance.formatDistance()} km • ${garage.rating} ⭐"
+        tvGarageInfo.text = "${garage.distance.formatDistance()} km "
         tvWaitingText.text = "Waiting for ${garage.name} to confirm..."
 
         // Setup nút hủy
@@ -344,7 +427,7 @@ class EmergencyBottomSheet(
             tvTechPhone.text = ""
             
             btnViewMap.setOnClickListener { dismiss(); onViewMapClickListener?.invoke() }
-            btnBack.setOnClickListener { showAccepted(garage, etaMinutes) }
+            btnBack.visibility = View.GONE
             
             show()
         }
