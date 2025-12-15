@@ -1363,6 +1363,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onDestroy()
         mapView.onDestroy()
 
+        fusedLocation.removeLocationUpdates(locationCallback)
 //        if (::locationCallback.isInitialized) {
 //            try {
 //                fusedLocation.removeLocationUpdates(locationCallback)
