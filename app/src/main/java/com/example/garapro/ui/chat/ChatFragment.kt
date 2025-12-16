@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
@@ -54,8 +55,6 @@ class ChatFragment : Fragment() {
     private val newMessageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val message = intent?.getStringExtra("message") ?: return
-            val fromUserId = intent.getStringExtra("fromUserId")
-            val conversationId = intent.getStringExtra("conversationId")
 
             // Nếu bạn có logic kiểm tra conversationId để chỉ insert vào chat đúng
             // hiện tại ta append trực tiếp (bạn có thể thêm điều kiện kiểm tra)
