@@ -4,7 +4,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white">
+    android:background="#F7F7F9">
 
     <!-- Message List -->
     <androidx.recyclerview.widget.RecyclerView
@@ -16,24 +16,21 @@
         android:clipToPadding="false"
         android:scrollbars="vertical" />
 
-    <!-- Waiting indicator (hidden by default) -->
+    <!-- Waiting indicator -->
     <LinearLayout
         android:id="@+id/layoutWaiting"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
+        android:gravity="center"
+        android:padding="8dp"
         android:visibility="gone">
 
         <ProgressBar
             android:id="@+id/progressWaiting"
             style="?android:attr/progressBarStyleSmall"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:indeterminate="true" />
 
         <TextView
@@ -41,20 +38,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Waiting for response..."
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:layout_marginStart="8dp"
-            android:textColor="#666666" />
+            android:textColor="#777777" />
     </LinearLayout>
 
     <!-- Input Section -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardElevation="6dp"
-        app:cardCornerRadius="12dp"
+        android:layout_margin="10dp"
+        app:cardElevation="8dp"
+        app:cardCornerRadius="16dp"
         app:strokeWidth="0dp"
-        android:layout_margin="8dp"
-        android:padding="8dp">
+        android:padding="10dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -67,11 +64,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                app:boxBackgroundMode="outline"
-                app:boxBackgroundColor="@android:color/white"
-                app:boxStrokeColor="#DDDDDD"
-                app:boxStrokeWidth="1dp"
-                app:boxStrokeWidthFocused="2dp"
+                app:boxBackgroundMode="filled"
+                app:boxBackgroundColor="#F1F1F5"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxStrokeWidth="0dp"
                 android:layout_marginEnd="8dp">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -82,22 +81,25 @@
                     android:imeOptions="actionSend"
                     android:inputType="textMultiLine"
                     android:maxLines="4"
-                    android:textColor="#000000"
-                    android:textColorHint="#888888" />
+                    android:textSize="14sp"
+                    android:textColor="#222222"
+                    android:textColorHint="#999999"
+                    android:padding="12dp" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Send Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSend"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:text="Send"
-                android:textAllCaps="false"
-                android:textSize="14sp"
-                app:icon="@drawable/ic_send"/>
+                android:layout_width="60dp"
+                android:layout_height="48dp"
+                android:text=""
+                app:icon="@drawable/ic_send"
+                app:iconSize="20dp"
+                app:cornerRadius="20dp"
+                app:backgroundTint="#4F7BFF"
+                app:iconTint="@android:color/white"
+                app:rippleColor="#80FFFFFF" />
 
         </LinearLayout>
 
