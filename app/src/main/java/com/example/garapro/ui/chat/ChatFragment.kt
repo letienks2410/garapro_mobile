@@ -1,5 +1,6 @@
 package com.example.garapro.ui.chat
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,12 +11,14 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.garapro.R
@@ -43,7 +46,7 @@ class ChatFragment : Fragment() {
     private lateinit var layoutWaiting: LinearLayout
 
     // Thay bằng webhook của bạn
-    private val WEBHOOK_URL = "https://n8n.zanis.id.vn/webhook/b396fc96-535d-4af6-8f1a-33ea454b8bb2"
+    private val WEBHOOK_URL = "https://n8ngarapro.zanis.id.vn/webhook/dd88ab48-6343-4a76-8b62-c3d9c456e750"
     private val AUTH_TOKEN: String? = null // nếu cần: "Bearer xxxxx"
 
     private val client = OkHttpClient()
@@ -52,8 +55,6 @@ class ChatFragment : Fragment() {
     private val newMessageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val message = intent?.getStringExtra("message") ?: return
-            val fromUserId = intent.getStringExtra("fromUserId")
-            val conversationId = intent.getStringExtra("conversationId")
 
             // Nếu bạn có logic kiểm tra conversationId để chỉ insert vào chat đúng
             // hiện tại ta append trực tiếp (bạn có thể thêm điều kiện kiểm tra)
@@ -104,7 +105,7 @@ class ChatFragment : Fragment() {
                 adapter.addMessage(Message(text, true))
                 rv.scrollToPosition(adapter.itemCount - 1)
                 edt.setText("")
-
+                hideKeyboard()
                 // Hiển thị hiệu ứng chờ và disable nút gửi
                 showWaiting()
 
@@ -138,6 +139,14 @@ class ChatFragment : Fragment() {
             }
         }
     }
+
+    @SuppressLint("ServiceCast")
+    private fun hideKeyboard() {
+        val imm = requireContext()
+            .getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(edt.windowToken, 0)
+    }
+
 
     override fun onResume() {
         super.onResume()
