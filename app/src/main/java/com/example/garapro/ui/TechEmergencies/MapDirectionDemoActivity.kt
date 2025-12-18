@@ -258,6 +258,7 @@ class MapDirectionDemoActivity : AppCompatActivity(), OnMapReadyCallback {
                 if (ok) {
                     Toast.makeText(this, "Pickup confirmed! Moving to garage...", Toast.LENGTH_SHORT).show()
 
+                    hasArrived = false
                     emergencyStatus = EmergencyStatus.Towing.value
                     btnPickupCustomer.visibility = View.GONE
                     destinationLatLng = branchLocation
