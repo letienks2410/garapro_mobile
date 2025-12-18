@@ -59,6 +59,7 @@ data class QuotationServicePart(
     var isSelected: Boolean = false,
     val isRecommended: Boolean = false,
     val partDescription: String? = null,
+    val warrantyMonths : Int?,
     val recommendationNote: String? = null
 )
 // Thêm các class mới

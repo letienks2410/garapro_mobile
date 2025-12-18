@@ -36,7 +36,12 @@ class QuotationPartAdapter(
 
         fun bind(part: QuotationServicePart) {
             try {
-                binding.tvPartName.text = part.partName+"( x${part.quantity} )"
+                binding.tvPartName.text = buildString {
+                    append("${part.partName} (x${part.quantity})")
+                    part.warrantyMonths?.let {
+                        append("  Warranty: $it")
+                    }
+                }
                 binding.tvPartPrice.text = MoneyUtils.formatVietnameseCurrency(part.price)
                 binding.cbPart.isChecked = part.isSelected
                 binding.cbPart.isEnabled = isEditable
