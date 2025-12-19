@@ -27,10 +27,13 @@ class BookingRepository(
 ) {
 
     // 🔹 Parent Service Categories
-    suspend fun getParentServiceCategories(): List<ParentServiceCategory> {
+    suspend fun getParentServiceCategories(vehicleId: String, branchId: String): List<ParentServiceCategory> {
         return try {
-            val response = RetrofitInstance.bookingService.getParentServiceCategories()
+            val response = RetrofitInstance.bookingService.getParentServiceCategories(vehicleId,branchId)
             if (response.isSuccessful) {
+                Log.w("BookingRepository", "getParentServiceCategories  ${response.body()}")
+                Log.w("BookingRepository", vehicleId)
+
                 response.body() ?: emptyList()
             } else {
                 Log.w("BookingRepository", "getParentServiceCategories failed: ${response.code()}")
@@ -94,7 +97,8 @@ class BookingRepository(
         pageSize: Int = 10,
         childServiceCategoryId: String? = null,
         searchTerm: String? = null,
-        branchId: String? = null
+        branchId: String? = null,
+        vehicleId: String? = null
     ): ChildCategoriesResponse {
         return try {
             val response = RetrofitInstance.bookingService.getChildServiceCategories(
@@ -103,9 +107,12 @@ class BookingRepository(
                 pageSize = pageSize,
                 childServiceCategoryId = childServiceCategoryId,
                 searchTerm = searchTerm,
-                branchId = branchId
+                branchId = branchId,
+                vehicleId = vehicleId
             )
             if (response.isSuccessful) {
+                Log.w("BookingRepository", "getChildServiceCategories : ${response.body()}")
+
                 response.body() ?: ChildCategoriesResponse(
                     totalCount = 0,
                     pageNumber = pageNumber,

@@ -47,8 +47,8 @@ interface BookingService {
     suspend fun getServiceCategories(): Response<List<ServiceCategory>>
 
 
-    @GET("ServiceCategories/parents")
-    suspend fun getParentServiceCategories(): Response<List<ParentServiceCategory>>
+    @GET("ServiceCategories/parentsByVehicleId")
+    suspend fun getParentServiceCategories(@Query("vehicleId") vehicleId: String,@Query("branchId") branchId: String): Response<List<ParentServiceCategory>>
 
     @GET("RepairRequest/arrival-availability/{branchId}")
     suspend fun getArrivalAvailability(
@@ -63,7 +63,8 @@ interface BookingService {
         @Query("pageSize") pageSize: Int = 10,
         @Query("childServiceCategoryId") childServiceCategoryId: String? = null,
         @Query("searchTerm") searchTerm: String? = null,
-        @Query("branchId") branchId: String? = null
+        @Query("branchId") branchId: String? = null,
+        @Query("vehicleId") vehicleId: String? = null
     ): Response<ChildCategoriesResponse>
     // Submit Repair Request
     @Multipart

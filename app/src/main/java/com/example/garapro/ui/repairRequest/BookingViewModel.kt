@@ -208,6 +208,9 @@ class BookingViewModel(
     fun selectVehicle(vehicle: Vehicle) {
         _selectedVehicle.value = vehicle
         _navigationState.value = NavigationState.BRANCH_SELECTION
+        _selectedParentCategory.value?.serviceCategoryId?.let { parentId ->
+            loadChildServiceCategories(parentId)
+        }
     }
 
     fun selectBranch(branch: Branch) {
@@ -363,7 +366,9 @@ class BookingViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.postValue(true)
             try {
-                val categories = repository.getParentServiceCategories()
+                val vehicle = _selectedVehicle.value;
+                val branch = _selectedBranch.value;
+                val categories = repository.getParentServiceCategories(vehicle?.vehicleID ?: "", branch?.branchId ?: "")
                 _parentServiceCategories.postValue(categories)
             } catch (e: Exception) {
                 _parentServiceCategories.postValue(emptyList())
@@ -380,19 +385,22 @@ class BookingViewModel(
         pageNumber: Int = 1,
         pageSize: Int = 10,
         childServiceCategoryId: String? = null,
-        searchTerm: String? = null,
-        branchId: String? = null
+        searchTerm: String? = null
+
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                val vehicleId = _selectedVehicle.value?.vehicleID
+                val branchId = _selectedBranch.value?.branchId
                 val response = repository.getChildServiceCategories(
                     parentId = parentId,
                     pageNumber = pageNumber,
                     pageSize = pageSize,
                     childServiceCategoryId = childServiceCategoryId,
                     searchTerm = searchTerm,
-                    branchId = branchId
+                    branchId = branchId,
+                    vehicleId = vehicleId
 
                 )
                 _childServiceCategories.value = response

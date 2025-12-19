@@ -20,7 +20,7 @@ data class Service(
     val description: String,
     val price: Double,
     val discountedPrice: Double,
-    val estimatedDuration: Int,
+    val estimatedDuration: Double,
     val isActive: Boolean,
     val isAdvanced: Boolean,
     val createdAt: String,

@@ -353,8 +353,8 @@ class ChildCategorySelectionFragment : BaseBookingFragment() {
         bookingViewModel.loadChildServiceCategories(
             parentId = parentId,
             childServiceCategoryId = childServiceCategoryId,
-            searchTerm = searchTerm,
-            branchId = branchId
+            searchTerm = searchTerm
+//            branchId = branchId
         )
     }
 
